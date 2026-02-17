@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 4]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/prd-validation-report.md
@@ -167,3 +167,96 @@ npm install -D prettier eslint-config-prettier husky lint-staged
 | Vercel AI SDK | 5.0 (`ai`) | [ai-sdk.dev](https://ai-sdk.dev/docs/introduction) |
 
 **Note:** Project initialization using this command sequence should be the first implementation story.
+
+## Core Architectural Decisions
+
+### Decision Priority Analysis
+
+**Critical Decisions (Block Implementation):**
+1. Hybrid data model (normalized core + JSONB metadata) — shapes every Supabase migration
+2. JWT sessions with role claims — foundation for all auth/RBAC flows
+3. Server Actions + Route Handlers split — determines API surface architecture
+4. Config-driven widget grid — structures the entire dashboard layer
+5. Event ID dedup table — required before any webhook handler
+
+**Important Decisions (Shape Architecture):**
+6. Zod + DB constraints validation — affects every data boundary
+7. ISR + Realtime hybrid caching — shapes Server/Client Component split
+8. HMAC + IP allowlist webhook security — webhook endpoint design
+9. Role-claim RLS policies — Supabase policy authoring
+10. Structured error types + boundaries — error handling patterns throughout
+11. Zustand for client state — widget interactivity patterns
+12. CSS variables theming — spice palette integration approach
+
+**Deferred Decisions (Post-MVP):**
+- Sentry integration (use Vercel Analytics + console logging for MVP)
+- External queue service for webhooks (Supabase dead letter table for MVP)
+- Centralized secrets management (Vercel env vars sufficient for MVP)
+- tRPC or GraphQL layer (Server Actions sufficient for MVP)
+- Turborepo/monorepo structure (single app for MVP)
+
+### Data Architecture
+
+| Decision | Choice | Version | Rationale | Affects |
+|----------|--------|---------|-----------|---------|
+| Data modeling | Hybrid (normalized + JSONB) | — | Core entities (issues, sprints, repos, PRs) as normalized tables with FK relationships. JSONB `metadata` columns for extended/vendor-specific fields. Balances query flexibility with simple webhook upserts. | All Supabase migrations, webhook handlers, dashboard queries |
+| Data validation | Zod + DB constraints | Zod 3.x | Zod schemas at API route/webhook ingestion boundaries for runtime type validation. Supabase NOT NULL, CHECK, FK constraints as safety net. Two-layer defense without over-validating. | API routes, webhook handlers, Server Actions, Supabase schema |
+| Caching strategy | ISR + Realtime hybrid | Next.js 15 ISR + Supabase Realtime | ISR with tag-based revalidation (`revalidateTag`) triggered by webhook handlers for Server Component page loads. Supabase Realtime subscriptions in Client Component widgets for live updates. | Dashboard pages, webhook pipeline, widget components |
+| Webhook idempotency | Event ID dedup table | — | `webhook_events` table stores processed event IDs with timestamps. Check-before-process pattern. Prevents duplicate processing and side-effects (notifications, AI triggers). | Webhook handlers, Supabase schema, admin monitoring |
+| Dead letter queue | Supabase dead_letter table | — | `dead_letter_events` table captures failed webhook payloads with error details and timestamps. Admin dashboard UI for inspection and manual retry. | Webhook error handling, admin dashboard |
+
+### Authentication & Security
+
+| Decision | Choice | Version | Rationale | Affects |
+|----------|--------|---------|-----------|---------|
+| Session strategy | JWT sessions | Auth.js v5 | Stateless JWT with role claims embedded. No DB lookup per request. 24h expiry. Enables Edge Middleware RBAC checks without DB round-trip. | Auth middleware, RLS policies, API route protection |
+| API route protection | `auth()` helper per route | Auth.js v5 | `auth()` in every API Route Handler and Server Action. Role checked from JWT claims. Consistent with page-level auth pattern. | All API routes, Server Actions |
+| Webhook security | HMAC-SHA256 + IP allowlist | — | Signature validation required for all webhooks. Optional IP allowlist for Atlassian/GitHub CIDR ranges. Defense in depth. | Webhook Route Handlers, middleware config |
+| RLS policy design | Role-claim RLS | Supabase | RLS policies read role from `auth.jwt()->>'role'`. No extra DB lookups for permission checks. Per-table policies based on role. | All Supabase tables, migration scripts |
+
+### API & Communication Patterns
+
+| Decision | Choice | Version | Rationale | Affects |
+|----------|--------|---------|-----------|---------|
+| API design | Server Actions + Route Handlers | Next.js 15 | Server Actions for all mutations (CRUD, form submissions). Route Handlers only for webhooks, AI streaming, and external callbacks. Minimizes API surface area. | All data mutations, webhook endpoints, AI streaming |
+| Error handling | Structured error types + boundaries | — | Typed error classes (`AuthError`, `IntegrationError`, `ValidationError`). React error boundaries per widget. `error.tsx` per route segment. Sentry-ready logging interface. | All components, API routes, widget architecture |
+| Jira rate limiting | Request queue + cooldown | — | In-memory queue for direct Jira API calls. Max 5 calls/min per PRD constraint. Exponential backoff on failures. Cooldown timer between requests. | Jira client, AI agent Jira tool calls |
+
+### Frontend Architecture
+
+| Decision | Choice | Version | Rationale | Affects |
+|----------|--------|---------|-----------|---------|
+| State management | Zustand + Server State | Zustand 5.x | Zustand for lightweight client UI state (sidebar, filters, active role context). Server Components + ISR for data state. Supabase Realtime for live updates. No heavy state library. | Dashboard UI, widget interactivity, filters |
+| Widget system | Config-driven grid | — | JSON config maps `role → widget[]`. Each widget is self-contained with own error boundary, data fetching, loading state. CSS Grid layout via Tailwind. Supports AI-generated widget configs. | Dashboard pages, role views, AI widget generation |
+| Theming | CSS variables in globals.css | Tailwind v4 | Override shadcn/ui CSS variables (`--primary`, `--accent`, etc.) with spice palette values. Role-specific colors via `data-role` attribute on `<body>`. Zero runtime cost. | All UI components, role-based styling |
+| AI sidebar | CopilotKit CopilotSidebar | CopilotKit v1.51.x | Built-in `CopilotSidebar` component for chat UI. `useCopilotReadable` for dashboard context injection. `useCopilotAction` for live data queries. Headless mode available for deeper customization later. | AI chat feature, dashboard integration |
+
+### Infrastructure & Deployment
+
+| Decision | Choice | Version | Rationale | Affects |
+|----------|--------|---------|-----------|---------|
+| CI/CD | GitHub Actions + Vercel | — | GitHub Actions for lint, type-check, Vitest on PRs. Vercel auto-deploys on merge to main with preview deploys on PRs. Free tier sufficient. | PR workflow, deploy pipeline |
+| Environment config | Vercel env vars + .env.local | — | Vercel dashboard for production/preview secrets. `.env.local` for local dev (gitignored). `.env.example` committed as template. | All environment-dependent config |
+| Monitoring | Vercel Analytics + console logging | — | Vercel Analytics (free) for Web Vitals. Vercel Logs for server-side. Structured `console.log` in webhook handlers with correlation IDs. Sentry added post-MVP. | Performance monitoring, error visibility |
+
+### Decision Impact Analysis
+
+**Implementation Sequence:**
+1. Supabase project + schema migrations (hybrid model, RLS policies, webhook_events, dead_letter_events tables)
+2. Auth.js v5 setup with JWT sessions + SupabaseAdapter + role claims
+3. Edge Middleware RBAC + `auth()` helper pattern
+4. CSS variable theming (spice palette override of shadcn defaults)
+5. Dashboard shell + config-driven widget grid + error boundaries
+6. Webhook Route Handlers (HMAC + dedup + ISR revalidation)
+7. Zustand stores for UI state
+8. Supabase Realtime subscriptions in widget Client Components
+9. Jira/GitHub clients with rate limiting queue
+10. CopilotKit sidebar integration
+11. GitHub Actions CI pipeline
+
+**Cross-Component Dependencies:**
+- JWT role claims → feeds RLS policies, Edge Middleware, widget config filtering, and AI system prompts
+- Webhook pipeline → triggers ISR revalidation AND Realtime broadcasts (two update paths from single source)
+- Config-driven widgets → consumed by dashboard renderer AND AI widget generator (FR38-FR44)
+- Structured error types → used by error boundaries, webhook dead letter logging, and admin health monitoring
+- Zustand role context store → consumed by widget grid config resolver, CopilotKit readable context, and navigation filtering
