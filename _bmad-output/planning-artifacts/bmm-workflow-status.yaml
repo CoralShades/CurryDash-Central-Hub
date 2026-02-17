@@ -66,10 +66,10 @@ workflow_status:
     name: "Solutioning"
     workflows:
       - id: "create-architecture"
-        status: "required"
+        status: "_bmad-output/planning-artifacts/architecture.md"
         agent: "architect"
         command: "/bmad:bmm:workflows:create-architecture"
-        output: "System architecture document"
+        note: "Completed 2026-02-17 — 8-step architecture: context analysis, starter template, 20+ decisions (5 categories), implementation patterns, project structure (~120 files), validation (56 FRs + 46 NFRs covered), 4 critical gaps resolved"
 
       - id: "create-epics-and-stories"
         status: "required"
