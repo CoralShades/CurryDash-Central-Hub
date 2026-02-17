@@ -1,0 +1,11 @@
+# CurryDash Central Hub - OpenAI Codex Configuration
+# Docs: https://developers.openai.com/codex/config-basic/
+
+model = "o4-mini"
+approval_policy = "unless-allow-listed"
+
+[features]
+shell_snapshot = true
+
+# Project root markers
+project_doc_fallback_filenames = ["CLAUDE.md", "AGENTS.md"]
