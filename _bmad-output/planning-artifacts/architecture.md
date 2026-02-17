@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/prd-validation-report.md
@@ -260,3 +260,158 @@ npm install -D prettier eslint-config-prettier husky lint-staged
 - Config-driven widgets → consumed by dashboard renderer AND AI widget generator (FR38-FR44)
 - Structured error types → used by error boundaries, webhook dead letter logging, and admin health monitoring
 - Zustand role context store → consumed by widget grid config resolver, CopilotKit readable context, and navigation filtering
+
+## Implementation Patterns & Consistency Rules
+
+### Pattern Categories Defined
+
+**Critical Conflict Points Identified:** 20+ areas where AI agents could make different choices, grouped into 5 categories: naming (8), structure (4), format (3), communication (3), and process (4).
+
+### Naming Patterns
+
+**Database Naming Conventions:**
+- Tables: plural `snake_case` — `jira_issues`, `webhook_events`, `dead_letter_events`, `team_members`
+- Columns: `snake_case` — `created_at`, `issue_key`, `sprint_id`, `webhook_payload`
+- Foreign keys: `{referenced_table_singular}_id` — `user_id`, `team_id`, `sprint_id`
+- Indexes: `idx_{table}_{columns}` — `idx_issues_status`, `idx_webhook_events_event_id`
+- JSONB columns: `metadata` (generic) or descriptive `raw_payload`, `widget_config`
+- Enums: `snake_case` type name, `snake_case` values — `user_role` type with `admin`, `developer`, `qa`, `stakeholder`
+
+**API & Route Naming Conventions:**
+- Route Handlers: `/api/{resource}/{action}` — `/api/webhooks/jira`, `/api/webhooks/github`, `/api/ai/chat`
+- Server Actions: `{verb}{Resource}` — `createIssue()`, `updateWidget()`, `deleteNotification()`
+- Query parameters: `camelCase` — `?issueKey=ABC-123&sprintId=5`
+- No custom headers needed for MVP (auth via cookies/JWT)
+
+**Code Naming Conventions:**
+- Files: `kebab-case` — `issue-card.tsx`, `use-realtime.ts`, `jira-client.ts`, `webhook-handler.ts`
+- React components: `PascalCase` — `IssueCard`, `DashboardGrid`, `WidgetSkeleton`
+- Functions/hooks: `camelCase` — `getIssues()`, `useRealtimeUpdates()`, `validateWebhook()`
+- Constants: `UPPER_SNAKE_CASE` — `MAX_JIRA_CALLS_PER_MINUTE`, `JWT_EXPIRY_HOURS`
+- Types/interfaces: `PascalCase` — `JiraIssue`, `WebhookEvent`, `DashboardWidget`
+- Zod schemas: `camelCase` with `Schema` suffix — `jiraIssueSchema`, `webhookEventSchema`
+- Zustand stores: `use{Feature}Store` — `useDashboardStore`, `useFilterStore`
+
+### Structure Patterns
+
+**Project Organization:**
+- Feature-based colocation in `src/modules/{feature}/`
+- Each module contains: components, hooks, actions, types, and tests
+- Shared UI components in `src/components/ui/` (shadcn) and `src/components/shared/`
+- Utilities in `src/lib/` — clients, helpers, schemas
+- App Router pages in `src/app/` — thin wrappers that compose module components
+
+**Test Location:**
+- Unit/integration tests co-located: `src/lib/jira-client.test.ts` next to `src/lib/jira-client.ts`
+- Component tests co-located: `src/modules/dashboard/components/issue-card.test.tsx`
+- E2E tests in top-level `e2e/` directory: `e2e/dashboard.spec.ts`, `e2e/auth.spec.ts`
+- Test utilities in `src/test-utils/` — mocks, factories, helpers
+
+**Configuration Files:**
+- All config at project root: `next.config.ts`, `tailwind.config.ts`, `vitest.config.ts`
+- Environment: `.env.local` (gitignored), `.env.example` (committed)
+- Supabase migrations in `supabase/migrations/`
+- Seed data in `supabase/seed.sql`
+
+### Format Patterns
+
+**API Response Format (all Server Actions and Route Handlers):**
+```typescript
+// Success
+{ data: T, error: null }
+
+// Error
+{ data: null, error: { code: string, message: string } }
+
+// Example error codes: "AUTH_REQUIRED", "FORBIDDEN", "VALIDATION_ERROR",
+// "JIRA_API_ERROR", "GITHUB_API_ERROR", "NOT_FOUND", "RATE_LIMITED"
+```
+
+**Date/Time Format:**
+- Database: PostgreSQL `timestamptz` (UTC)
+- JSON/API: ISO 8601 strings — `"2026-02-17T14:30:00.000Z"`
+- UI display: Relative time for recent (`"5 min ago"`), formatted date for older (`"Feb 17, 2026"`)
+- Staleness indicators: calculated from `updated_at` vs `Date.now()`
+
+**JSON Field Naming:**
+- TypeScript/API layer: `camelCase` — `issueKey`, `sprintId`, `createdAt`
+- Database columns: `snake_case` — `issue_key`, `sprint_id`, `created_at`
+- Supabase client handles the mapping automatically via column selection
+
+### Communication Patterns
+
+**Event Naming (Supabase Realtime + Internal):**
+- Format: `{resource}.{action}` — `issue.created`, `sprint.updated`, `webhook.failed`
+- Standard payload structure:
+```typescript
+{
+  type: "issue.updated",
+  data: { /* entity data */ },
+  timestamp: "2026-02-17T14:30:00.000Z",
+  source: "jira" | "github" | "system" | "user"
+}
+```
+- Supabase Realtime channels: `dashboard:{role}` for role-filtered broadcasts
+
+**Zustand State Management:**
+- Feature slices: `useDashboardStore`, `useFilterStore`, `useSidebarStore`
+- Action naming: verb-first — `setActiveRole()`, `toggleSidebar()`, `updateFilter()`, `resetFilters()`
+- Selectors: use `useShallow()` for multi-property selections to prevent unnecessary re-renders
+- No business logic in stores — stores hold UI state only, data comes from Server Components/Realtime
+
+### Process Patterns
+
+**Error Handling:**
+- Server Actions: return `{ data: null, error: { code, message } }` — never throw
+- Route Handlers: return `NextResponse.json({ data: null, error }, { status })` with appropriate HTTP codes
+- Client Components: `<WidgetError>` component with retry button, logs error to console with correlation ID
+- Error boundaries: every dashboard widget wrapped in `<ErrorBoundary fallback={<WidgetError />}>`
+- Error classes: `AuthError`, `IntegrationError`, `ValidationError`, `RateLimitError` extending base `AppError`
+
+**Loading States:**
+- Shared `<WidgetSkeleton />` component matching widget card dimensions
+- `<WidgetSkeleton variant="chart" | "table" | "stats" | "list" />`
+- Server Components use Next.js `loading.tsx` for route-level loading
+- Client Components use Suspense with `<WidgetSkeleton />` fallback
+- No full-page spinners — widget-level loading only
+
+**Structured Logging:**
+- Format: `{ level, message, correlationId, source, timestamp, data }`
+- Correlation ID: generated per webhook event, flows through entire processing pipeline
+- Levels: `debug` (dev only), `info` (operations), `warn` (degraded), `error` (failures)
+- Source tags: `webhook:jira`, `webhook:github`, `auth`, `ai`, `realtime`, `admin`
+- Example:
+```typescript
+log.info({
+  message: "Webhook processed",
+  correlationId: "wh_abc123",
+  source: "webhook:jira",
+  data: { eventType: "issue.updated", issueKey: "CD-42" }
+})
+```
+
+**Retry & Rate Limiting:**
+- Jira API: in-memory queue, max 5 calls/min, exponential backoff (1s, 2s, 4s, 8s, 16s), max 3 retries
+- Webhook processing: retry failed events from dead letter table (manual admin action for MVP)
+- Supabase Realtime: auto-reconnect built into client, no custom retry needed
+- AI requests: single retry on timeout, then graceful degradation message
+
+### Enforcement Guidelines
+
+**All AI Agents MUST:**
+1. Follow naming conventions exactly — no exceptions for "just this one file"
+2. Use the `{ data, error }` response wrapper for every Server Action and Route Handler
+3. Wrap every dashboard widget in an error boundary with `<WidgetError />` fallback
+4. Include correlation IDs in all webhook processing log entries
+5. Co-locate tests with source files (unit/integration) or in `e2e/` (end-to-end)
+6. Use `kebab-case` for all new files, `PascalCase` for components/types, `camelCase` for functions/variables
+7. Never put business logic in Zustand stores — stores are UI state only
+8. Always validate at boundaries with Zod schemas before writing to Supabase
+
+**Anti-Patterns to Avoid:**
+- Creating `utils.ts` or `helpers.ts` catch-all files — use descriptive names in `src/lib/`
+- Mixing `snake_case` and `camelCase` in the same layer (DB is snake, TS is camel)
+- Returning raw Supabase errors to the client — always map to typed `AppError`
+- Putting `"use client"` on components that don't need interactivity
+- Creating loading spinners instead of using `<WidgetSkeleton />`
+- Storing server data in Zustand — use Server Components + ISR + Realtime instead
