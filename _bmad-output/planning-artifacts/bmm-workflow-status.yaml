@@ -56,11 +56,11 @@ workflow_status:
         note: "Completed 2026-02-17 — 12-step PRD: Executive Summary, Success Criteria, Product Scope, 6 User Journeys, Domain Requirements, Innovation Analysis, SaaS B2B Platform Requirements, Project Scoping, 56 FRs, 40 NFRs, polished"
 
       - id: "create-ux-design"
-        status: "conditional"
+        status: "_bmad-output/planning-artifacts/ux-design-specification.md"
         condition: "if_has_ui"
         agent: "ux-designer"
         command: "/bmad:bmm:workflows:create-ux-design"
-        note: "Determined after PRD — this is a UI-heavy project"
+        note: "Completed 2026-02-17 — 12-section comprehensive UX spec: design principles, IA, navigation, design tokens, page layouts, dashboard design, component patterns, AI UX patterns, interaction flows, system states, responsive behavior, accessibility"
 
   - phase: 3
     name: "Solutioning"
