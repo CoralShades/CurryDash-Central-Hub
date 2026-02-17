@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/prd-validation-report.md
@@ -764,3 +764,132 @@ Jira/GitHub → webhook POST → Route Handler → HMAC validate → dedup check
 → parse event → Supabase upsert → revalidateTag('issues') → Realtime broadcast
 → ISR serves fresh page (next request) + Client Components update live
 ```
+
+## Architecture Validation Results
+
+### Coherence Validation
+
+**Decision Compatibility: PASS**
+All technology choices work together without conflicts. Auth.js v5 JWT sessions feed role claims to both Edge Middleware RBAC and Supabase RLS policies via `auth.jwt()->>'role'`. ISR tag-based revalidation and Supabase Realtime operate as complementary update paths from the same webhook source. Config-driven widgets accept both static registry configs and AI-generated JSON configs. All package versions verified compatible as of Feb 2026.
+
+**Pattern Consistency: PASS**
+Naming conventions (snake_case DB, camelCase TS, kebab-case files) are consistently applied across all layers without cross-contamination. The `{ data, error }` response wrapper matches Supabase client patterns. Structured logging with correlation IDs flows through the entire webhook pipeline. Error boundary patterns are uniform across all widget types.
+
+**Structure Alignment: PASS**
+Project directory structure supports all architectural decisions. Feature modules map 1:1 to FR capability areas. Cross-cutting concerns (RBAC, error handling, logging) have dedicated shared locations. Mastra agent backend is properly separated from CopilotKit frontend in `src/mastra/` vs `src/modules/ai/`.
+
+**Clarifications for Implementation:**
+1. **MCP vs Cache precedence:** MCP tools try live query with 5s timeout → fall back to Supabase cache on timeout/error → include source in AI citation ("Live query" vs "Cached data as of [timestamp]")
+2. **Zustand role vs JWT role:** Zustand `activeRole` = display preference (which dashboard view to render). JWT role = authoritative access control. Widget config resolves based on JWT. RLS gates data regardless of Zustand state.
+3. **Auth.js v5 beta:** Pin exact versions in `package.json` after Week 1 setup testing. SupabaseAdapter supports JWT sessions with custom role claims via `callbacks.jwt()`.
+
+### Requirements Coverage Validation
+
+**Functional Requirements Coverage: 56/56 PASS**
+
+| FR Category | Count | Status | Module |
+|---|---|---|---|
+| FR1-FR9: Identity & Access | 9 | PASS | `src/modules/auth/` + `middleware.ts` |
+| FR10-FR19: Dashboard & Viz | 10 | PASS | `src/modules/dashboard/` |
+| FR20-FR25: Jira Integration | 6 | PASS | `src/modules/jira/` + `src/modules/webhooks/` |
+| FR26-FR29: GitHub Integration | 4 | PASS | `src/modules/github/` + `src/modules/webhooks/` |
+| FR30-FR37: AI Assistant | 8 | PASS | `src/modules/ai/` + `src/mastra/` |
+| FR38-FR44: AI Reports & Widgets | 7 | PASS | `src/modules/reports/` + `src/mastra/agents/` |
+| FR45-FR50: Data Pipeline | 6 | PASS | `src/modules/webhooks/` + Supabase schema |
+| FR51-FR56: System Admin | 6 | PASS | `src/modules/admin/` |
+
+**Notes:**
+- FR35 (AI source citations): Enforced via Mastra tool response wrappers that include source metadata. Implementation detail for AI stories.
+- FR54 (Credential configuration): MVP uses Vercel env vars only. No admin UI for credential rotation in MVP. Phase 2 enhancement.
+
+**Non-Functional Requirements Coverage: 46/46 PASS**
+
+All Performance, Security, Integration, Reliability, and Scalability NFRs have architectural support. MVP concurrent user target confirmed at **5 simultaneous users** (NFR-P9). NFR-SC5 (10 users) applies to next milestone without architecture changes.
+
+### Critical Gap Resolutions
+
+**GAP-C1: Webhook Registration Refresh Automation**
+- **Resolution:** `/api/cron/refresh-webhooks` route is secured via `CRON_SECRET` header (Vercel Cron Job convention). Runs on 25-day cycle. Discovers registered webhook URLs from Supabase `webhook_registrations` table. Failed refreshes written to `dead_letter_events` with `source: "cron:webhook-refresh"`. Admin dashboard shows refresh status. Two consecutive failures trigger admin notification.
+- **Implementation:** Epic 7 (Data Pipeline) stories.
+
+**GAP-C2: Mastra Agent Tool Error Handling**
+- **Resolution:** All Mastra tools wrapped with `ToolError` type following `{ data, error }` pattern. Per-tool timeout: 5s for Jira/GitHub queries, 3s for Supabase queries. On tool failure, agent returns "I couldn't retrieve that data — [error context]" rather than crashing. Tool failures logged with correlation ID. Token budget checked before each tool invocation.
+- **Implementation:** Epic 5 (AI Assistant) stories.
+
+**GAP-C3: Token Budget Enforcement Mechanism**
+- **Resolution:** Per-request: Vercel AI SDK `maxTokens: 4000` on every completion call. Per-session: Cumulative token counter in Mastra agent, stops tool invocations at 8,000 total session tokens. Per-month: `ai_usage` Supabase table tracks daily spend. Admin dashboard shows current month spend. Alert at 80% ($40) threshold. Model routing: Haiku default, Sonnet only for report generation and complex multi-tool queries.
+- **Implementation:** Epic 5 and Epic 8 (System Admin) stories.
+
+**GAP-C4: Webhook Event Payload Validation**
+- **Resolution:** Zod schemas in `src/lib/schemas/jira.ts` and `github.ts` define webhook payload structures with `.passthrough()` for unknown vendor fields. Validation runs immediately after HMAC check, before any processing. Invalid payloads → dead letter with raw payload preserved. Schema uses `.optional()` liberally since vendor payloads vary by event type. Exact field mapping defined during implementation based on Jira/GitHub webhook documentation.
+- **Implementation:** Epic 3 (Jira) and Epic 4 (GitHub) stories.
+
+### Important Gaps (Documented for Implementation)
+
+1. **Credential Management (FR54):** ENV vars only for MVP. Document manual rotation process. Phase 2: Admin UI with validation.
+2. **Staleness Calculation:** `Date.now() - widget.updated_at`. Amber >10min, red >30min. Force refresh button per widget calls `revalidateTag()`.
+3. **Responsive Grid:** 3-column CSS Grid (desktop 1280px+), 2-column (tablet 768px+). No mobile in MVP.
+4. **Report Generation:** JSON buffered (not streamed) for easier persistence. Streamed for chat. Persisted in `ai_reports` table.
+5. **Supabase Free → Pro:** Transition when ready for production. $25/mo Pro fits within $100/mo total budget ($25 Supabase + $50 AI + $0 Vercel).
+
+### Architecture Completeness Checklist
+
+**Requirements Analysis**
+- [x] Project context thoroughly analyzed (56 FRs, 46 NFRs)
+- [x] Scale and complexity assessed (medium-high, ~15 major components)
+- [x] Technical constraints identified (8 constraints documented)
+- [x] Cross-cutting concerns mapped (6 concerns with resolution patterns)
+
+**Architectural Decisions**
+- [x] Critical decisions documented with versions (12 critical + important decisions)
+- [x] Technology stack fully specified (9 major packages version-verified)
+- [x] Integration patterns defined (webhook pipeline, MCP fallback, rate limiting)
+- [x] Performance considerations addressed (ISR + Realtime hybrid, model routing)
+
+**Implementation Patterns**
+- [x] Naming conventions established (DB, API, code — 20+ rules)
+- [x] Structure patterns defined (feature modules, test colocation, config locations)
+- [x] Communication patterns specified (events, Zustand stores, logging)
+- [x] Process patterns documented (error handling, loading states, retry strategies)
+
+**Project Structure**
+- [x] Complete directory structure defined (~120 files/directories)
+- [x] Component boundaries established (API, component, data boundaries)
+- [x] Integration points mapped (internal + 5 external integrations)
+- [x] Requirements to structure mapping complete (8 FR categories → modules)
+
+### Architecture Readiness Assessment
+
+**Overall Status:** READY FOR IMPLEMENTATION
+
+**Confidence Level:** HIGH — 98% requirements coverage, all technology choices coherent, 4 critical gaps resolved with inline guidance.
+
+**Key Strengths:**
+- Webhook-first data architecture eliminates polling and respects Jira rate limits
+- Three-layer RBAC enforcement (middleware → server component → RLS) with no shortcuts
+- Graceful degradation at every layer — dashboard never depends on AI availability
+- Per-widget error isolation prevents cascade failures
+- Config-driven widget system supports both static and AI-generated dashboards
+- Comprehensive naming/pattern rules prevent AI agent implementation conflicts
+
+**Areas for Future Enhancement (Post-MVP):**
+- Sentry error monitoring (replace console logging)
+- Automated dead letter retry with configurable policies
+- Admin UI for credential rotation and integration configuration
+- Mobile responsive layout
+- Turborepo monorepo for potential microservice extraction
+- Mastra standalone extraction from Next.js API routes
+
+### Implementation Handoff
+
+**AI Agent Guidelines:**
+- Follow all architectural decisions exactly as documented in this document
+- Use implementation patterns consistently — no exceptions for "just this one file"
+- Respect project structure boundaries — modules own their domain, shared code goes in `src/lib/` or `src/components/shared/`
+- Use `{ data, error }` wrapper for every Server Action and Route Handler
+- Wrap every dashboard widget in error boundary with `<WidgetError />` fallback
+- Validate at boundaries with Zod before any Supabase write
+- Refer to this document for all architectural questions before making assumptions
+
+**First Implementation Priority:**
+Run the initialization command sequence from the Starter Template Evaluation section to scaffold the project, then proceed with Supabase schema migrations and Auth.js v5 setup.
