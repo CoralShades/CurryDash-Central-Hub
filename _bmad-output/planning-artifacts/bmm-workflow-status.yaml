@@ -41,19 +41,19 @@ workflow_status:
         note: "Completed 2026-02-17 — 6-step technical research, all steps validated"
 
       - id: "product-brief"
-        status: "recommended"
+        status: "_bmad-output/planning-artifacts/product-brief-CurryDash-Central-Hub-2026-02-17.md"
         agent: "analyst"
         command: "/bmad:bmm:workflows:create-product-brief"
-        note: "User selected — strategic product planning from Action Plan"
+        note: "Completed 2026-02-17 — 6-step collaborative product brief with vision, users, metrics, MVP scope"
 
   - phase: 2
     name: "Planning"
     workflows:
       - id: "prd"
-        status: "required"
+        status: "_bmad-output/planning-artifacts/prd.md"
         agent: "pm"
         command: "/bmad:bmm:workflows:prd"
-        output: "Product Requirements Document with FRs and NFRs"
+        note: "Completed 2026-02-17 — 12-step PRD: Executive Summary, Success Criteria, Product Scope, 6 User Journeys, Domain Requirements, Innovation Analysis, SaaS B2B Platform Requirements, Project Scoping, 56 FRs, 40 NFRs, polished"
 
       - id: "create-ux-design"
         status: "conditional"

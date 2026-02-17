@@ -1,111 +1,92 @@
-# Task Plan: BMAD Technical Research — CurryDash Central Hub MVP Architecture
+# Task Plan: BMAD Product Brief — CurryDash Central Hub
 
 ## Goal
-Conduct comprehensive technical research (6-step BMAD workflow) to validate architecture choices, find proven implementation patterns, and assess technical risks for the CurryDash Central Hub MVP.
+Create a comprehensive product brief for CurryDash Central Hub through collaborative step-by-step discovery, using the Action Plan and Technical Research as input.
 
 ## Reference
-- **Research Template:** `_bmad/bmm/workflows/1-analysis/research/research.template.md`
-- **Step Files:** `_bmad/bmm/workflows/1-analysis/research/technical-steps/step-01-init.md` through `step-06`
-- **Output:** `_bmad-output/planning-artifacts/research/technical-currydash-mvp-architecture-research-2026-02-17.md`
-- **Workflow Status:** `_bmad-output/planning-artifacts/bmm-workflow-status.yaml`
+- **Workflow:** `_bmad/bmm/workflows/1-analysis/create-product-brief/`
+- **Step Files:** `steps/step-01-init.md` through `step-06-complete.md`
+- **Output:** `_bmad-output/planning-artifacts/product-brief-CurryDash-Central-Hub-2026-02-17.md`
+- **Input Docs:**
+  - `CurryDash_Central_Hub_Action_Plan.md` (project vision, architecture, 8-phase plan)
+  - `_bmad-output/planning-artifacts/research/technical-currydash-mvp-architecture-research-2026-02-17.md` (38+ web search validated architecture)
 
 ## Current Phase
-COMPLETE — All 6 phases done, post-research actions done
+COMPLETE — All 6 steps done
 
 ## Phases
 
-### Phase 1: Scope Confirmation (Step 01)
-- [x] Present 5 technical research areas
-- [x] User confirmed scope + expanded with AI agent ecosystem research
-- [x] Created output directory and starter file
-- [x] Appended scope confirmation to document
-- [x] Updated frontmatter: stepsCompleted: [1]
+### Phase 1: Initialization (Step 01)
+- [x] Check for existing workflow state — no prior product brief found
+- [x] Discover input documents (1 research doc + 1 action plan)
+- [x] Load all discovered files completely
+- [x] Create output document from template with frontmatter
+- [x] Present initialization report to user
+- [x] Update frontmatter: stepsCompleted: [1]
 - **Status:** complete
 
-### Phase 2: Technology Stack Analysis (Step 02)
-- [x] Parallel web searches: Next.js 15, Supabase, shadcn/ui, Vercel
-- [x] Parallel web searches: AG-UI, A2A, CopilotKit, MCP, Claude Agent SDK
-- [x] Additional searches: Vercel AI SDK 5, Mastra, RLS, starter templates
-- [x] Write Technology Stack Analysis section to document
-- [x] Present findings and [C] continue option
-- [x] User confirms [C]
+### Phase 2: Vision Discovery (Step 02)
+- [x] Collaborative problem space exploration
+- [x] Deep problem understanding (fragmentation, tool-hopping, manual reporting, knowledge loss)
+- [x] Current solutions analysis (Jira, GitHub, Slack, Notion gaps)
+- [x] Solution vision (unified dashboard + role portals + AI assistant + living docs)
+- [x] Unique differentiators (domain-specific, AI-native, single-team velocity, timing, 3-layer security)
+- [x] Executive Summary + Core Vision appended to document
+- [x] User confirmed [C]
 - [x] Update frontmatter: stepsCompleted: [1, 2]
 - **Status:** complete
 
-### Phase 3: Integration Patterns Analysis (Step 03)
-- [x] Jira REST API v3 patterns, pagination, webhooks
-- [x] GitHub API + Octokit + server actions
-- [x] Anthropic Claude streaming in Next.js
-- [x] MCP servers (Atlassian official, GitHub community)
-- [x] CopilotKit + Mastra integration patterns
-- [x] Integration security patterns
-- [x] Write to document
-- [x] User confirms [C]
+### Phase 3: Target Users Discovery (Step 03)
+- [x] User segment identification (primary daily vs secondary periodic)
+- [x] Primary personas: Demi (PM), Arjun (Dev), Priya (QA)
+- [x] Secondary persona: Marcus (Investor/Advisor)
+- [x] Future users: Vendors, Customers (post-MVP)
+- [x] User journey mapping (onboarding, daily usage, success moments)
+- [x] User confirmed [C]
 - [x] Update frontmatter: stepsCompleted: [1, 2, 3]
 - **Status:** complete
 
-### Phase 4: Architectural Patterns (Step 04)
-- [x] Next.js App Router RBAC architecture (3-layer defense)
-- [x] Supabase RLS vs app-level auth (complementary, both needed)
-- [x] Server vs client component boundaries (decision guide)
-- [x] AI dashboard generation architecture (widget config pattern)
-- [x] Folder structure (feature-based colocation)
-- [x] CopilotKit + Mastra agent architecture (3-tier)
-- [x] Data fetching & caching patterns (ISR + webhook revalidation)
-- [x] Deployment architecture (Vercel + Supabase same region)
-- [x] Write to document
-- [x] User confirms [C]
+### Phase 4: Success Metrics (Step 04)
+- [x] User success metrics (tool consolidation, self-service, onboarding speed)
+- [x] Business objectives (3-month and 12-month targets)
+- [x] Core platform KPIs, AI assistant KPIs (separate dashboard), integration health KPIs
+- [x] Strategic alignment (every metric traces to core vision)
+- [x] User confirmed [C]
 - [x] Update frontmatter: stepsCompleted: [1, 2, 3, 4]
 - **Status:** complete
 
-### Phase 5: Implementation Research (Step 05)
-- [x] Project setup fastest path (free template bootstrap)
-- [x] Testing strategies (Vitest unit + Playwright E2E)
-- [x] Deployment checklist (10-step Vercel+Supabase)
-- [x] AI chat production patterns (partial response preservation)
-- [x] Development workflow & DX (Turbopack, TypeScript strict, ESLint)
-- [x] Cost analysis (Free→$55-95/mo production)
-- [x] AI-assisted development strategy
-- [x] Risk assessment (6 risks identified with mitigations)
-- [x] Implementation roadmap (6-week breakdown)
-- [x] Write to document
-- [x] User confirms [C]
+### Phase 5: MVP Scope Definition (Step 05)
+- [x] Core features: Auth + Admin Dashboard (W1-2), Integrations (W3), AI (W4)
+- [x] Out of scope: Role dashboards, docs hub, videos, tours, external portals
+- [x] MVP success criteria: 7 go/no-go gates
+- [x] Future vision: 5 phases through 2-3 year north star
+- [x] User confirmed [C]
 - [x] Update frontmatter: stepsCompleted: [1, 2, 3, 4, 5]
 - **Status:** complete
 
-### Phase 6: Synthesis (Step 06)
-- [x] Executive summary
-- [x] Table of contents
-- [x] Strategic recommendations (6 items with priority ratings)
-- [x] Research methodology section
-- [x] Conclusion with critical success factors
-- [x] Update frontmatter: all steps complete
+### Phase 6: Completion (Step 06)
+- [x] Workflow completion announcement
+- [x] bmm-workflow-status.yaml updated (product-brief → file path)
+- [x] Document quality check
+- [x] Next steps guidance
+- [x] Update frontmatter: stepsCompleted: [1, 2, 3, 4, 5, 6]
 - **Status:** complete
 
-## Post-Research
-- [x] Update bmm-workflow-status.yaml (research → file path)
-- [x] Update progress.md
-- [x] Update task_plan.md
-- [ ] Next: Product Brief (`/bmad:bmm:workflows:create-product-brief`)
-
-## Key Questions
-1. Is Next.js 15 App Router stable enough for aggressive MVP? → YES (confirmed)
-2. Supabase + NextAuth.js integration path? → Auth.js v5 with SupabaseAdapter (confirmed)
-3. Which AI framework for dashboard gen? → Vercel AI SDK 5 + CopilotKit + Mastra (confirmed)
-4. MCP vs AG-UI vs A2A relevance for MVP? → MCP most relevant, AG-UI for UI, A2A post-MVP (confirmed)
+## Post-Brief Next Steps
+- [ ] Next: PRD (`/bmad:bmm:workflows:prd`) — detailed requirements from this brief
+- [ ] Optional: UX Design (`/bmad:bmm:workflows:create-ux-design`) — can run parallel with PRD
 
 ## Decisions Made
 | Decision | Rationale |
 |----------|-----------|
-| Expanded scope to include AI agent ecosystem | User requested AG-UI, A2A, CopilotKit, MCP, agent teams research |
-| Vercel AI SDK 5.0 as AI communication layer | Replace custom ai-chat-engine.ts. SSE streaming, agentic loop control |
-| Auth.js v5 + SupabaseAdapter recommended | Maximum provider flexibility (email, Google, GitHub OAuth) |
-| shadcn/ui dashboard starters as reference | Multiple RBAC templates exist, colocation architecture matches needs |
-| CopilotKit + Mastra as AI architecture | CopilotKit (frontend UI) + Mastra (agent backend) + MCP (tool access) |
-| Widget config JSON for AI Dashboard Gen | Safer than raw code gen, maps to pre-built shadcn/ui components |
-| 3-layer RBAC defense | Edge Middleware → Server Components → Supabase RLS (defense in depth) |
+| Use Action Plan + Research as inputs | Most comprehensive existing documentation |
+| Internal team first, external post-MVP | 4-6 person team gets immediate value; vendors/customers can wait |
+| Admin/PM dashboard first, then iterate | Proves concept before building 4 role variants |
+| Full AI stack in MVP (chat + reports + widgets) | AI is key differentiator, not a nice-to-have |
+| 4-week aggressive timeline | AI-assisted development + BMAD methodology enables speed |
+| Separate AI metrics dashboard | AI features are primary differentiator, need dedicated tracking |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
 |-------|---------|------------|
-| step-06 filename mismatch | 1 | Globbed directory, found correct name: step-06-research-synthesis.md |
+| (none) | | |
