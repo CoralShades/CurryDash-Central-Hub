@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2]
+stepsCompleted: [1, 2, 3]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/prd-validation-report.md
@@ -64,3 +64,106 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 4. **Data Freshness & Staleness** — Eventual consistency model with transparency. Every dashboard component must handle staleness indicators (>10 min amber, >30 min red). AI reports must include "data as of" timestamps.
 5. **AI Graceful Degradation** — AI features are an enhancement layer. Dashboard, navigation, data, charts all work independently of AI availability. AI sidebar shows "unavailable" status, never crashes the dashboard.
 6. **Server/Client Component Boundary** — Server Components for data fetching and auth checks; Client Components pushed to leaf nodes for interactivity (charts, Realtime subscriptions, AI chat, animations). Critical for security and performance.
+
+## Starter Template Evaluation
+
+### Primary Technology Domain
+
+Full-stack web application (Next.js 15 App Router) with AI agent integration, based on project requirements analysis.
+
+### Approach: Composite Scaffold + Per-Requirement Reference Repos
+
+Rather than one monolithic starter, CurryDash uses a **composite approach**: a primary scaffold plus reference repos/libraries for each major capability area.
+
+### Primary Scaffold (Foundation)
+
+**Vercel Supabase Starter** — `npx create-next-app --example with-supabase`
+
+Provides: Next.js App Router, Supabase SSR auth (cookie-based via `@supabase/ssr`), shadcn/ui initialized, TypeScript, Tailwind CSS, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (new format).
+
+**Rationale:** Lightest official baseline with the exact auth+DB combo CurryDash needs. Well-maintained by Vercel. Avoids Clerk/NextAuth mismatch from heavier starters.
+
+### Per-Requirement Reference Repos & Libraries
+
+| Requirement Area | Template / Repo | What to Extract |
+|---|---|---|
+| **Auth + RBAC** | [Auth.js RBAC Guide](https://authjs.dev/guides/role-based-access-control) + [nextjs-rbac boilerplate](https://github.com/justin22/nextjs-rbac) | Role-to-route mapping, middleware RBAC, session role injection |
+| **Dashboard Layout** | [Kiranism next-shadcn-dashboard-starter](https://github.com/Kiranism/next-shadcn-dashboard-starter) | Sidebar + header shell, feature-based colocation, RBAC navigation filtering, parallel routes for widgets |
+| **Charts & Visualization** | [shadcn/ui Charts](https://ui.shadcn.com/docs/components/radix/chart) + Recharts | Bar, line, pie, area charts — copy-paste, no abstraction lock-in |
+| **AI Chat Sidebar** | [CopilotKit](https://github.com/CopilotKit/CopilotKit) — `CopilotSidebar` component | Production-ready chat sidebar, `useCopilotReadable`, `useCopilotAction`, headless UI option |
+| **AI Agent Backend** | [CopilotKit/with-mastra](https://github.com/CopilotKit/with-mastra) | Full Mastra + CopilotKit + AG-UI starter — agents on backend, CopilotKit on frontend |
+| **AI Chat + Streaming** | [Vercel ai-chatbot](https://github.com/vercel/ai-chatbot) + [Supabase variant](https://github.com/supabase-community/vercel-ai-chatbot) | AI SDK streaming patterns, `useChat()`, Auth.js integration, Supabase persistence |
+| **Realtime Dashboard** | [Supabase Realtime with Next.js](https://supabase.com/docs/guides/realtime/realtime-with-nextjs) + [MakerKit notification system](https://makerkit.dev/blog/tutorials/real-time-notifications-supabase-nextjs) | Realtime subscription patterns in Client Components, notification system with RLS |
+| **Webhook Handlers** | [Next.js GitHub webhook handler](https://gist.github.com/Keith-Hon/ed48526c3d9a249d5d56048df6172762) + Octokit webhook verification | Route handler patterns for webhook signature validation, HMAC-SHA256 |
+| **MCP Servers** | [Atlassian MCP Server](https://github.com/atlassian/atlassian-mcp-server) + awesome-mcp-servers | Pre-built Jira+Confluence MCP server, GitHub MCP servers |
+| **Data Tables** | [shadcn DataTable](https://ui.shadcn.com/docs/components/radix/data-table) (Tanstack Table) | Server-side search, filter, pagination, sorting |
+| **Production SaaS Patterns** | [Razikus/supabase-nextjs-template](https://github.com/Razikus/supabase-nextjs-template) | RLS policies, user management, file storage patterns |
+
+### Initialization Command Sequence
+
+```bash
+# 1. Primary scaffold
+npx create-next-app --example with-supabase currydash-central-hub
+
+# 2. shadcn/ui with stone base (closest to spice palette)
+npx shadcn@latest init -b stone --yes
+
+# 3. Add shadcn components (dashboard essentials)
+npx shadcn@latest add button card input table badge dialog toast sidebar
+npx shadcn@latest add chart
+
+# 4. Auth + RBAC layer
+npm install next-auth@beta @auth/supabase-adapter
+
+# 5. Integration clients
+npm install jira.js octokit
+
+# 6. AI stack (Week 4 — reference CopilotKit/with-mastra starter)
+npm install @copilotkit/react-core @copilotkit/react-ui
+npm install ai @ai-sdk/anthropic
+npm install @mastra/core@latest @mastra/ai-sdk @ag-ui/mastra
+
+# 7. Dev tooling
+npm install -D vitest @testing-library/react playwright
+npm install -D prettier eslint-config-prettier husky lint-staged
+```
+
+### Architectural Decisions Provided by Starter
+
+**Language & Runtime:** TypeScript strict mode, Node.js 20+, Turbopack dev server
+
+**Styling Solution:** Tailwind CSS v4 + shadcn/ui components (Radix UI primitives), CSS variables for theming — ready for CurryDash spice palette tokens
+
+**Build Tooling:** Turbopack (dev), Next.js production build, Vercel deployment pipeline
+
+**Testing Framework:** Not included in starter — add Vitest + React Testing Library (unit) and Playwright (E2E)
+
+**Code Organization:** App Router file-system routing with `src/` directory. Feature-based colocation following Kiranism patterns: `src/modules/` for feature modules, `src/components/` for shared UI, `src/lib/` for utilities.
+
+**Development Experience:** HMR via Turbopack, TypeScript type checking, ESLint, `@/*` import alias
+
+### Pattern Reference Map (for implementation stories)
+
+| Epic/Story Area | Reference Repo to Study |
+|---|---|
+| Auth + RBAC setup | Auth.js RBAC guide + nextjs-rbac boilerplate |
+| Dashboard shell + layout | Kiranism next-shadcn-dashboard-starter |
+| Dashboard widgets + charts | shadcn/ui charts + Kiranism analytics page |
+| AI chat sidebar | CopilotKit docs + with-mastra starter |
+| AI streaming + persistence | Vercel ai-chatbot Supabase variant |
+| Webhook handlers | Keith-Hon gist + Octokit App webhook patterns |
+| Realtime subscriptions | Supabase Realtime Next.js docs + MakerKit tutorial |
+| MCP integration | Atlassian MCP server + Mastra MCP client docs |
+| User management | Razikus supabase-nextjs-template patterns |
+
+### Verified Current Versions (Feb 2026)
+
+| Package | Version | Source |
+|---------|---------|--------|
+| Next.js | 15.x (latest stable) | [nextjs.org](https://nextjs.org/docs/app/getting-started/installation) |
+| shadcn CLI | `shadcn@latest` (renamed from shadcn-ui) | [ui.shadcn.com](https://ui.shadcn.com/docs/cli) |
+| CopilotKit | v1.51.3 (`@copilotkit/react-core`) | [npm](https://www.npmjs.com/package/@copilotkit/react-core) |
+| Mastra | v1.2.0 (`@mastra/core`) | [npm](https://www.npmjs.com/package/@mastra/core) |
+| Vercel AI SDK | 5.0 (`ai`) | [ai-sdk.dev](https://ai-sdk.dev/docs/introduction) |
+
+**Note:** Project initialization using this command sequence should be the first implementation story.
