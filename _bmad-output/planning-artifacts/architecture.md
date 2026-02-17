@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5]
+stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/prd-validation-report.md
@@ -415,3 +415,352 @@ log.info({
 - Putting `"use client"` on components that don't need interactivity
 - Creating loading spinners instead of using `<WidgetSkeleton />`
 - Storing server data in Zustand — use Server Components + ISR + Realtime instead
+
+## Project Structure & Boundaries
+
+### Complete Project Directory Structure
+
+```
+currydash-central-hub/
+├── .env.example                          # Environment template (committed)
+├── .env.local                            # Local secrets (gitignored)
+├── .eslintrc.json                        # ESLint config
+├── .gitignore
+├── .prettierrc                           # Prettier config
+├── next.config.ts                        # Next.js configuration
+├── package.json
+├── tailwind.config.ts                    # Tailwind + spice palette extensions
+├── tsconfig.json
+├── vitest.config.ts                      # Vitest unit test config
+├── playwright.config.ts                  # Playwright E2E config
+├── components.json                       # shadcn/ui config
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml                        # Lint, type-check, Vitest on PRs
+│
+├── e2e/                                  # End-to-end tests (Playwright)
+│   ├── auth.spec.ts                      # Login, registration, RBAC flows
+│   ├── dashboard.spec.ts                 # Dashboard loading, widget rendering
+│   ├── webhooks.spec.ts                  # Webhook processing flows
+│   └── fixtures/                         # Test fixtures and helpers
+│       └── auth.ts                       # Authenticated page helper
+│
+├── public/
+│   ├── favicon.ico
+│   └── images/                           # Static images, logos
+│
+├── supabase/                             # Supabase CLI directory
+│   ├── config.toml                       # Supabase local dev config
+│   ├── seed.sql                          # Dev seed data (roles, test users)
+│   └── migrations/                       # Ordered SQL migrations
+│       ├── 00001_create_roles.sql
+│       ├── 00002_create_users.sql
+│       ├── 00003_create_teams.sql
+│       ├── 00004_create_jira_tables.sql
+│       ├── 00005_create_github_tables.sql
+│       ├── 00006_create_webhook_events.sql
+│       ├── 00007_create_dead_letter_events.sql
+│       ├── 00008_create_dashboard_widgets.sql
+│       ├── 00009_create_notifications.sql
+│       ├── 00010_create_ai_chat_sessions.sql
+│       ├── 00011_create_system_health.sql
+│       └── 00012_rls_policies.sql
+│
+├── src/
+│   ├── app/                              # Next.js App Router (thin route wrappers)
+│   │   ├── globals.css                   # Tailwind directives + spice CSS variables
+│   │   ├── layout.tsx                    # Root layout (auth provider, CopilotKit provider)
+│   │   ├── loading.tsx                   # Root loading state
+│   │   ├── error.tsx                     # Root error boundary
+│   │   ├── not-found.tsx                 # 404 page
+│   │   ├── page.tsx                      # Landing / redirect to dashboard
+│   │   │
+│   │   ├── (auth)/                       # Auth route group (no layout nesting)
+│   │   │   ├── login/
+│   │   │   │   └── page.tsx
+│   │   │   ├── register/
+│   │   │   │   └── page.tsx
+│   │   │   └── layout.tsx                # Auth pages layout (centered card)
+│   │   │
+│   │   ├── (dashboard)/                  # Dashboard route group (shared shell)
+│   │   │   ├── layout.tsx                # Dashboard shell (sidebar + header + CopilotSidebar)
+│   │   │   ├── loading.tsx               # Dashboard-level loading
+│   │   │   ├── error.tsx                 # Dashboard-level error boundary
+│   │   │   ├── page.tsx                  # Main dashboard (role-filtered widgets)
+│   │   │   ├── admin/
+│   │   │   │   ├── page.tsx              # Admin dashboard view
+│   │   │   │   ├── users/
+│   │   │   │   │   └── page.tsx          # User management
+│   │   │   │   ├── integrations/
+│   │   │   │   │   └── page.tsx          # Integration health monitoring
+│   │   │   │   └── system/
+│   │   │   │       └── page.tsx          # System health, dead letters, AI costs
+│   │   │   ├── issues/
+│   │   │   │   ├── page.tsx              # Issue list (Jira synced)
+│   │   │   │   └── [issueKey]/
+│   │   │   │       └── page.tsx          # Issue detail
+│   │   │   ├── sprints/
+│   │   │   │   ├── page.tsx              # Sprint list
+│   │   │   │   └── [sprintId]/
+│   │   │   │       └── page.tsx          # Sprint detail + charts
+│   │   │   ├── repos/
+│   │   │   │   ├── page.tsx              # Repository list (GitHub synced)
+│   │   │   │   └── [repoName]/
+│   │   │   │       └── page.tsx          # Repo detail + PRs
+│   │   │   └── reports/
+│   │   │       └── page.tsx              # AI-generated reports
+│   │   │
+│   │   └── api/                          # Route Handlers (webhooks, AI, callbacks)
+│   │       ├── webhooks/
+│   │       │   ├── jira/
+│   │       │   │   └── route.ts          # Jira webhook receiver
+│   │       │   └── github/
+│   │       │       └── route.ts          # GitHub webhook receiver
+│   │       ├── ai/
+│   │       │   └── copilotkit/
+│   │       │       └── route.ts          # CopilotKit runtime endpoint
+│   │       ├── auth/
+│   │       │   └── [...nextauth]/
+│   │       │       └── route.ts          # Auth.js catch-all route
+│   │       └── cron/
+│   │           └── refresh-webhooks/
+│   │               └── route.ts          # Jira webhook refresh (25-day cycle)
+│   │
+│   ├── components/                       # Shared components
+│   │   ├── ui/                           # shadcn/ui components (auto-generated)
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── toast.tsx
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── chart.tsx
+│   │   │   └── data-table.tsx
+│   │   └── shared/                       # App-wide shared components
+│   │       ├── widget-skeleton.tsx        # <WidgetSkeleton variant="chart|table|stats|list" />
+│   │       ├── widget-error.tsx           # <WidgetError> with retry button
+│   │       ├── error-boundary.tsx         # Reusable React error boundary wrapper
+│   │       ├── staleness-indicator.tsx    # Amber >10min, red >30min badge
+│   │       ├── role-gate.tsx             # <RoleGate allowedRoles={[...]}> wrapper
+│   │       └── relative-time.tsx          # "5 min ago" display component
+│   │
+│   ├── modules/                          # Feature modules (domain capability)
+│   │   ├── auth/                         # FR1-FR9: Identity & Access Management
+│   │   │   ├── components/
+│   │   │   │   ├── login-form.tsx
+│   │   │   │   ├── register-form.tsx
+│   │   │   │   └── role-switcher.tsx
+│   │   │   ├── actions/
+│   │   │   │   ├── login.ts              # Server Action
+│   │   │   │   └── register.ts           # Server Action
+│   │   │   ├── auth-config.ts            # Auth.js v5 configuration
+│   │   │   ├── types.ts                  # AuthUser, Session, Role types
+│   │   │   └── login-form.test.ts
+│   │   │
+│   │   ├── dashboard/                    # FR10-FR19: Dashboard & Data Visualization
+│   │   │   ├── components/
+│   │   │   │   ├── dashboard-grid.tsx     # Config-driven widget grid renderer
+│   │   │   │   ├── widget-card.tsx        # Base widget wrapper (error boundary + staleness)
+│   │   │   │   ├── stats-widget.tsx       # Numeric KPI card
+│   │   │   │   ├── chart-widget.tsx       # Recharts wrapper widget
+│   │   │   │   ├── table-widget.tsx       # Data table widget
+│   │   │   │   ├── list-widget.tsx        # Simple list widget
+│   │   │   │   └── sidebar-nav.tsx        # Dashboard navigation sidebar
+│   │   │   ├── config/
+│   │   │   │   └── widget-registry.ts     # Role → widget[] config mapping
+│   │   │   ├── hooks/
+│   │   │   │   └── use-realtime-widget.ts # Supabase Realtime subscription hook
+│   │   │   ├── types.ts                  # DashboardWidget, WidgetConfig types
+│   │   │   └── dashboard-grid.test.ts
+│   │   │
+│   │   ├── jira/                         # FR20-FR25: Jira Integration
+│   │   │   ├── components/
+│   │   │   │   ├── issue-card.tsx
+│   │   │   │   ├── issue-list.tsx
+│   │   │   │   ├── sprint-board.tsx
+│   │   │   │   └── sprint-chart.tsx
+│   │   │   ├── actions/
+│   │   │   │   ├── sync-issues.ts        # Server Action: manual sync
+│   │   │   │   └── update-issue.ts       # Server Action: update via API
+│   │   │   ├── types.ts                  # JiraIssue, JiraSprint types
+│   │   │   └── issue-card.test.ts
+│   │   │
+│   │   ├── github/                       # FR26-FR29: GitHub Integration
+│   │   │   ├── components/
+│   │   │   │   ├── repo-card.tsx
+│   │   │   │   ├── pr-list.tsx
+│   │   │   │   └── commit-activity.tsx
+│   │   │   ├── actions/
+│   │   │   │   └── sync-repos.ts         # Server Action: manual sync
+│   │   │   ├── types.ts                  # GitHubRepo, PullRequest types
+│   │   │   └── repo-card.test.ts
+│   │   │
+│   │   ├── ai/                           # FR30-FR37: AI Assistant (frontend)
+│   │   │   ├── components/
+│   │   │   │   ├── copilot-provider.tsx   # CopilotKit provider + config
+│   │   │   │   ├── ai-sidebar.tsx         # CopilotSidebar customization
+│   │   │   │   └── ai-status.tsx          # AI availability indicator
+│   │   │   ├── hooks/
+│   │   │   │   ├── use-copilot-context.ts # useCopilotReadable for dashboard data
+│   │   │   │   └── use-copilot-actions.ts # useCopilotAction definitions
+│   │   │   ├── types.ts
+│   │   │   └── copilot-provider.test.ts
+│   │   │
+│   │   ├── reports/                      # FR38-FR44: AI Report & Widget Generation
+│   │   │   ├── components/
+│   │   │   │   ├── report-viewer.tsx
+│   │   │   │   ├── report-generator.tsx
+│   │   │   │   └── widget-builder.tsx     # AI-generated widget config preview
+│   │   │   ├── actions/
+│   │   │   │   ├── generate-report.ts     # Server Action: trigger AI report
+│   │   │   │   └── save-widget.ts         # Server Action: persist widget config
+│   │   │   └── types.ts
+│   │   │
+│   │   ├── webhooks/                     # FR45-FR50: Data Pipeline & Freshness
+│   │   │   ├── handlers/
+│   │   │   │   ├── jira-handler.ts        # Jira event → Supabase upsert → revalidate
+│   │   │   │   └── github-handler.ts      # GitHub event → Supabase upsert → revalidate
+│   │   │   ├── validation/
+│   │   │   │   ├── hmac.ts               # HMAC-SHA256 signature validation
+│   │   │   │   └── ip-allowlist.ts       # IP range validation
+│   │   │   ├── dedup.ts                  # Event ID deduplication logic
+│   │   │   ├── dead-letter.ts            # Dead letter queue writer
+│   │   │   ├── types.ts
+│   │   │   ├── hmac.test.ts
+│   │   │   └── dedup.test.ts
+│   │   │
+│   │   └── admin/                        # FR51-FR56: System Administration
+│   │       ├── components/
+│   │       │   ├── integration-health.tsx  # Integration status cards
+│   │       │   ├── webhook-monitor.tsx     # Webhook event log + dead letters
+│   │       │   ├── ai-cost-tracker.tsx     # AI spend telemetry
+│   │       │   └── user-management.tsx     # User CRUD table
+│   │       ├── actions/
+│   │       │   ├── retry-dead-letter.ts   # Server Action: retry failed webhook
+│   │       │   └── manage-users.ts        # Server Action: CRUD users
+│   │       └── types.ts
+│   │
+│   ├── mastra/                           # Mastra AI agent backend
+│   │   ├── index.ts                      # Mastra instance + agent registration
+│   │   ├── agents/
+│   │   │   ├── dashboard-agent.ts         # Main CopilotKit-connected agent
+│   │   │   └── report-agent.ts            # Report generation agent
+│   │   └── tools/
+│   │       ├── jira-tools.ts             # Jira query tools for agents
+│   │       ├── github-tools.ts           # GitHub query tools for agents
+│   │       ├── supabase-tools.ts         # Direct DB query tools
+│   │       └── report-tools.ts           # Report generation tools
+│   │
+│   ├── lib/                              # Shared utilities and clients
+│   │   ├── supabase/
+│   │   │   ├── client.ts                 # Browser Supabase client
+│   │   │   ├── server.ts                 # Server Component Supabase client
+│   │   │   ├── middleware.ts             # Middleware Supabase client (cookie refresh)
+│   │   │   └── admin.ts                  # Service role client (webhooks, cron)
+│   │   ├── clients/
+│   │   │   ├── jira-client.ts            # jira.js client with rate limiting queue
+│   │   │   └── github-client.ts          # Octokit client
+│   │   ├── schemas/                      # Shared Zod schemas
+│   │   │   ├── auth.ts                   # Login, register, session schemas
+│   │   │   ├── jira.ts                   # Jira issue, sprint, webhook schemas
+│   │   │   ├── github.ts                 # GitHub repo, PR, webhook schemas
+│   │   │   ├── dashboard.ts              # Widget config, filter schemas
+│   │   │   └── api.ts                    # API response wrapper, error schemas
+│   │   ├── errors.ts                     # AppError, AuthError, IntegrationError classes
+│   │   ├── logger.ts                     # Structured JSON logger with correlation IDs
+│   │   ├── rate-limiter.ts               # In-memory request queue (Jira API)
+│   │   └── constants.ts                  # App-wide constants
+│   │
+│   ├── stores/                           # Zustand stores (UI state only)
+│   │   ├── dashboard-store.ts            # Active role, sidebar state
+│   │   ├── filter-store.ts              # Dashboard filter selections
+│   │   └── sidebar-store.ts             # Sidebar open/collapse state
+│   │
+│   ├── types/                            # Shared cross-module types
+│   │   ├── database.ts                   # Supabase generated types (supabase gen types)
+│   │   ├── api.ts                        # ApiResponse<T>, ApiError
+│   │   └── roles.ts                      # Role enum, RolePermissions
+│   │
+│   ├── middleware.ts                     # Edge Middleware: auth + RBAC + Supabase cookie refresh
+│   │
+│   └── test-utils/                       # Test utilities
+│       ├── mocks/
+│       │   ├── supabase.ts              # Supabase client mock
+│       │   ├── jira.ts                  # Jira client mock
+│       │   └── github.ts               # GitHub client mock
+│       ├── factories/
+│       │   ├── user.ts                  # Test user factory
+│       │   ├── issue.ts                 # Test issue factory
+│       │   └── webhook.ts              # Test webhook event factory
+│       └── render.tsx                   # Custom render with providers
+```
+
+### Architectural Boundaries
+
+**API Boundaries:**
+- **External inbound:** `/api/webhooks/jira` and `/api/webhooks/github` — public endpoints, protected by HMAC signature validation + IP allowlist. No auth session required.
+- **External inbound (auth):** `/api/auth/[...nextauth]` — Auth.js handles OAuth callbacks and session management.
+- **AI runtime:** `/api/ai/copilotkit` — CopilotKit runtime endpoint, requires authenticated session with role claims. Connects to Mastra agents.
+- **Cron:** `/api/cron/refresh-webhooks` — Vercel Cron Job (secured by `CRON_SECRET` header). Refreshes Jira webhook registrations every 25 days.
+- **Server Actions:** All mutations go through Server Actions in `src/modules/{feature}/actions/`. Each validates session via `auth()` and input via Zod before any data operation.
+
+**Component Boundaries:**
+- **Server Components:** Dashboard pages, layouts, data-fetching wrappers — read from Supabase via server client, pass data as props to Client Components.
+- **Client Components:** Charts (Recharts), Realtime subscriptions, CopilotKit sidebar, Zustand-consuming widgets, interactive forms. Marked with `"use client"` at leaf nodes only.
+- **Error Boundaries:** Each widget wrapped in `<ErrorBoundary>` → `<WidgetError />`. Route-level `error.tsx` catches unhandled errors. AI sidebar has independent error isolation.
+
+**Data Boundaries:**
+- **Supabase (source of truth for cached data):** All Jira/GitHub data cached in Supabase tables. Dashboard reads from Supabase, never directly from Jira/GitHub APIs on page load.
+- **Direct API calls (rate-limited):** Only for user-initiated actions (create issue, manual sync) via the rate-limited Jira/GitHub clients in `src/lib/clients/`.
+- **Realtime layer:** Supabase Realtime broadcasts from webhook handlers. Client Components subscribe to channels. No direct DB polling.
+- **AI data access:** Mastra tools in `src/mastra/tools/` query Supabase cached data. MCP servers provide Jira/GitHub access with fallback to cached data.
+
+### Requirements to Structure Mapping
+
+**Feature/Epic Mapping:**
+
+| FR Category | Module | App Routes | Key Files |
+|---|---|---|---|
+| FR1-FR9: Identity & Access | `src/modules/auth/` | `(auth)/login`, `(auth)/register` | `auth-config.ts`, `middleware.ts` |
+| FR10-FR19: Dashboard & Viz | `src/modules/dashboard/` | `(dashboard)/page.tsx` | `widget-registry.ts`, `dashboard-grid.tsx` |
+| FR20-FR25: Jira Integration | `src/modules/jira/` + `src/lib/clients/jira-client.ts` | `(dashboard)/issues/`, `(dashboard)/sprints/` | `jira-handler.ts`, `jira-client.ts` |
+| FR26-FR29: GitHub Integration | `src/modules/github/` + `src/lib/clients/github-client.ts` | `(dashboard)/repos/` | `github-handler.ts`, `github-client.ts` |
+| FR30-FR37: AI Assistant | `src/modules/ai/` + `src/mastra/` | `api/ai/copilotkit` | `copilot-provider.tsx`, `dashboard-agent.ts` |
+| FR38-FR44: AI Reports & Widgets | `src/modules/reports/` + `src/mastra/agents/report-agent.ts` | `(dashboard)/reports/` | `report-agent.ts`, `widget-builder.tsx` |
+| FR45-FR50: Data Pipeline | `src/modules/webhooks/` | `api/webhooks/jira`, `api/webhooks/github` | `dedup.ts`, `dead-letter.ts`, `hmac.ts` |
+| FR51-FR56: System Admin | `src/modules/admin/` | `(dashboard)/admin/` | `integration-health.tsx`, `webhook-monitor.tsx` |
+
+**Cross-Cutting Concerns Mapping:**
+
+| Concern | Primary Location | Touches |
+|---|---|---|
+| RBAC (3 layers) | `src/middleware.ts` + `src/lib/supabase/` + `supabase/migrations/` | Every route, every query, every RLS policy |
+| Error handling | `src/lib/errors.ts` + `src/components/shared/` | All modules, all API routes |
+| Logging | `src/lib/logger.ts` | Webhook handlers, admin module, error handlers |
+| Theming (spice palette) | `src/app/globals.css` | All UI components via CSS variables |
+| Data freshness | `src/components/shared/staleness-indicator.tsx` | All dashboard widgets |
+
+### Integration Points
+
+**Internal Communication:**
+- Server Components → Supabase server client → DB (read path)
+- Server Actions → Zod validation → Supabase admin client → DB (write path)
+- Webhook Route Handler → dedup check → handler → Supabase upsert → `revalidateTag()` → Realtime broadcast
+- CopilotKit frontend → `/api/ai/copilotkit` → Mastra agent → tools → Supabase/Jira/GitHub
+
+**External Integrations:**
+- **Jira Cloud:** Inbound webhooks → `/api/webhooks/jira`. Outbound API calls via `jira-client.ts` (rate-limited). MCP server for AI agent access.
+- **GitHub:** Inbound webhooks → `/api/webhooks/github`. Outbound via `github-client.ts` (Octokit). MCP server for AI agent access.
+- **Anthropic AI:** Via Vercel AI SDK + Mastra. Model routing: Haiku for simple queries, Sonnet for complex reports. 4,000 token output cap.
+- **Supabase:** Auth, DB, Realtime, and Storage. Same-region as Vercel deployment.
+- **Vercel:** Hosting, preview deploys, analytics, cron jobs, edge middleware runtime.
+
+**Data Flow (Webhook → Dashboard):**
+```
+Jira/GitHub → webhook POST → Route Handler → HMAC validate → dedup check
+→ parse event → Supabase upsert → revalidateTag('issues') → Realtime broadcast
+→ ISR serves fresh page (next request) + Client Components update live
+```
