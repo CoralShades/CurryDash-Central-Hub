@@ -1,0 +1,98 @@
+// CurryDash Central Hub - Prisma Schema
+// Role-based project management portal data models
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String
+  passwordHash  String
+  avatar        String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  // Relations
+  roles         Role[]
+  teams         TeamMember[]
+  notifications Notification[]
+  
+  // Profile fields
+  bio           String?
+  department    String?
+  position      String?
+  
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   // admin, dev, qa, stakeholder
+  description String?
+  permissions Json     // Flexible permissions object
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  users       User[]
+  
+  @@unique([name])
+  @@map("roles")
+}
+
+model Team {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  color       String?      // Team color for UI display
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  // Relations
+  members     TeamMember[]
+  
+  // Metadata
+  isActive    Boolean      @default(true)
+  
+  @@map("teams")
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  userId    String
+  teamId    String
+  role      String   // team-specific role (e.g., "lead", "member")
+  joinedAt  DateTime @default(now())
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, teamId])
+  @@map("team_members")
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // "info", "warning", "error", "success"
+  title       String
+  message     String
+  isRead      Boolean  @default(false)
+  link        String?  // Optional link for notification action
+  metadata    Json?    // Additional notification data
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, isRead])
+  @@map("notifications")
+}
