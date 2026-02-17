@@ -1,7 +1,7 @@
 # GitHub Copilot Instructions for CurryDash Central Hub
 
 ## Project Context
-You are working on **CurryDash Central Hub**, a role-based project management portal built with Next.js 14, TypeScript, and Prisma. The application integrates with Jira, GitHub, and AI services to provide specialized dashboards for different user roles.
+You are working on **CurryDash Central Hub**, a role-based project management portal built with Next.js 15, TypeScript, and Prisma. The application integrates with Jira, GitHub, and AI services to provide specialized dashboards for different user roles.
 
 ## Core Principles
 
@@ -47,7 +47,7 @@ export default function InteractiveComponent() {
 }
 ```
 
-### API Routes (Next.js 14 App Router)
+### API Routes (Next.js 15 App Router)
 ```typescript
 // /src/app/api/[endpoint]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
@@ -274,9 +274,21 @@ describe('UtilityFunction', () => {
 3. Run: `npx prisma generate`
 4. Use Prisma Client in your code
 
-## Performance Tips
+### Where to Use Sub-Agents**
+- Prefer using relevant sub-agents (via the task tool) instead of doing the work yourself.
+- When relevant sub-agents are available, your role changes from a coder making changes to a manager of software engineers. Your job is to utilize these sub-agents to deliver the best results as efficiently as possible.
 
-- Use Server Components by default (Next.js 14)
+**When to use explore agent** (not grep/glob):
+- Questions needing understanding or synthesis
+- Multi-step searches requiring analysis
+- Want a summarized answer, not raw results
+
+**When to use custom agents**:
+- If both a built-in agent and a custom agent could handle a task, prefer the custom agent as it has specialized knowledge for this environment.
+
+### Performance Tips
+
+- Use Server Components by default (Next.js 15)
 - Add `'use client'` only when needed
 - Implement proper loading states
 - Use `<Link>` for client-side navigation

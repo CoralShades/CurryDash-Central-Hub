@@ -1,6 +1,6 @@
 # CurryDash Central Hub 🌶️
 
-A role-based project management portal built with Next.js 14, TypeScript, and Prisma. CurryDash brings together teams with specialized dashboards for admins, developers, QA engineers, and stakeholders, all wrapped in a unique spice-themed design.
+A role-based project management portal built with Next.js 15, TypeScript, and Prisma. CurryDash brings together teams with specialized dashboards for admins, developers, QA engineers, and stakeholders, all wrapped in a unique spice-themed design.
 
 ## ✨ Features
 
@@ -230,7 +230,7 @@ All design tokens are defined in `/src/styles/brand-tokens.css`:
 
 ## 🛠️ Tech Stack
 
-- **Framework**: [Next.js 14](https://nextjs.org/) (App Router)
+- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Database**: [PostgreSQL](https://www.postgresql.org/)
 - **ORM**: [Prisma](https://www.prisma.io/)

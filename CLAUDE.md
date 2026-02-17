@@ -6,7 +6,7 @@ CurryDash Central Hub is a role-based project management portal built with Next.
 ## Architecture
 
 ### Tech Stack
-- **Frontend**: Next.js 14 (App Router), React 18, TypeScript
+- **Frontend**: Next.js 15 (App Router), React 18, TypeScript
 - **Styling**: Custom CSS with spice-themed design tokens
 - **Database**: PostgreSQL with Prisma ORM
 - **Integrations**: Jira API, GitHub API, AI Chat (Anthropic Claude)

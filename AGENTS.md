@@ -1,7 +1,7 @@
 # CurryDash Central Hub - AI Agents Guide
 
 ## Overview
-This document provides guidance for AI agents (automated assistants, copilots, and code generation tools) working with the CurryDash Central Hub codebase.
+This document provides guidance for AI agents (automated assistants, copilots, and code generation tools) working with the CurryDash Central Hub codebase built with Next.js 15.
 
 ## Agent Personas
 
