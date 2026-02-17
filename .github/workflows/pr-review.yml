@@ -1,0 +1,36 @@
+name: PR Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-haiku-4-5
+          max_turns: "5"
+          prompt: |
+            Review this PR for the CurryDash Central Hub project. Check for:
+
+            1. **TypeScript strict mode compliance** — no `any` types, proper error types
+            2. **Spice-themed design tokens** — no hardcoded hex colors, use CSS custom properties
+            3. **Role-based access control** — three-layer RBAC (middleware, server component, RLS)
+            4. **Server/Client Component boundaries** — `"use client"` only at leaf nodes
+            5. **Zod validation** — input validated at all data boundaries
+            6. **Naming conventions** — kebab-case files, PascalCase components, camelCase functions
+            7. **Anti-patterns** — no Zustand for server data, no direct API reads on page load
+
+            Be concise and actionable. Focus on issues, not praise.

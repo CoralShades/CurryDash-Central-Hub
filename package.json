@@ -1,0 +1,20 @@
+{
+  "name": "currydash-central-hub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CurryDash Central Hub — Role-based project management portal",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
