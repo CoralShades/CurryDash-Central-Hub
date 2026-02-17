@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-02-17
+
+### Added
+
+- **Product Brief** — Comprehensive product brief created through 6-step collaborative
+  discovery: vision (unified AI-native ops center), 4 primary personas (Demi PM, Arjun Dev,
+  Priya QA, Marcus Stakeholder), success metrics with measurable targets, MVP feature scope
+  (4-week timeline), and phased roadmap through 5 growth phases.
+- **Product Requirements Document (PRD)** — Full BMAD-standard PRD with 56 Functional
+  Requirements across 8 capability areas (Identity & Access, Dashboard, Jira Integration,
+  GitHub Integration, AI Assistant, AI Reports/Widgets, Data Pipeline, System Admin) and
+  46 Non-Functional Requirements across 5 categories (Performance, Security, Integration,
+  Reliability, Scalability). Includes Executive Summary, Success Criteria with go/no-go gates,
+  6 narrative User Journeys, Domain-Specific Requirements, Innovation & Novel Patterns analysis,
+  SaaS B2B Platform Requirements (RBAC matrix, integration spec, tenant model), and 5-phase
+  Project Scoping.
+- **PRD Validation Report** — 12-step BMAD validation covering format detection, information
+  density (0 violations), product brief coverage (95%+), measurability, traceability (complete
+  chain integrity), implementation leakage analysis (14 contextual warnings), domain compliance,
+  project-type compliance (100%), SMART scoring (4.91/5.0 average), holistic quality (4/5 Good),
+  and completeness (100%). Overall status: Warning (usable, minor improvements recommended).
+
+### Changed
+
+- Updated BMAD workflow status tracker with product brief and PRD completion.
+- Updated session tracking files (progress.md, task_plan.md) for product brief workflow.
+
 ## [0.1.0] - 2026-02-17
 
 ### Added
@@ -41,4 +68,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dependencies (18 files). The project enters a greenfield planning phase for rebuild with
   Next.js 15, Supabase, and a modern AI agent architecture.
 
+[0.2.0]: https://github.com/CoralShades/CurryDash-Central-Hub/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/CoralShades/CurryDash-Central-Hub/compare/fbda430...v0.1.0
