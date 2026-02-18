@@ -1,4 +1,10 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+/* =============================================================================
+   CurryDash Spice Palette — Design System
+   Tailwind v4 @theme block: generates both CSS custom properties + utilities
+   ============================================================================= */
 
 @theme {
   /* Brand colors — spice palette */
@@ -45,27 +51,27 @@
   --color-role-stakeholder-bg: #f7f3f0;
 
   /* Typography scale */
-  --text-xs: 0.75rem;
-  --text-sm: 0.875rem;
-  --text-base: 1rem;
-  --text-lg: 1.125rem;
-  --text-xl: 1.25rem;
-  --text-2xl: 1.5rem;
-  --text-3xl: 1.875rem;
-  --text-4xl: 2.25rem;
+  --text-xs: 0.75rem;   /* 12px */
+  --text-sm: 0.875rem;  /* 14px */
+  --text-base: 1rem;    /* 16px */
+  --text-lg: 1.125rem;  /* 18px */
+  --text-xl: 1.25rem;   /* 20px */
+  --text-2xl: 1.5rem;   /* 24px */
+  --text-3xl: 1.875rem; /* 30px */
+  --text-4xl: 2.25rem;  /* 36px */
 
-  /* Spacing scale (4px base) */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
-  --space-5: 1.25rem;
-  --space-6: 1.5rem;
-  --space-8: 2rem;
-  --space-10: 2.5rem;
-  --space-12: 3rem;
+  /* Spacing scale (4px base unit) */
+  --spacing-1: 0.25rem;  /* 4px */
+  --spacing-2: 0.5rem;   /* 8px */
+  --spacing-3: 0.75rem;  /* 12px */
+  --spacing-4: 1rem;     /* 16px */
+  --spacing-5: 1.25rem;  /* 20px */
+  --spacing-6: 1.5rem;   /* 24px */
+  --spacing-8: 2rem;     /* 32px */
+  --spacing-10: 2.5rem;  /* 40px */
+  --spacing-12: 3rem;    /* 48px */
 
-  /* Border radius */
+  /* Border radius tokens */
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
@@ -84,60 +90,95 @@
   --transition-slow: 300ms ease-in-out;
   --transition-spring: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* shadcn/ui CSS variable overrides — stone base with spice palette */
-  --background: 55 100% 93%;
-  --foreground: 15 36% 19%;
-  --card: 0 0% 100%;
-  --card-foreground: 15 36% 19%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 15 36% 19%;
-  --primary: 38 74% 59%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 22 21% 29%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 38 40% 90%;
-  --muted-foreground: 22 21% 40%;
-  --accent: 38 74% 59%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 10 73% 44%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 38 40% 82%;
-  --input: 38 40% 82%;
-  --ring: 38 74% 59%;
-  --radius: 0.5rem;
-
   /* Font stack */
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
 }
 
-/* Role-specific theming via data-role attribute */
+/* =============================================================================
+   shadcn/ui CSS variable overrides — stone base + spice palette
+   These use the HSL space-separated format expected by shadcn components
+   ============================================================================= */
+
+:root {
+  /* shadcn/ui core variables — override stone base with spice palette */
+  --background: 55 100% 93%;        /* Cream #fff8dc */
+  --foreground: 15 36% 19%;         /* Cinnamon Dark #3e2723 */
+  --card: 0 0% 100%;                /* White */
+  --card-foreground: 15 36% 19%;    /* Cinnamon Dark */
+  --popover: 0 0% 100%;
+  --popover-foreground: 15 36% 19%;
+  --primary: 38 74% 59%;            /* Turmeric #e6b04b */
+  --primary-foreground: 0 0% 100%;  /* White */
+  --secondary: 22 21% 29%;          /* Cinnamon #5d4037 */
+  --secondary-foreground: 0 0% 100%;
+  --muted: 38 40% 90%;
+  --muted-foreground: 22 21% 40%;
+  --accent: 38 74% 59%;             /* Turmeric */
+  --accent-foreground: 0 0% 100%;
+  --destructive: 10 73% 44%;        /* Chili #c5351f */
+  --destructive-foreground: 0 0% 100%;
+  --border: 38 40% 82%;             /* Warm border */
+  --input: 38 40% 82%;
+  --ring: 38 74% 59%;               /* Turmeric focus ring */
+  --radius: 0.5rem;
+
+  /* sidebar variables */
+  --sidebar: 22 21% 29%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 38 74% 59%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 22 21% 35%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 22 21% 22%;
+  --sidebar-ring: 38 74% 59%;
+}
+
+/* =============================================================================
+   Role-specific theming via data-role attribute on <body>
+   Zero runtime cost — pure CSS attribute selectors
+   ============================================================================= */
+
 body[data-role='admin'] {
   --color-role-accent: var(--color-chili);
+  --primary: 10 73% 44%;            /* Chili for admin */
+  --ring: 10 73% 44%;
 }
 
 body[data-role='developer'] {
   --color-role-accent: var(--color-coriander);
+  --primary: 141 26% 39%;           /* Coriander for developer */
+  --ring: 141 26% 39%;
 }
 
 body[data-role='qa'] {
   --color-role-accent: var(--color-turmeric);
+  /* QA uses default turmeric — no override needed */
 }
 
 body[data-role='stakeholder'] {
   --color-role-accent: var(--color-cinnamon);
+  --primary: 22 21% 29%;            /* Cinnamon for stakeholder */
+  --ring: 22 21% 29%;
 }
 
-/* Base styles */
+/* =============================================================================
+   Base styles
+   ============================================================================= */
+
 body {
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Reduced motion */
+/* =============================================================================
+   Reduced motion
+   Disables shimmer and slide animations per WCAG 2.1 AA / UX-13
+   ============================================================================= */
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
