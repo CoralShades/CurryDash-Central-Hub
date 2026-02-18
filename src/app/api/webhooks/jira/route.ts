@@ -10,6 +10,32 @@ import {
 
 const SOURCE = 'webhook:jira' as const
 
+/** Exponential backoff delays per retry attempt: 1s, 5s, 30s */
+const RETRY_DELAYS_MS = [1000, 5000, 30000] as const
+
+/**
+ * Retries an async operation with exponential backoff.
+ * On all retries exhausted, throws the last error.
+ */
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3
+): Promise<T> {
+  let lastError: unknown
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastError = err
+      if (attempt < maxRetries) {
+        const delayMs = RETRY_DELAYS_MS[attempt] ?? 1000
+        await new Promise((resolve) => setTimeout(resolve, delayMs))
+      }
+    }
+  }
+  throw lastError
+}
+
 /**
  * Writes an event to the dead_letter_events table for manual investigation.
  * Best-effort — if this write fails, we log but do not throw.
@@ -22,6 +48,7 @@ async function writeDeadLetter(
     eventType: string
     payload: unknown
     error: unknown
+    retryCount?: number
   }
 ): Promise<void> {
   const errorMessage =
@@ -36,6 +63,7 @@ async function writeDeadLetter(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     payload: params.payload as any,
     error: errorMessage,
+    retry_count: params.retryCount ?? 0,
     correlation_id: params.correlationId,
   })
 
@@ -54,11 +82,15 @@ async function writeDeadLetter(
  * Jira webhook receiver — processes events in the following pipeline:
  * 1. HMAC-SHA256 validate → 401 if invalid
  * 2. Event ID dedup → 200 if already processed
- * 3. Zod parse → 400 + dead_letter if invalid
- * 4. Supabase upsert → dead_letter if fails
- * 5. revalidateTag('issues') → ISR cache invalidation
- * 6. Realtime broadcast → dashboard:{role} channel
- * 7. Return 200 OK
+ * 3. Out-of-order check → 200 if newer event already processed (Story 4.3)
+ * 4. Zod parse → 400 + dead_letter if invalid
+ * 5. Supabase upsert with retry backoff (1s/5s/30s, max 3) → dead_letter if exhausted
+ * 6. revalidateTag('issues') → ISR cache invalidation
+ * 7. Realtime broadcast → dashboard:{role} channel
+ * 8. Return 200 OK
+ *
+ * Burst tolerance: each invocation is independent serverless execution.
+ * On overflow/failure, events go to dead_letter rather than being dropped silently.
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const correlationId = crypto.randomUUID()
@@ -72,10 +104,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     rawBody = await request.text()
     parsedBody = JSON.parse(rawBody)
   } catch {
-    logger.error('Failed to read request body', {
-      source: SOURCE,
-      correlationId,
-    })
+    logger.error('Failed to read request body', { source: SOURCE, correlationId })
     return NextResponse.json(
       { data: null, error: { code: 'INVALID_BODY', message: 'Invalid request body' } },
       { status: 400 }
@@ -172,7 +201,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       correlationId,
       data: { error: insertError.message },
     })
-    // Not fatal — continue processing but log for visibility
   }
 
   // ─── Step 3: Zod Parse ─────────────────────────────────────────────────────
@@ -199,75 +227,135 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const webhookEvent = parseResult.data
 
-  // ─── Step 4: Supabase Upsert ───────────────────────────────────────────────
-  try {
-    // Process issue events
-    if (
-      webhookEvent.issue &&
-      (eventType === 'jira:issue_created' ||
-        eventType === 'jira:issue_updated' ||
-        eventType === 'jira:issue_deleted')
-    ) {
-      const issue = webhookEvent.issue
-      const fields = issue.fields
+  // ─── Step 3b: Out-of-order check (Story 4.3) ───────────────────────────────
+  // If a newer event for the same issue has already been processed, skip this one.
+  if (webhookEvent.issue) {
+    const issueKey = webhookEvent.issue.key
+    const eventUpdatedAt = webhookEvent.issue.fields.updated
 
-      // Build a lookup for the jira_projects table by issue key prefix
-      const projectKey = issue.key.split('-')[0]
-      const { data: projectRow } = await supabase
-        .from('jira_projects')
-        .select('id')
-        .eq('project_key', projectKey)
+    if (eventUpdatedAt) {
+      const { data: storedIssue } = await supabase
+        .from('jira_issues')
+        .select('jira_updated_at')
+        .eq('issue_key', issueKey)
         .maybeSingle()
 
-      if (projectRow && eventType !== 'jira:issue_deleted') {
-        const issuePayload = jiraIssuePayloadSchema.parse({
-          issue_key: issue.key,
-          summary: fields.summary,
-          description: typeof fields.description === 'string' ? fields.description : null,
-          issue_type: fields.issuetype.name,
-          status: fields.status.name,
-          priority: fields.priority?.name ?? null,
-          assignee_email: fields.assignee?.emailAddress ?? null,
-          reporter_email: fields.reporter?.emailAddress ?? null,
-          story_points: fields.customfield_10016 ?? fields.story_points ?? null,
-          labels: fields.labels ?? [],
-          jira_updated_at: fields.updated ?? null,
-          jira_created_at: fields.created ?? null,
-        })
+      if (storedIssue?.jira_updated_at) {
+        const storedTs = new Date(storedIssue.jira_updated_at).getTime()
+        const eventTs = new Date(eventUpdatedAt).getTime()
 
-        const { error: upsertError } = await supabase
-          .from('jira_issues')
-          .upsert(
-            {
-              ...issuePayload,
-              project_id: projectRow.id,
-              synced_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
+        if (storedTs > eventTs) {
+          logger.info('Out-of-order event skipped: newer event already processed', {
+            source: SOURCE,
+            correlationId,
+            data: {
+              issueKey,
+              eventUpdatedAt,
+              storedUpdatedAt: storedIssue.jira_updated_at,
+              reason: 'out-of-order: newer event already processed',
             },
-            { onConflict: 'issue_key' }
+          })
+          return NextResponse.json(
+            { data: { status: 'out_of_order', eventId }, error: null },
+            { status: 200 }
           )
-
-        if (upsertError) {
-          throw new Error(`Upsert failed: ${upsertError.message}`)
         }
       }
     }
+  }
 
-    // Mark event as processed
-    await supabase
-      .from('webhook_events')
-      .update({ processed: true, processed_at: new Date().toISOString() })
-      .eq('correlation_id', correlationId)
+  // ─── Step 4: Supabase Upsert with Retry ────────────────────────────────────
+  let upsertAttempts = 0
 
+  try {
+    await retryWithBackoff(async () => {
+      upsertAttempts++
+
+      if (
+        webhookEvent.issue &&
+        (eventType === 'jira:issue_created' ||
+          eventType === 'jira:issue_updated' ||
+          eventType === 'jira:issue_deleted')
+      ) {
+        const issue = webhookEvent.issue
+        const fields = issue.fields
+
+        const projectKey = issue.key.split('-')[0]
+        const { data: projectRow, error: projectError } = await supabase
+          .from('jira_projects')
+          .select('id')
+          .eq('project_key', projectKey)
+          .maybeSingle()
+
+        if (projectError) {
+          throw new Error(`Project lookup failed: ${projectError.message}`)
+        }
+
+        if (projectRow && eventType !== 'jira:issue_deleted') {
+          const issuePayload = jiraIssuePayloadSchema.parse({
+            issue_key: issue.key,
+            summary: fields.summary,
+            description: typeof fields.description === 'string' ? fields.description : null,
+            issue_type: fields.issuetype.name,
+            status: fields.status.name,
+            priority: fields.priority?.name ?? null,
+            assignee_email: fields.assignee?.emailAddress ?? null,
+            reporter_email: fields.reporter?.emailAddress ?? null,
+            story_points: fields.customfield_10016 ?? fields.story_points ?? null,
+            labels: fields.labels ?? [],
+            jira_updated_at: fields.updated ?? null,
+            jira_created_at: fields.created ?? null,
+          })
+
+          const { error: upsertError } = await supabase
+            .from('jira_issues')
+            .upsert(
+              {
+                ...issuePayload,
+                project_id: projectRow.id,
+                synced_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: 'issue_key' }
+            )
+
+          if (upsertError) {
+            throw new Error(`Upsert failed: ${upsertError.message}`)
+          }
+        }
+      }
+
+      // Mark event as processed
+      const { error: updateError } = await supabase
+        .from('webhook_events')
+        .update({ processed: true, processed_at: new Date().toISOString() })
+        .eq('correlation_id', correlationId)
+
+      if (updateError) {
+        throw new Error(`Event mark-processed failed: ${updateError.message}`)
+      }
+    }, 3)
   } catch (err) {
-    logger.error('Webhook pipeline upsert failed', {
+    logger.error('Webhook pipeline failed after retries exhausted', {
       source: SOURCE,
       correlationId,
-      data: { eventId, step: 'upsert', error: err instanceof Error ? err.message : String(err) },
+      data: {
+        eventId,
+        step: 'upsert',
+        attempts: upsertAttempts,
+        error: err instanceof Error ? err.message : String(err),
+      },
     })
-    await writeDeadLetter(supabase, { correlationId, eventId, eventType, payload: parsedBody, error: err })
+    await writeDeadLetter(supabase, {
+      correlationId,
+      eventId,
+      eventType,
+      payload: parsedBody,
+      error: err,
+      retryCount: upsertAttempts,
+    })
     return NextResponse.json(
-      { data: null, error: { code: 'PROCESSING_ERROR', message: 'Failed to process webhook event' } },
+      { data: null, error: { code: 'PROCESSING_ERROR', message: 'Failed to process webhook event after retries' } },
       { status: 500 }
     )
   }
@@ -288,7 +376,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       )
     )
   } catch (broadcastErr) {
-    // Broadcast failure is non-fatal — clients poll on reconnect
     logger.warn('Realtime broadcast failed', {
       source: SOURCE,
       correlationId,
