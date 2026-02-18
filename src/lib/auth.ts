@@ -6,6 +6,7 @@ import Resend from 'next-auth/providers/resend'
 import type { Role } from '@/types/roles'
 import { ROLES } from '@/types/roles'
 import { logger } from '@/lib/logger'
+import { AuthError } from '@/lib/errors'
 
 /**
  * Fetches the user's role from the Supabase users table.
@@ -53,6 +54,33 @@ async function getUserRole(userId: string): Promise<Role | null> {
     logger.error('Error fetching user role', { source: 'auth', data: { error, userId } })
     return null
   }
+}
+
+/**
+ * Server Component helper — returns the current session user with role.
+ * Throws AuthError if not authenticated or if the user's role is not one of the allowed roles.
+ *
+ * Usage in Server Components:
+ *   const user = await requireAuth('admin')
+ *   const user = await requireAuth('developer', 'admin')  // multiple roles allowed
+ */
+export async function requireAuth(...allowedRoles: Role[]) {
+  const session = await auth()
+
+  if (!session?.user) {
+    throw new AuthError('Not authenticated', { redirect: '/login' })
+  }
+
+  const userRole = session.user.role as Role | null
+
+  if (allowedRoles.length > 0 && (!userRole || !allowedRoles.includes(userRole))) {
+    throw new AuthError('Insufficient permissions', {
+      required: allowedRoles,
+      actual: userRole,
+    })
+  }
+
+  return { id: session.user.id, role: userRole, email: session.user.email }
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
