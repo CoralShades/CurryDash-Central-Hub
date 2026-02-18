@@ -19,6 +19,13 @@
 .DS_Store
 *.pem
 
+# OAuth / service account credential downloads (contain live secrets)
+docs/client_secret*.json
+**/client_secret*.json
+
+# Supabase CLI temp files (project ref, pooler URL, version pins)
+supabase/.temp/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
