@@ -10,6 +10,7 @@ import {
   CiStatusWidget,
 } from './metric-card'
 import { ActivityFeed } from './activity-feed'
+import { BlockerCard } from './blocker-card'
 
 interface WidgetGridProps {
   role: Role
@@ -27,6 +28,7 @@ function resolveWidget(config: WidgetConfig) {
     case 'bugs-open':         return <BugsOpenWidget />
     case 'ci-status':         return <CiStatusWidget />
     case 'team-activity':     return <ActivityFeed />
+    case 'blockers':          return <BlockerCard />
     default:                  return <WidgetPlaceholder config={config} />
   }
 }
