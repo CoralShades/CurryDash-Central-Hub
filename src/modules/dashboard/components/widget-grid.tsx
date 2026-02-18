@@ -45,16 +45,18 @@ export function WidgetGrid({ role }: WidgetGridProps) {
   const widgets = widgetRegistry[role] ?? []
 
   return (
-    <div
-      style={{
-        maxWidth: '1440px',
-        margin: '0 auto',
-        padding: 'var(--space-6)',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(12, 1fr)',
-        gap: 'var(--space-6)',
-      }}
-    >
+    <>
+      {/* Mobile message — CSS hides .dashboard-grid and shows this at <768px */}
+      <div className="dashboard-mobile-message">
+        <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: 'var(--space-2)' }}>
+          Best viewed on desktop
+        </p>
+        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0 }}>
+          CurryDash Central Hub is optimised for desktop. For the best experience, please use a laptop or tablet.
+        </p>
+      </div>
+
+      <div className="dashboard-grid">
       {widgets.map((config) => (
         <div
           key={config.id}
@@ -65,6 +67,7 @@ export function WidgetGrid({ role }: WidgetGridProps) {
           </WidgetCard>
         </div>
       ))}
-    </div>
+      </div>
+    </>
   )
 }

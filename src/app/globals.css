@@ -175,6 +175,65 @@ body {
 }
 
 /* =============================================================================
+   Dashboard grid — responsive layout (Story 3.5)
+   12-col at 1280px+, 2-col at 768-1279px, mobile message at <768px
+   ============================================================================= */
+
+.dashboard-grid {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: var(--space-6);
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-6);
+}
+
+/* Desktop SM + Tablet: compress to 6-col effectively (2-column for 6-span items) */
+@media (max-width: 1279px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Tablet: tighten padding */
+@media (max-width: 1023px) {
+  .dashboard-grid {
+    padding: var(--space-4);
+    gap: var(--space-4);
+  }
+}
+
+/* Mobile: hide grid, show mobile message */
+@media (max-width: 767px) {
+  .dashboard-grid {
+    display: none;
+  }
+}
+
+/* Mobile message — only visible at <768px */
+.dashboard-mobile-message {
+  display: none;
+  padding: var(--space-6);
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .dashboard-mobile-message {
+    display: block;
+  }
+}
+
+/* Sidebar: auto-collapse at 1024px */
+@media (max-width: 1023px) {
+  .sidebar-full {
+    display: none;
+  }
+  .sidebar-collapsed-label {
+    display: none;
+  }
+}
+
+/* =============================================================================
    Reduced motion
    Disables shimmer and slide animations per WCAG 2.1 AA / UX-13
    ============================================================================= */

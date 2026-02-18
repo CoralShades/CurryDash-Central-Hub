@@ -159,9 +159,27 @@ export function PageHeader({ userRole, userName, userEmail, userAvatar, lastUpda
       }}
     >
       {/* Page title */}
-      <h1 style={{ fontSize: '1rem', fontWeight: 600, color: 'hsl(var(--foreground))', margin: 0, whiteSpace: 'nowrap' }}>
-        {pageTitle}
-      </h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+        <h1 style={{ fontSize: '1rem', fontWeight: 600, color: 'hsl(var(--foreground))', margin: 0, whiteSpace: 'nowrap' }}>
+          {pageTitle}
+        </h1>
+        {userRole === 'stakeholder' && (
+          <span
+            style={{
+              fontSize: '0.75rem',
+              padding: '0.125rem 0.375rem',
+              borderRadius: 'var(--radius-full)',
+              backgroundColor: 'hsl(var(--muted))',
+              color: 'var(--color-text-muted)',
+              fontWeight: 500,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            Read-only
+          </span>
+        )}
+      </div>
 
       {/* Right side controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
