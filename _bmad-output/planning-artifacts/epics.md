@@ -1513,3 +1513,118 @@ So that I am immediately aware of issues requiring my attention without monitori
 **When** system-level events occur
 **Then** admin notifications are NOT visible to non-admin users (completely absent from their notification feed)
 **And** non-admin users only see notifications relevant to their role (e.g., "Your assigned issue CUR-42 was updated")
+
+---
+
+## Appendix: Requirements Traceability Matrix
+
+### Functional Requirements Coverage
+
+| FR | Description | Epic.Story |
+|----|-------------|------------|
+| FR1 | Supabase project + schema setup | 1.1 |
+| FR2 | Spice-themed design tokens | 1.2 |
+| FR3 | Shared UI component library | 1.3 |
+| FR4 | Error boundary + skeleton patterns | 1.3 |
+| FR5 | Auth.js email/password registration | 2.1 |
+| FR6 | Auth.js login with session/JWT | 2.2 |
+| FR7 | Role-based redirect after login | 2.2 |
+| FR8 | Edge Middleware route gating | 2.3 |
+| FR9 | Supabase RLS policies | 2.3 |
+| FR10 | Unified dashboard layout | 3.1, 3.2 |
+| FR11 | Sprint progress summaries | 4.4 |
+| FR12 | GitHub PR activity display | 5.3 |
+| FR13 | Key metric cards | 3.3 |
+| FR14 | Team activity feed | 3.3 |
+| FR15 | Blocker indicators | 3.4 |
+| FR16 | Drill-down detail views | 3.4 |
+| FR17 | Stakeholder read-only view | 3.5 |
+| FR18 | Staleness badges | 3.4, 4.4 |
+| FR19 | Widget error isolation | 3.2, 4.4, 5.3, 5.4, 7.3 |
+| FR20 | Jira Cloud API connection | 4.1 |
+| FR21 | Fetch sprints/issues/epics (6 projects) | 4.1, 4.4 |
+| FR22 | Receive Jira webhook events | 4.2 |
+| FR23 | Jira webhook shared secret validation | 4.2 |
+| FR24 | Auto-refresh Jira webhooks | 4.5 |
+| FR25 | Jira rate limit handling (429) | 4.1 |
+| FR26 | GitHub API via Octokit + OAuth | 5.1 |
+| FR27 | Fetch repos/PRs/commits/CI status | 5.1, 5.4 |
+| FR28 | Receive GitHub webhook events | 5.2 |
+| FR29 | GitHub webhook HMAC-SHA256 validation | 5.2 |
+| FR30 | AI chat sidebar panel | 6.2 |
+| FR31 | AI streaming responses (SSE) | 6.2, 7.2 |
+| FR32 | AI queries live Jira data via MCP | 6.3 |
+| FR33 | AI queries live GitHub data via MCP | 6.3 |
+| FR34 | Role-aware AI responses | 6.1, 6.4, 7.2 |
+| FR35 | AI source citations | 6.3, 7.1, 7.2 |
+| FR36 | AI graceful degradation | 6.4 |
+| FR37 | AI unavailability status | 6.4 |
+| FR38 | AI sprint status reports | 7.1 |
+| FR39 | AI stakeholder summaries | 7.2 |
+| FR40 | Data-as-of timestamp footers | 7.1, 7.2 |
+| FR41 | AI widget generation (natural language) | 7.3 |
+| FR42 | Widget types: cards/charts/tables | 7.3 |
+| FR43 | Persist AI widget configs | 7.4 |
+| FR44 | Pre-built fallback widgets | 7.4 |
+| FR45 | Cache Jira/GitHub data in Supabase | 4.1, 5.1 |
+| FR46 | ISR cache tag revalidation on webhook | 4.2, 4.4, 5.2 |
+| FR47 | Realtime broadcast to dashboard clients | 4.2, 5.2 |
+| FR48 | Idempotent webhook processing | 4.2, 4.3 |
+| FR49 | Out-of-order event resolution | 4.3 |
+| FR50 | Dead letter logging | 4.2, 4.3, 4.5, 5.2, 8.2 |
+| FR51 | Admin: integration connection status | 8.1 |
+| FR52 | Admin: webhook health status | 8.1, 8.2 |
+| FR53 | Admin: AI usage metrics | 8.3 |
+| FR54 | Admin: configure integration credentials | 8.1 |
+| FR55 | Token budget cap enforcement | 8.3 |
+| FR56 | Rate limit logging + warnings | 8.2, 8.4 |
+
+### Non-Functional Requirements Coverage
+
+| NFR | Description | Epic.Story |
+|-----|-------------|------------|
+| NFR-P1 | Dashboard TTFCP <3s | 3.2 |
+| NFR-P2 | Client-side nav <500ms | 3.2 |
+| NFR-P3 | Widget render <1s | 3.3 |
+| NFR-P4 | AI first token <3s | 6.2 |
+| NFR-P5 | AI complete response <10s | 6.2 |
+| NFR-P6 | AI widget generation <20s | 7.3 |
+| NFR-P7 | AI report generation <15s | 7.1, 7.2 |
+| NFR-P8 | Webhook to dashboard <30s | 5.2, 5.4 |
+| NFR-S3 | API keys server-side only | 8.1 |
+| NFR-S5 | Webhook shared secret validation | 4.2, 5.2 |
+| NFR-S9 | No sensitive data in client logs | 8.1 |
+| NFR-R3 | Dashboard 100% functional without AI | 6.4 |
+| NFR-R4 | Webhook retry (3 retries, backoff) | 4.3 |
+| NFR-R7 | Zero data loss on webhook burst | 4.3 |
+| NFR-I1 | Webhook success rate ≥95% | 4.3, 8.2 |
+| NFR-I5 | GitHub API <10% of limit | 5.1 |
+| NFR-I6 | Dead letter recovery <1hr | 8.2 |
+| NFR-I8 | Integration failure isolation | 4.5, 8.1 |
+| NFR-SC4 | Webhook burst 50 events/min | 4.3 |
+
+### Architecture Decisions Coverage
+
+| ARCH | Description | Epic.Story |
+|------|-------------|------------|
+| ARCH-7 | HMAC-SHA256 webhook security | 4.2, 5.2 |
+| ARCH-9 | ISR + Realtime hybrid caching | 4.2, 4.4, 5.2 |
+| ARCH-10 | MCP → cache fallback + citation | 6.3, 7.1 |
+| ARCH-11 | Model routing (Haiku/Sonnet) + budgets | 6.1, 7.1, 7.3, 8.3 |
+| ARCH-12 | Mastra tool error handling | 6.1, 6.3 |
+| ARCH-14 | Event ID dedup table | 4.2, 4.3, 5.2 |
+| ARCH-17 | Zod + DB constraints validation | 4.2, 5.2 |
+
+### Story Count Summary
+
+| Epic | Name | Stories |
+|------|------|---------|
+| 1 | Project Foundation & Design System | 3 |
+| 2 | Identity & Access Management | 4 |
+| 3 | Dashboard Shell & Data Visualization | 5 |
+| 4 | Jira Integration & Live Sprint Data | 5 |
+| 5 | GitHub Integration & Repository Activity | 4 |
+| 6 | AI Assistant & Project Intelligence | 4 |
+| 7 | AI Reports & Widget Generation | 4 |
+| 8 | System Administration & Observability | 4 |
+| **Total** | | **33 stories** |
