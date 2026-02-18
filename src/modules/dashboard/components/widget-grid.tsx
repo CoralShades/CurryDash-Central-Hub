@@ -12,6 +12,7 @@ import {
 import { ActivityFeed } from './activity-feed'
 import { BlockerCard } from './blocker-card'
 import { SprintProgressWidget } from '@/modules/jira/components/sprint-progress-widget'
+import { PrStatusWidget } from '@/modules/github/components/pr-status-widget'
 
 interface WidgetGridProps {
   role: Role
@@ -22,7 +23,7 @@ interface WidgetGridProps {
  * New widget implementations are registered here as they ship.
  * Falls back to WidgetPlaceholder for unimplemented widget IDs.
  */
-function resolveWidget(config: WidgetConfig) {
+function resolveWidget(config: WidgetConfig, role: Role) {
   switch (config.id) {
     case 'stories-completed': return <StoriesCompletedWidget />
     case 'prs-merged':        return <PrsMergedWidget />
@@ -31,6 +32,7 @@ function resolveWidget(config: WidgetConfig) {
     case 'team-activity':      return <ActivityFeed />
     case 'blockers':           return <BlockerCard />
     case 'sprint-progress':    return <SprintProgressWidget />
+    case 'pr-status':          return <PrStatusWidget role={role} />
     default:                   return <WidgetPlaceholder config={config} />
   }
 }
@@ -65,7 +67,7 @@ export function WidgetGrid({ role }: WidgetGridProps) {
           style={{ gridColumn: `span ${config.colSpan}` }}
         >
           <WidgetCard config={config}>
-            {resolveWidget(config)}
+            {resolveWidget(config, role)}
           </WidgetCard>
         </div>
       ))}
