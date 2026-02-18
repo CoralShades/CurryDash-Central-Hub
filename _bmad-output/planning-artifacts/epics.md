@@ -541,3 +541,143 @@ So that I can control who has access to Central Hub and what they can do.
 **And** the Server Action returns `{ data, error }` pattern — never throws (code-style rule)
 **And** empty state shows "No team members yet." with an "Add User" button
 **And** loading state shows skeleton rows (5 rows of grey bars)
+
+---
+
+## Epic 3: Dashboard Shell & Data Visualization
+
+Authenticated users can view a unified dashboard with navigation, metric cards, widget grid, and drill-down capability — all role-filtered and failure-isolated.
+
+### Story 3.1: App Shell Layout — Sidebar Navigation & Page Header
+
+As an authenticated user,
+I want a consistent application shell with collapsible sidebar navigation and an informative page header,
+So that I can navigate Central Hub efficiently and always know where I am and how fresh the data is.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated user lands on any dashboard page
+**When** the app shell renders
+**Then** a `(dashboard)` layout group wraps all authenticated views with sidebar + header shell
+**And** the sidebar is pinned to the left edge at 256px width (expanded, default on desktop)
+**And** the sidebar contains: CurryDash logo + "Central Hub" text at top, "Dashboard" nav item (always visible), "ADMIN" section label with Users/Integrations/System Health items (admin role only), user avatar + name + role badge + collapse toggle at bottom
+**And** the ADMIN section is completely absent from the DOM for non-admin roles (not hidden, not disabled — absent)
+**And** the active nav item shows a Turmeric Gold 4px left border accent with subtle background tint
+**And** pressing `[` toggles the sidebar between expanded (256px) and collapsed (64px icon-only with tooltips)
+**And** the collapsed state shows icons only with tooltip labels on hover
+**And** keyboard navigation works: Tab/Shift+Tab between items, Enter/Space to activate
+**And** the page header spans the content area (right of sidebar) at 64px height
+**And** the header contains: page title (left), data freshness display, alerts bell with unread count badge (Chili Red), AI toggle button (Turmeric Gold when active), user dropdown menu (avatar + name + role badge → Profile, Theme toggle, Logout)
+**And** data freshness shows "Last updated: just now" when <2min, "Last updated: X min ago" when >2min
+**And** `Cmd+K` / `Ctrl+K` toggles the AI sidebar (placeholder for Epic 6)
+**And** `G then D` navigates to Dashboard, `G then U` to Users, `G then I` to Integrations, `G then S` to System Health (vim-style 500ms timeout)
+**And** `Escape` closes any open modal or sidebar
+**And** a skip-to-content link is the first focusable element (visible on focus)
+**And** focus indicators use 2px solid Turmeric Gold outline with 2px offset
+
+### Story 3.2: Dashboard Grid & Config-Driven Widget System
+
+As an authenticated user,
+I want a responsive dashboard grid that displays widgets appropriate for my role with independent loading and error handling,
+So that I see relevant information immediately and one broken widget never takes down my whole dashboard.
+
+**Acceptance Criteria:**
+
+**Given** a user navigates to their role-appropriate dashboard (`/admin`, `/dev`, `/qa`, `/stakeholder`)
+**When** the dashboard page renders
+**Then** the main content area uses a 12-column CSS Grid layout with `--space-6` (24px) gap
+**And** max content width is 1440px, centered for ultra-wide screens, with `--space-6` padding on all sides
+**And** a widget registry in `src/modules/dashboard/config/widget-registry.ts` maps `role → widget[]` configuration
+**And** each widget config specifies: component, grid column span (3/4/6/12), data source, and refresh behavior
+**And** each widget is wrapped in `<ErrorBoundary fallback={<WidgetError />}>` so one crash doesn't affect others (FR19, NFR-R2)
+**And** each widget independently shows `<WidgetSkeleton>` while its data loads (no full-page loading state)
+**And** fast widgets appear first while slow widgets continue to shimmer
+**And** widget cards use white surface with `--shadow-sm`, `--radius-md`, and `--space-5` padding
+**And** card hover elevates to `--shadow-md` with `--transition-fast`
+**And** the dashboard page is a thin Server Component wrapper that composes from `src/modules/dashboard/components/`
+**And** dashboard initial page load completes in <3 seconds TTFCP (NFR-P1)
+**And** client-side navigation between dashboard views completes in <500ms (NFR-P2)
+
+### Story 3.3: Key Metric Cards & Team Activity Feed
+
+As a project manager,
+I want to see key project metrics at a glance and a chronological feed of recent team activity,
+So that I can assess project health within 5 seconds of opening the dashboard (Glanceable Truth principle).
+
+**Acceptance Criteria:**
+
+**Given** the dashboard grid is rendered with widget registry
+**When** the key metrics row loads (Row 1: 4 x 3-column cards)
+**Then** each metric card displays: metric label (text-sm, secondary color), metric value (text-3xl, semibold), trend indicator (arrow up/down + delta + period), and optional mini progress bar or sparkline (FR13)
+**And** the 4 default metric cards are: "Stories Completed", "PRs Merged", "Bugs Open", "CI Status"
+**And** trend colors use `--color-success` for positive, `--color-error` for negative, `--color-text-muted` for neutral
+**And** metric cards use placeholder/mock data until Jira and GitHub integrations are connected (Epics 4-5)
+**And** each card renders in <1 second independently (NFR-P3)
+**When** the team activity feed loads (Row 2 right: 6-column card)
+**Then** a chronological feed displays up to 10 recent events, scrollable within the card (FR14)
+**And** each event shows: avatar/icon + actor name + action verb + target + relative timestamp
+**And** event types include: PR merged, issue transitioned, commits pushed, webhook sync
+**And** clicking any activity item navigates to the detail view for that item
+**And** the feed uses placeholder data until integrations are connected
+**And** `aria-live="polite"` is set on the feed container for screen reader updates
+
+### Story 3.4: Blocker Indicators & Drill-Down Detail Views
+
+As a project manager,
+I want blocker and alert indicators with the ability to drill down into issue and PR details,
+So that I can quickly identify and investigate problems without leaving Central Hub.
+
+**Acceptance Criteria:**
+
+**Given** the dashboard grid is rendered
+**When** the Blockers & Alerts card loads (Row 3 left: 6-column card)
+**Then** a priority-sorted list displays items requiring attention (FR15)
+**And** blocker items show: Chili Red 4px left-border accent, issue key, title, "blocked · X days" duration
+**And** warning items show: Turmeric Gold 4px left-border accent, description, source
+**And** a critical count badge appears in the card header (e.g., "2 blockers")
+**And** empty state displays "No blockers — all clear" with a Coriander Green checkmark
+**And** staleness indicators appear on any widget whose data is >10 minutes old (amber badge) or >30 minutes old (Chili Red badge) (FR18)
+**When** a user clicks any dashboard item (issue, PR, activity item)
+**Then** a detail panel slides in or expands inline showing full context (FR16):
+  - Jira issue detail: Key, Title, Status, Assignee, Priority, Description, Linked PRs. Actions: "Open in Jira" (external link), "Copy link"
+  - PR detail: Number, Title, Repo, Author, Status, Reviewers, CI Status. Actions: "Open in GitHub" (external link), "Copy link"
+**And** breadcrumbs appear below the header for detail views: "Dashboard > Sprint CUR-42 > CUR-312 (Payment Timeout)"
+**And** browser back button returns to the dashboard with scroll position preserved
+**And** detail data uses placeholder content until integrations are connected
+
+### Story 3.5: Stakeholder Dashboard Variant & Responsive Behavior
+
+As a stakeholder user,
+I want a read-only dashboard view optimized for my oversight role, accessible across desktop and tablet,
+So that I can monitor project progress without being overwhelmed by operational details I don't need.
+
+**Acceptance Criteria:**
+
+**Given** a user with the Stakeholder role logs in
+**When** they are redirected to `/stakeholder`
+**Then** the dashboard renders with the same grid layout as the admin dashboard (FR17)
+**And** the sidebar does NOT contain Users, Integrations, or System Health nav items (completely absent from DOM)
+**And** team activity shows aggregate data only ("5 PRs merged this week" not individual developer attribution)
+**And** PR entries show titles but NOT code links (links to GitHub code are hidden)
+**And** AI widget generation is not offered (chat and report generation remain available)
+**And** a subtle "Read-only" badge appears in the header (text-xs, muted)
+**And** individual developer metrics are not rendered anywhere on the stakeholder view
+
+**Given** the viewport width is between 1024px-1279px (Desktop SM)
+**When** the dashboard renders
+**Then** the sidebar auto-collapses to 64px icon-only mode
+**And** the AI sidebar (when implemented) overlays content instead of compressing the grid
+**And** metric cards remain 4-across at compressed width
+**And** the dashboard grid switches to 2-column layout
+
+**Given** the viewport width is between 768px-1023px (Tablet)
+**When** the dashboard renders
+**Then** the sidebar is hidden behind a hamburger menu (top-left)
+**And** metric cards display in a 2-column grid (2 per row)
+**And** Sprint progress and activity cards stack full-width
+**And** data tables enable horizontal scroll
+
+**Given** the viewport width is below 768px (Mobile)
+**When** the page loads
+**Then** a friendly message displays: "CurryDash Central Hub is optimized for desktop. For the best experience, please use a laptop or tablet."
+**And** key metrics are shown in a simplified view (no charts, no AI sidebar)
