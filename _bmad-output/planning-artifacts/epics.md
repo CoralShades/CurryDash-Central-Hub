@@ -1,5 +1,5 @@
 ---
-stepsCompleted: ['step-01-validate-prerequisites']
+stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics']
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/architecture.md
@@ -197,8 +197,101 @@ This document provides the complete epic and story breakdown for CurryDash-Centr
 
 ### FR Coverage Map
 
-{{requirements_coverage_map}}
+FR1: Epic 2 - User registration (magic link, Google OAuth, GitHub OAuth)
+FR2: Epic 2 - User login with role-appropriate JWT session
+FR3: Epic 2 - Route-level access control via edge middleware
+FR4: Epic 2 - Data-level access control via server-side authorization
+FR5: Epic 2 - Row-level data isolation via Supabase RLS policies
+FR6: Epic 2 - Admin creates user accounts and assigns roles
+FR7: Epic 2 - Admin views and manages users and role assignments
+FR8: Epic 2 - Unauthenticated users redirected to login
+FR9: Epic 2 - Insufficient privileges redirected to role-appropriate dashboard
+FR10: Epic 3 - Unified dashboard displaying ecosystem-wide health data
+FR11: Epic 4 - Sprint progress summaries across all Jira projects
+FR12: Epic 5 - GitHub PR activity across all connected repositories
+FR13: Epic 3 - Key metric cards (stories, PRs, bugs, deployments)
+FR14: Epic 3 - Team activity summaries
+FR15: Epic 3 - Blocker indicators with drill-down
+FR16: Epic 3 - Click dashboard item for full details
+FR17: Epic 3 - Stakeholder read-only dashboard mode
+FR18: Epic 3 - Staleness indicators when data >10 minutes old
+FR19: Epic 3 - Widget failure isolation (per-widget error boundaries)
+FR20: Epic 4 - Connect to Jira Cloud REST API v3
+FR21: Epic 4 - Fetch sprint data, issues, epics across 6 projects
+FR22: Epic 4 - Receive Jira webhook events
+FR23: Epic 4 - Validate Jira webhook payloads (shared secret)
+FR24: Epic 4 - Auto-refresh Jira webhook registrations (30-day expiry)
+FR25: Epic 4 - Handle Jira API rate limits (429) with exponential backoff
+FR26: Epic 5 - Connect to GitHub API via Octokit
+FR27: Epic 5 - Fetch repos, PRs, commits, CI status
+FR28: Epic 5 - Receive GitHub webhook events
+FR29: Epic 5 - Validate GitHub webhooks (HMAC-SHA256)
+FR30: Epic 6 - AI chat sidebar panel within dashboard
+FR31: Epic 6 - AI streaming responses via SSE
+FR32: Epic 6 - AI queries live Jira data via MCP
+FR33: Epic 6 - AI queries live GitHub data via MCP
+FR34: Epic 6 - AI role-aware responses
+FR35: Epic 6 - AI source citations in responses
+FR36: Epic 6 - AI graceful degradation (dashboard unaffected)
+FR37: Epic 6 - AI unavailability status message
+FR38: Epic 7 - AI sprint status report generation
+FR39: Epic 7 - AI stakeholder progress summary generation
+FR40: Epic 7 - AI reports include "data as of" timestamp
+FR41: Epic 7 - AI widget generation via natural language
+FR42: Epic 7 - AI widgets rendered as metric cards, charts, tables
+FR43: Epic 7 - AI widget configs persisted to database
+FR44: Epic 7 - Pre-built static widgets as fallback
+FR45: Epic 4 - Cache Jira/GitHub data in Supabase
+FR46: Epic 4 - ISR cache tag revalidation on webhook receipt
+FR47: Epic 5 - Supabase Realtime pushes live updates to dashboards
+FR48: Epic 4 - Idempotent webhook event processing
+FR49: Epic 4 - Out-of-order webhook resolution via timestamps
+FR50: Epic 4 - Dead letter logging for failed webhook payloads
+FR51: Epic 8 - Admin views integration connection status
+FR52: Epic 8 - Admin views webhook health status
+FR53: Epic 8 - Admin views AI API usage metrics
+FR54: Epic 8 - Admin configures integration credentials
+FR55: Epic 8 - Token budget cap on AI requests
+FR56: Epic 8 - Rate limit event logging with warnings at 50%
 
 ## Epic List
 
-{{epics_list}}
+### Epic 1: Project Foundation & Design System
+Users can access a professionally styled, properly scaffolded application with the CurryDash spice-themed design system, database schema, and shared infrastructure in place.
+**FRs covered:** Foundational — enables all subsequent epics
+**Additional reqs:** ARCH-1, ARCH-2, ARCH-3, ARCH-8, ARCH-10, ARCH-11, ARCH-18, UX-5, UX-15
+
+### Epic 2: Identity & Access Management
+Users can register, log in, and access role-appropriate content with security enforced at every layer — from routing to data queries.
+**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR6, FR7, FR8, FR9
+**Additional reqs:** ARCH-4, NFR-S1, NFR-S2, NFR-S6, NFR-S7, NFR-S9, NFR-S10, UX-8, UX-16
+
+### Epic 3: Dashboard Shell & Data Visualization
+Authenticated users can view a unified dashboard with navigation, metric cards, widget grid, and drill-down capability — all role-filtered and failure-isolated.
+**FRs covered:** FR10, FR13, FR14, FR15, FR16, FR17, FR18, FR19
+**Additional reqs:** ARCH-6, UX-1, UX-2, UX-3, UX-4, UX-9, UX-10, UX-11, UX-12, UX-13, UX-14, NFR-P1, NFR-P2, NFR-P3, NFR-R2
+
+### Epic 4: Jira Integration & Live Sprint Data
+The dashboard displays live Jira sprint progress, issues, and blocker details — updated automatically via webhooks with rate-limit compliance and data freshness transparency.
+**FRs covered:** FR11, FR20, FR21, FR22, FR23, FR24, FR25, FR45, FR46, FR48, FR49, FR50
+**Additional reqs:** ARCH-7, ARCH-9, ARCH-14, ARCH-17, NFR-S5, NFR-I1, NFR-I2, NFR-I3, NFR-I4, NFR-I6, NFR-I8, NFR-R4, NFR-R7, NFR-SC4
+
+### Epic 5: GitHub Integration & Repository Activity
+The dashboard displays live GitHub PR activity, CI status, and commit feeds — updated via webhooks with signature validation and real-time push to connected clients.
+**FRs covered:** FR12, FR26, FR27, FR28, FR29, FR47
+**Additional reqs:** ARCH-9, ARCH-14, NFR-S4, NFR-I5, NFR-I8, NFR-R6
+
+### Epic 6: AI Assistant & Project Intelligence
+Users can interact with an AI chat sidebar that answers project questions using live Jira and GitHub data via MCP, with role-aware responses and source citations — while the dashboard continues to function independently of AI availability.
+**FRs covered:** FR30, FR31, FR32, FR33, FR34, FR35, FR36, FR37
+**Additional reqs:** ARCH-12, ARCH-15, ARCH-16, NFR-S3, NFR-S8, NFR-P4, NFR-P5, NFR-R3, NFR-SC2, NFR-I7, UX-6
+
+### Epic 7: AI Reports & Widget Generation
+Users can request AI-generated sprint reports and stakeholder summaries, and create persistent dashboard widgets through natural language — with pre-built static widgets as fallback.
+**FRs covered:** FR38, FR39, FR40, FR41, FR42, FR43, FR44
+**Additional reqs:** UX-7, NFR-P6, NFR-P7
+
+### Epic 8: System Administration & Observability
+Admin users can monitor integration health, webhook status, AI costs, and rate limit consumption — with visibility into system operations and the ability to investigate failures.
+**FRs covered:** FR51, FR52, FR53, FR54, FR55, FR56
+**Additional reqs:** ARCH-13, NFR-P9, NFR-P10, NFR-R1, NFR-R5, NFR-SC1, NFR-SC3, NFR-SC5
