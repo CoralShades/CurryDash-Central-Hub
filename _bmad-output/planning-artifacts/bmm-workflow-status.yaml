@@ -78,10 +78,10 @@ workflow_status:
         note: "Break down PRD into implementable epics and stories"
 
       - id: "test-design"
-        status: "optional"
+        status: "_bmad-output/test-design-system.md"
         agent: "tea"
         command: "/bmad:bmm:workflows:testarch-test-design"
-        output: "System-level testability review"
+        note: "Completed 2026-02-18 — System-Level Mode: testability PASS (no blockers), 3 high-priority ASRs mitigated, 40/30/30 test split, Sprint 0 recommendations"
 
       - id: "implementation-readiness"
         status: "required"

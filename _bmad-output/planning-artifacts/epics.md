@@ -279,7 +279,7 @@ The dashboard displays live Jira sprint progress, issues, and blocker details �
 ### Epic 5: GitHub Integration & Repository Activity
 The dashboard displays live GitHub PR activity, CI status, and commit feeds — updated via webhooks with signature validation and real-time push to connected clients.
 **FRs covered:** FR12, FR26, FR27, FR28, FR29, FR47
-**Additional reqs:** ARCH-9, ARCH-14, NFR-S4, NFR-I5, NFR-I8, NFR-R6
+**Additional reqs:** ARCH-9, ARCH-14, NFR-S4, NFR-I5, NFR-I8, NFR-P8, NFR-R6
 
 ### Epic 6: AI Assistant & Project Intelligence
 Users can interact with an AI chat sidebar that answers project questions using live Jira and GitHub data via MCP, with role-aware responses and source citations — while the dashboard continues to function independently of AI availability.
@@ -1522,15 +1522,15 @@ So that I am immediately aware of issues requiring my attention without monitori
 
 | FR | Description | Epic.Story |
 |----|-------------|------------|
-| FR1 | Supabase project + schema setup | 1.1 |
-| FR2 | Spice-themed design tokens | 1.2 |
-| FR3 | Shared UI component library | 1.3 |
-| FR4 | Error boundary + skeleton patterns | 1.3 |
-| FR5 | Auth.js email/password registration | 2.1 |
-| FR6 | Auth.js login with session/JWT | 2.2 |
-| FR7 | Role-based redirect after login | 2.2 |
-| FR8 | Edge Middleware route gating | 2.3 |
-| FR9 | Supabase RLS policies | 2.3 |
+| FR1 | User registration (email magic link, Google OAuth, GitHub OAuth) | 2.1 |
+| FR2 | User login with role-appropriate JWT session | 2.1 |
+| FR3 | Route-level access control via edge middleware | 2.3 |
+| FR4 | Data-level access control via server-side authorization | 2.4 |
+| FR5 | Row-level data isolation via Supabase RLS policies | 2.4 |
+| FR6 | Admin creates user accounts and assigns roles | 2.5 |
+| FR7 | Admin views and manages users and role assignments | 2.5 |
+| FR8 | Unauthenticated users redirected to login | 2.3 |
+| FR9 | Insufficient role privileges redirected to role-appropriate dashboard | 2.3 |
 | FR10 | Unified dashboard layout | 3.1, 3.2 |
 | FR11 | Sprint progress summaries | 4.4 |
 | FR12 | GitHub PR activity display | 5.3 |
@@ -1619,12 +1619,12 @@ So that I am immediately aware of issues requiring my attention without monitori
 
 | Epic | Name | Stories |
 |------|------|---------|
-| 1 | Project Foundation & Design System | 3 |
-| 2 | Identity & Access Management | 4 |
+| 1 | Project Foundation & Design System | 5 |
+| 2 | Identity & Access Management | 5 |
 | 3 | Dashboard Shell & Data Visualization | 5 |
 | 4 | Jira Integration & Live Sprint Data | 5 |
 | 5 | GitHub Integration & Repository Activity | 4 |
 | 6 | AI Assistant & Project Intelligence | 4 |
 | 7 | AI Reports & Widget Generation | 4 |
 | 8 | System Administration & Observability | 4 |
-| **Total** | | **33 stories** |
+| **Total** | | **36 stories** |

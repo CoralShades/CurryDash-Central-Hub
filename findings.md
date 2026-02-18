@@ -1,46 +1,56 @@
-# Findings: Create Epics & Stories — CurryDash Central Hub
+# Findings: System-Level Test Design — CurryDash Central Hub
 
-## Document Analysis Summary
+## Testability Assessment
 
-### PRD (56 FRs + 46 NFRs)
-- **FR Distribution:** Identity (9), Dashboard (10), Jira (6), GitHub (4), AI Assistant (8), AI Reports/Widgets (7), Data Pipeline (6), System Admin (6)
-- **NFR Distribution:** Performance (10), Security (10), Integration (8), Reliability (7), Scalability (5)
-- **MVP Timeline:** 4 weeks — W1-2 Auth+Dashboard, W3 Integrations, W4 AI
-- **Cut Line:** Week 4 AI features can slip without blocking core value
-- **4 MVP Roles:** Admin, Developer, QA, Stakeholder
+### Controllability — PASS
+- Supabase RLS + Auth.js v5 JWT claims enable fine-grained role control in tests
+- Webhook pipeline has clear entry points (POST endpoints) for test injection
+- Config-driven widget registry allows selective component testing
+- AI stack has explicit graceful degradation paths (testable failure modes)
 
-### Architecture (18 Additional Requirements)
-- **ARCH-1 (CRITICAL):** Starter template = Vercel Supabase Starter → must be Epic 1 Story 1
-- **ARCH-2:** Pre-existing codebase migration needed (Prisma → Supabase, custom CSS → shadcn/ui + Tailwind)
-- **ARCH-3:** 12 Supabase migration files defined in architecture
-- **ARCH-6:** Config-driven widget grid shapes all dashboard work
-- **ARCH-12:** AI stack = CopilotKit frontend + Mastra backend + MCP servers
-- **ARCH-14:** Webhook pipeline pattern shared by Jira and GitHub
-- **ARCH-16:** Token budget enforcement at 3 levels (request, session, monthly)
+### Observability — PASS (with concerns)
+- Structured logging (`{ message, correlationId, source, data }`) enables assertion on log output
+- Realtime channels (`dashboard:{role}`) are observable via Supabase client subscriptions
+- **Concern:** No explicit metrics/telemetry layer beyond logging — monitoring assertions will need custom helpers
+- **Concern:** AI token budget tracking (request/session/monthly) needs test instrumentation
 
-### UX Design (16 Additional Requirements)
-- **UX-3/4:** 12-column dashboard grid with prescribed section layout (4 rows)
-- **UX-5:** Full spice palette design token system to implement
-- **UX-6/7:** AI sidebar 400px width + widget generation 4-step UX flow
-- **UX-9:** Desktop-first responsive (1280px+), tablet secondary (768px+), no mobile MVP
-- **UX-13:** WCAG 2.1 AA accessibility target
-- **UX-14:** Stakeholder variant = same layout minus admin controls + hidden dev metrics
+### Reliability — PASS
+- Per-widget ErrorBoundary isolation prevents cascade failures
+- Dead letter queue captures webhook failures for test verification
+- Correlation IDs flow through entire pipeline — enables end-to-end trace assertions
+- ISR + revalidateTag pattern provides deterministic cache invalidation for tests
 
-## Epic Design Considerations
-1. **Build order from Architecture:** Scaffold → Auth/RBAC → Dashboard shell → Integrations → AI
-2. **Architecture prescribes 11-step implementation sequence** (must align epics)
-3. **Cross-cutting concerns** span multiple epics: RBAC, error boundaries, staleness, logging
-4. **Should-have stretch goals:** AI widget gen, Mastra, stakeholder view, webhook health, API cost telemetry
-5. **Dependency chain:** Auth → Dashboard → Jira/GitHub clients → Webhook handlers → Realtime → AI → Reports
+## High-Priority ASRs (Score >= 6)
 
-## Key Decisions for Epic Organization
-- Epic 1 should cover project scaffold + Supabase setup + design system foundation
-- Auth/RBAC is a natural epic boundary (FR1-FR9, 3-layer enforcement)
-- Dashboard could be one epic or split by shell vs widgets
-- Jira and GitHub could be separate epics or combined as "Integrations"
-- AI features naturally split into: chat assistant vs report/widget generation
-- System admin could be its own epic or distributed across relevant epics
-- Data pipeline (webhooks, Realtime) is cross-cutting but has its own FR set
+### ASR-1: Three-Layer RBAC Consistency (Score: 6 = P2 × I3)
+- **Risk:** Edge middleware, Server Components, and Supabase RLS must all agree on role enforcement
+- **Mitigation:** E2E auth matrix tests — every role × every route × every RLS policy
+- **Test Level:** Integration (middleware + server) + E2E (full stack)
+
+### ASR-2: AI Graceful Degradation (Score: 6 = P2 × I3)
+- **Risk:** AI service unavailability must never crash the dashboard
+- **Mitigation:** Mock AI responses, test `<AiStatus />` indicator, verify dashboard functions without AI
+- **Test Level:** Integration (component isolation) + E2E (full flow)
+
+## Test Levels Strategy
+| Level | Ratio | Focus |
+|-------|-------|-------|
+| Unit | 40% | Zod schemas, utility functions, Zustand stores, error classes |
+| Integration | 30% | Supabase queries, webhook pipeline, auth middleware, AI tools |
+| E2E | 30% | Role-based flows, dashboard rendering, real-time updates, cross-cutting |
+
+## Key Architectural Patterns Affecting Testing
+1. **Webhook pipeline** (HMAC → dedup → Zod → upsert → revalidateTag → Realtime) — needs end-to-end pipeline tests
+2. **Config-driven widgets** — registry-based testing, widget isolation via ErrorBoundary
+3. **Server/Client component split** — Server components need Supabase mock, Client components need browser environment
+4. **Four Supabase client variants** — each needs appropriate test context (browser, server, middleware, admin)
+5. **MCP precedence chain** (live → cache → citation) — needs timeout simulation tests
+
+## Hook File CRLF Issue
+- All three `.claude/hooks/*.sh` files had Windows CRLF line endings
+- Caused "syntax error: unexpected end of file" on WSL bash execution
+- Fixed with `sed -i 's/\r$//'` on all three files
+- Root cause: files created/edited on Windows side of WSL
 
 ---
-*Updated 2026-02-17 — Step 01 requirements extraction complete*
+*Updated 2026-02-18 — System-Level testability review complete*
