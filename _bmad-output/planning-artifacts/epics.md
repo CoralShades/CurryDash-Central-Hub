@@ -1027,3 +1027,174 @@ So that I can monitor build health and team velocity at a glance.
 **When** the widget renders
 **Then** it shows: "Connect GitHub to see CI/CD status" with a link to integration settings
 **And** the widget degrades gracefully within its `<ErrorBoundary>`
+
+---
+
+## Epic 6: AI Assistant & Project Intelligence
+
+Integrate CopilotKit frontend with Mastra backend to provide a role-aware AI chat sidebar that queries live Jira and GitHub data via MCP tools, streams responses in real-time, cites data sources, and degrades gracefully when the AI provider is unavailable.
+
+### Story 6.1: Mastra AI Backend & Agent Configuration
+
+As a system integrator,
+I want a Mastra agent backend configured with model routing, token budgets, and role-specific system prompts,
+So that the AI assistant can serve different roles cost-effectively while maintaining quality for complex queries.
+
+**Acceptance Criteria:**
+
+**Given** the Mastra backend is being set up
+**When** the agent modules are created
+**Then** the following files exist per the architecture module structure:
+  - `src/mastra/agents/dashboard-agent.ts` — main CopilotKit-connected agent
+  - `src/mastra/agents/report-agent.ts` — report generation agent
+  - `src/mastra/tools/jira-tools.ts` — Jira query tools for agents
+  - `src/mastra/tools/github-tools.ts` — GitHub query tools for agents
+  - `src/mastra/tools/supabase-tools.ts` — direct DB query tools
+**And** packages are installed: `@mastra/core` v1.2.0, `ai` (Vercel AI SDK 5.0), `@copilotkit/react-core` v1.51.x
+
+**Given** a user sends a chat message
+**When** the model routing logic evaluates the query
+**Then** simple queries (status checks, data lookups, Q&A) route to Claude Haiku (ARCH-11)
+**And** complex queries (report generation, multi-tool analysis, widget creation) route to Claude Sonnet (ARCH-11)
+**And** the `ANTHROPIC_API_KEY` environment variable is used for authentication (server-side only)
+
+**Given** any AI SDK completion call
+**When** the call is constructed
+**Then** `maxTokens: 4000` is enforced on every individual completion call (ARCH-11, cost control)
+**And** a cumulative session token counter tracks total usage, stopping tool invocations at 8,000 total session tokens (ARCH-11)
+
+**Given** a user with a specific role initiates a chat session
+**When** the agent system prompt is assembled
+**Then** the system prompt includes role-specific context and instructions (FR34):
+  - Admin: full system access context, user management capabilities
+  - Developer: technical depth, code-level details, CI/CD context
+  - QA: testing focus, bug tracking, quality metrics context
+  - Stakeholder: business metrics, aggregate data only, no code details or individual developer attribution
+**And** the role is sourced from JWT claims (authoritative), not client-side state
+
+**Given** token usage is tracked
+**When** a completion call finishes
+**Then** the token count is recorded in the `ai_usage` Supabase table with date and cost estimate
+**And** the admin dashboard can query monthly spend (tracked for $50/month budget ceiling, ARCH-11)
+**And** an alert is logged at `warn` level when monthly spend reaches 80% ($40 threshold)
+
+### Story 6.2: CopilotKit AI Sidebar & Chat Interface
+
+As an authenticated user,
+I want an AI chat sidebar that I can toggle with a keyboard shortcut, send messages, and receive streamed responses,
+So that I can ask questions about my project without leaving the dashboard.
+
+**Acceptance Criteria:**
+
+**Given** the CopilotKit frontend module is set up
+**When** the AI sidebar components are created
+**Then** the following files exist per the architecture module structure:
+  - `src/modules/ai/copilot-provider.tsx` — CopilotKit provider + configuration
+  - `src/modules/ai/ai-sidebar.tsx` — CopilotSidebar customization
+  - `src/modules/ai/ai-status.tsx` — AI availability indicator
+  - `src/modules/ai/use-copilot-context.ts` — `useCopilotReadable` for dashboard data injection
+  - `src/modules/ai/use-copilot-actions.ts` — `useCopilotAction` definitions
+**And** all interactive components use `"use client"` directive at leaf nodes only (never on layouts or wrappers)
+
+**Given** a user is on any dashboard page
+**When** they press `Cmd+K` (Mac) or `Ctrl+K` (Windows/Linux)
+**Then** the AI sidebar toggles open/closed (FR30, UX from Epic 3 Story 3.1)
+**And** the sidebar slides in from the right edge over the dashboard content
+**And** the AI toggle button in the page header shows Turmeric Gold when the sidebar is active
+
+**Given** the AI sidebar is open
+**When** a user types a message and sends it
+**Then** the response streams in real-time using Server-Sent Events via the `/api/ai/copilotkit` route handler (FR31)
+**And** the route handler requires an authenticated session with role claims (ARCH-12)
+**And** time to first streamed token is <3 seconds (NFR-P4)
+**And** total response time is <10 seconds (NFR-P5)
+
+**Given** the AI sidebar is open
+**When** the chat renders
+**Then** it shows a session-based message history (user messages + AI responses)
+**And** the current dashboard context is injected via `useCopilotReadable` — the AI knows which page the user is on, active sprint data, and visible widget data
+**And** a "New chat" button clears session history and starts fresh
+**And** a text input with send button and `Enter` to submit is at the bottom
+
+**Given** the viewport width is between 1024px-1279px (Desktop SM)
+**When** the AI sidebar is open
+**Then** it overlays content instead of compressing the dashboard grid (responsive behavior from Epic 3 Story 3.5)
+
+### Story 6.3: MCP Tool Integration for Live Data Queries
+
+As an authenticated user,
+I want the AI assistant to query live Jira and GitHub data when I ask project questions,
+So that I get accurate, up-to-date answers about sprints, issues, PRs, and project status.
+
+**Acceptance Criteria:**
+
+**Given** a user asks the AI about Jira data (e.g., "What issues are in the current sprint?")
+**When** the Mastra agent processes the query
+**Then** the agent invokes Jira MCP tools to query live data (FR32)
+**And** the MCP query has a 5-second timeout (ARCH-10)
+**And** if the live query succeeds, the response is labeled "Live query" in the citation
+**And** if the live query times out or fails, the agent falls back to Supabase cached data (ARCH-10)
+**And** if using cached data, the response is labeled "Cached data as of [timestamp]" in the citation
+
+**Given** a user asks the AI about GitHub data (e.g., "Show me open PRs needing review")
+**When** the Mastra agent processes the query
+**Then** the agent invokes GitHub MCP tools to query live data (FR33)
+**And** the same 5-second timeout → cache fallback → source citation pattern applies (ARCH-10)
+
+**Given** any AI response references project data
+**When** the response is rendered
+**Then** it includes a source citation: e.g., "Based on Jira JQL query across CUR, CAD, CAR..." or "From GitHub API: org/repo" (FR35)
+**And** citations help users verify accuracy and catch potential hallucinations
+
+**Given** a Mastra tool call fails
+**When** the error is caught
+**Then** the tool returns `{ data: null, error: { code, message } }` following the `{ data, error }` pattern (ARCH-12)
+**And** the agent responds to the user: "I couldn't retrieve that data — [error context]" (ARCH-12, integration rules)
+**And** the failure is logged with correlation ID: `{ message, correlationId, source: "ai", data: { tool, error } }`
+**And** Supabase query tools have a 3-second timeout; Jira/GitHub tools have a 5-second timeout (ARCH-12)
+
+**Given** the token budget check runs before each tool invocation
+**When** the cumulative session tokens have reached 8,000
+**Then** the agent stops invoking tools and responds with available context only (ARCH-11)
+**And** the agent informs the user: "I've reached the query limit for this session. Start a new chat for more questions."
+
+### Story 6.4: Role-Specific AI Behavior & Graceful Degradation
+
+As a system administrator,
+I want the AI assistant to enforce role-based data filtering and degrade gracefully when unavailable,
+So that users only see data appropriate to their role and the dashboard never breaks due to AI issues.
+
+**Acceptance Criteria:**
+
+**Given** a user with the Stakeholder role interacts with the AI
+**When** the AI responds with project data
+**Then** responses contain aggregate data only — no individual developer names, code snippets, or GitHub code links (FR34)
+**And** MCP queries are filtered by the stakeholder role context (e.g., no developer-level issue assignment details)
+**And** the AI system prompt enforces: "You are assisting a stakeholder. Provide business-level summaries only."
+
+**Given** a user with the Developer role interacts with the AI
+**When** the AI responds
+**Then** responses include full technical depth: code references, specific PR details, CI/CD logs, individual issue assignments (FR34)
+**And** the AI can reference specific Jira issue keys and GitHub PR numbers
+
+**Given** a user with the QA role interacts with the AI
+**When** the AI responds
+**Then** responses emphasize testing context: test coverage, bug counts, regression risks, quality metrics (FR34)
+
+**Given** the Anthropic API is unavailable (timeout, 5xx, network failure)
+**When** a user opens the AI sidebar
+**Then** the `<AiStatus />` indicator shows "AI assistant is temporarily unavailable" (FR37, NFR-R3)
+**And** the AI sidebar does not crash — it displays the status message cleanly
+**And** the dashboard continues to function fully: all Jira/GitHub data, charts, navigation, and widgets work without AI (FR36, NFR-R3)
+**And** the AI toggle button in the header shows a muted/grey state instead of Turmeric Gold
+
+**Given** the AI provider becomes available again after an outage
+**When** the next user request is sent
+**Then** the AI resumes normal operation without requiring a page reload
+**And** failed report requests (not chat) are queued for retry when service recovers
+
+**Given** the AI generates a response
+**When** accuracy is evaluated
+**Then** the system targets a 70% accuracy floor as a go/no-go gate
+**And** below threshold: AI scope reduces to report generation only (structured output from structured data = higher accuracy)
+**And** accuracy is measured by admin review of AI responses vs actual project data (manual process in MVP)
