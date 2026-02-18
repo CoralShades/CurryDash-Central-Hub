@@ -863,3 +863,167 @@ So that the Jira data pipeline never silently breaks due to expired webhooks.
 **Then** the integration failure is isolated — it does not affect GitHub integration or AI features (integration failure isolation)
 **And** dashboard widgets that depend on Jira data show staleness badges and degrade gracefully
 **And** the System Health page (admin-only) displays Jira integration status with last-successful-sync timestamp
+
+---
+
+## Epic 5: GitHub Integration & Repository Activity
+
+Connect to GitHub via Octokit across all connected repositories, receive webhook events for push/PR/workflow activity, cache data in Supabase, and display PR status, CI/CD results, and commit activity on the dashboard.
+
+### Story 5.1: GitHub API Client & Repository Data Fetching
+
+As a system integrator,
+I want a GitHub API client that authenticates via OAuth token and fetches repository data, pull requests, commits, and CI status,
+So that the dashboard can display accurate GitHub data from Supabase cache without direct API calls on page load.
+
+**Acceptance Criteria:**
+
+**Given** the GitHub environment variable (`GITHUB_TOKEN`) is configured
+**When** the GitHub client initializes
+**Then** it authenticates against the GitHub API using Octokit SDK with OAuth token authentication (FR26)
+**And** the client is implemented at `src/lib/clients/github-client.ts` per the architecture module structure
+**And** TypeScript interfaces are defined: `GitHubRepo`, `PullRequest`, `CommitActivity`, `WorkflowRun`, `GitHubWebhookEvent`
+**And** all interfaces use `camelCase` properties (code-style rule)
+
+**Given** the client is authenticated
+**When** a data fetch is requested
+**Then** the client can fetch repository data, pull requests, commits, and CI status for all connected repositories (FR27)
+**And** fetched data is upserted into Supabase tables for cached dashboard queries (FR45)
+**And** the Supabase upsert uses the `admin` client (service role, bypasses RLS)
+**And** page loads never call GitHub APIs directly — always read from Supabase cache (ARCH-9, integration rules)
+
+**Given** the GitHub API rate limit is 5,000 requests/hour
+**When** the client monitors usage
+**Then** normal operation consumes <10% of the rate limit (NFR-I5: <500 requests/hour)
+**And** the remaining rate limit is tracked via response headers (`X-RateLimit-Remaining`)
+**And** if remaining requests drop below 100, the client logs a `warn` level entry and throttles non-critical requests
+**And** if a 429 response is received, the client retries with exponential backoff: 1s, 2s, 4s, 8s, max 4 retries
+
+**Given** any GitHub API call fails with a non-rate-limit error
+**When** the error is caught
+**Then** it is wrapped in `IntegrationError` with the original status code and message
+**And** the function returns `{ data: null, error: { code, message } }` — never throws from public API surface
+
+**Given** a manual sync is triggered
+**When** the Server Action `sync-repos` at `src/modules/github/actions/sync-repos.ts` is invoked
+**Then** it fetches latest data from GitHub and upserts to Supabase
+**And** it returns `{ data: { synced: number }, error: null }` on success (code-style rule: Server Actions never throw)
+
+### Story 5.2: GitHub Webhook Receiver & Validation Pipeline
+
+As a system integrator,
+I want a secure webhook endpoint that receives GitHub events for push, pull request, and workflow run activities,
+So that dashboard data updates in real-time when developers push code, open PRs, or CI pipelines complete.
+
+**Acceptance Criteria:**
+
+**Given** the webhook route handler exists at `/api/webhooks/github`
+**When** a POST request arrives
+**Then** the handler executes the pipeline in this exact sequence: HMAC-SHA256 validate → Event ID dedup → Zod parse → Supabase upsert → `revalidateTag('github-prs')` → Realtime broadcast → 200 OK (ARCH-7, ARCH-9, ARCH-14, integration rules)
+**And** the handler returns `NextResponse.json({ data, error }, { status })` with appropriate HTTP codes
+
+**Given** a webhook payload arrives
+**When** the HMAC-SHA256 signature is validated
+**Then** the handler computes HMAC-SHA256 using `GITHUB_WEBHOOK_SECRET` env var against the raw payload body (FR29)
+**And** the signature is compared from the `X-Hub-Signature-256` header
+**And** if the signature does not match, the handler returns 401 Unauthorized immediately — no further processing
+**And** all payloads with invalid credentials are rejected (NFR-S5)
+
+**Given** a valid webhook payload arrives
+**When** the event type is checked
+**Then** the handler processes these GitHub event types: `push`, `pull_request`, `workflow_run` (FR28)
+**And** unrecognized event types are logged at `info` level and return 200 OK (acknowledge but ignore)
+
+**Given** a new (non-duplicate) event
+**When** the payload is parsed
+**Then** Zod schemas validate the event structure: `githubWebhookEventSchema`, `githubPushPayloadSchema`, `githubPrPayloadSchema`, `githubWorkflowRunPayloadSchema` (ARCH-17)
+**And** if validation fails, the raw payload + error is written to `dead_letter_events` table (FR50)
+
+**Given** a valid, parsed event is persisted
+**When** the Supabase upsert completes
+**Then** `revalidateTag('github-prs')` is called for PR events and `revalidateTag('github-ci')` for workflow_run events (FR46)
+**And** a Realtime broadcast is sent on `dashboard:{role}` channel (FR47)
+**And** webhook processing latency from receipt to dashboard update is <30 seconds (NFR-P8)
+
+**Given** any pipeline step fails
+**When** the error is caught
+**Then** the raw payload + error details are written to `dead_letter_events` (FR50)
+**And** structured log: `{ message, correlationId, source: "webhook:github", data: { eventId, eventType, step, error } }`
+**And** idempotency, dedup, and retry behavior follow the same patterns established in Epic 4 Story 4.3
+
+### Story 5.3: PR Status & Code Review Dashboard Widget
+
+As a developer,
+I want a dashboard widget showing open pull requests with review status, CI results, and age,
+So that I can quickly identify PRs that need my attention or are blocking the team.
+
+**Acceptance Criteria:**
+
+**Given** the dashboard grid is rendered and GitHub data is cached in Supabase
+**When** the Pull Requests widget loads (dashboard card, 6-column span)
+**Then** the widget displays GitHub pull request activity across all connected repositories (FR12)
+**And** each PR row shows: repo name (abbreviated), PR number + title (linked), author avatar + name, review status (approved/changes requested/pending), CI status icon (green check/red X/yellow spinner), and age ("2d ago")
+**And** PRs are sorted by most recently updated first
+**And** a filter row allows toggling: "Needs Review", "Changes Requested", "Ready to Merge", "All"
+
+**Given** a PR has the review status "changes requested"
+**When** the widget renders
+**Then** the row shows a Turmeric Gold left-border accent and "Changes Requested" badge
+
+**Given** a PR has been open for more than 3 days without review
+**When** the widget renders
+**Then** the row shows an amber "Stale" indicator next to the age
+
+**Given** a user clicks on a PR row
+**When** the drill-down activates
+**Then** a detail view shows: PR number, title, repository, author, status, reviewer list with individual review status, CI pipeline status (each check), lines changed (+/-), and description excerpt
+**And** action buttons: "Open in GitHub" (external link, opens new tab), "Copy link"
+**And** breadcrumbs: "Dashboard > Pull Requests > repo/org#123 (PR Title)"
+
+**Given** a user has the Stakeholder role
+**When** the PR widget renders on the `/stakeholder` dashboard
+**Then** PR titles are shown but code links to GitHub are hidden (FR17 from Epic 3, Story 3.5)
+**And** individual developer attribution is not shown — aggregated view only ("5 PRs merged this week")
+
+**Given** the GitHub integration is not connected or has failed
+**When** the widget renders
+**Then** it shows: "Connect GitHub to see pull request activity" with a link to integration settings
+**And** the widget does NOT crash — `<ErrorBoundary>` shows `<WidgetError />`
+
+### Story 5.4: CI/CD Pipeline Status & Commit Activity Widget
+
+As a developer,
+I want a dashboard widget showing CI/CD pipeline results and recent commit activity,
+So that I can monitor build health and team velocity at a glance.
+
+**Acceptance Criteria:**
+
+**Given** the dashboard grid is rendered and GitHub data is cached in Supabase
+**When** the CI/CD Status widget loads (dashboard card, 6-column span)
+**Then** the widget displays recent workflow runs with: workflow name, triggering branch/PR, status (success/failure/in-progress/queued), duration, and timestamp
+**And** status icons use: Coriander Green checkmark for success, Chili Red X for failure, Turmeric Gold spinner for in-progress
+**And** the most recent run for each workflow is prominently displayed at the top
+**And** a summary row shows: "X passed, Y failed, Z running" for the last 24 hours
+
+**Given** a CI workflow has failed
+**When** the widget renders
+**Then** the failed run row shows a Chili Red left-border accent
+**And** clicking the row shows: workflow name, failure step, error summary (if available), link to "Open in GitHub Actions"
+**And** if the same workflow has failed 3+ times consecutively, a "Recurring Failure" badge appears
+
+**Given** the dashboard grid is rendered
+**When** the Commit Activity section loads (within CI/CD widget or as a sub-card)
+**Then** a mini sparkline or bar chart shows commit frequency over the last 14 days
+**And** the chart uses `--color-primary` for bars/line
+**And** a tooltip on hover shows: date and commit count for that day
+**And** below the chart: "X commits this week" summary text
+
+**Given** a GitHub webhook `workflow_run` event is received
+**When** the webhook pipeline completes and `revalidateTag('github-ci')` fires
+**Then** the CI/CD widget updates on the next page request (ISR) and live for connected clients (Realtime)
+**And** processing latency from webhook receipt to dashboard update is <30 seconds (NFR-P8)
+
+**Given** the GitHub integration is not connected
+**When** the widget renders
+**Then** it shows: "Connect GitHub to see CI/CD status" with a link to integration settings
+**And** the widget degrades gracefully within its `<ErrorBoundary>`
