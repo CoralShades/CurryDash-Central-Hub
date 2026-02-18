@@ -1,13 +1,27 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { signIn } from 'next-auth/react'
+
+const SESSION_REDIRECT_KEY = 'redirectAfterLogin'
+
+function getAndClearRedirect(): string {
+  if (typeof window === 'undefined') return '/'
+  const stored = sessionStorage.getItem(SESSION_REDIRECT_KEY)
+  if (stored) sessionStorage.removeItem(SESSION_REDIRECT_KEY)
+  return stored ?? '/'
+}
 
 export function LoginForm() {
   const [email, setEmail] = useState('')
   const [magicLinkSent, setMagicLinkSent] = useState(false)
   const [isLoading, setIsLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [callbackUrl, setCallbackUrl] = useState('/')
+
+  useEffect(() => {
+    setCallbackUrl(getAndClearRedirect())
+  }, [])
 
   async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault()
@@ -32,7 +46,7 @@ export function LoginForm() {
     setIsLoading(provider)
     setError(null)
     try {
-      await signIn(provider, { callbackUrl: '/' })
+      await signIn(provider, { callbackUrl })
     } catch {
       setError('Failed to connect. Please try again.')
       setIsLoading(null)
