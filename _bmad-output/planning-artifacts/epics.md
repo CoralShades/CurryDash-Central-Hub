@@ -295,3 +295,127 @@ Users can request AI-generated sprint reports and stakeholder summaries, and cre
 Admin users can monitor integration health, webhook status, AI costs, and rate limit consumption — with visibility into system operations and the ability to investigate failures.
 **FRs covered:** FR51, FR52, FR53, FR54, FR55, FR56
 **Additional reqs:** ARCH-13, NFR-P9, NFR-P10, NFR-R1, NFR-R5, NFR-SC1, NFR-SC3, NFR-SC5
+
+---
+
+## Epic 1: Project Foundation & Design System
+
+Users can access a professionally styled, properly scaffolded application with the CurryDash spice-themed design system, database schema, and shared infrastructure in place.
+
+### Story 1.1: Project Scaffold & Dependency Installation
+
+As a developer,
+I want a properly initialized Next.js 15 project with all required dependencies installed and the project structure established,
+So that all subsequent feature development has a consistent, production-ready foundation.
+
+**Acceptance Criteria:**
+
+**Given** the project repository exists with the current codebase
+**When** the developer initializes the new scaffold using the Vercel Supabase Starter
+**Then** a Next.js 15 App Router project is created with TypeScript strict mode enabled
+**And** all core dependencies are installed (shadcn/ui, Auth.js, jira.js, Octokit, Zustand, Zod)
+**And** all dev dependencies are installed (Vitest, Playwright, Prettier, ESLint, Husky, lint-staged)
+**And** the `src/` directory structure matches the Architecture document (`src/app/`, `src/components/`, `src/modules/`, `src/lib/`, `src/stores/`, `src/types/`, `src/test-utils/`, `src/mastra/`)
+**And** the `@/` import alias resolves to the `src/` directory
+**And** `.env.example` is created with all required environment variable placeholders (Supabase, Auth.js, Jira, GitHub, Anthropic, Cron Secret)
+**And** `.env.local` is gitignored
+**And** `components.json` is configured for shadcn/ui with stone base
+**And** shadcn/ui components are installed (button, card, input, table, badge, dialog, toast, sidebar, chart, data-table)
+**And** the dev server starts without errors using `npm run dev`
+
+### Story 1.2: Supabase Database Schema & Migrations
+
+As a developer,
+I want all database tables created with proper relationships, indexes, and JSONB metadata columns,
+So that the application has a complete data model ready for feature development.
+
+**Acceptance Criteria:**
+
+**Given** a Supabase project is connected and the `supabase/` directory exists
+**When** the developer runs the database migrations
+**Then** the following tables are created with proper column types and constraints:
+- `roles` table with the 4 MVP roles (admin, developer, qa, stakeholder)
+- `users` table with auth fields, role FK, profile data, and `metadata` JSONB column
+- `teams` and `team_members` tables for team organization
+- `jira_projects`, `jira_sprints`, `jira_issues` tables with JSONB `raw_payload` columns
+- `github_repos`, `github_pull_requests` tables with JSONB `raw_payload` columns
+- `webhook_events` table for event ID deduplication (event_id unique, source, processed_at)
+- `dead_letter_events` table for failed webhook payloads (raw_payload JSONB, error text, created_at)
+- `dashboard_widgets` table for widget configs (user_id FK, widget_config JSONB, position, role)
+- `notifications` table linked to users
+- `ai_chat_sessions` table for conversation persistence
+- `system_health` table for integration status tracking
+**And** all tables use `snake_case` naming with `created_at` and `updated_at` timestamptz columns
+**And** foreign keys follow `{table_singular}_id` convention
+**And** indexes are created on frequently queried columns (`idx_issues_status`, `idx_webhook_events_event_id`)
+**And** RLS is enabled on every table (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY`)
+**And** a seed file (`supabase/seed.sql`) creates the 4 default roles and a test admin user
+**And** migrations can be applied cleanly to a fresh Supabase instance
+
+### Story 1.3: Spice Palette Design System & Theme Configuration
+
+As a user,
+I want the application to have a warm, professional CurryDash spice-themed visual identity,
+So that the interface feels approachable yet credible as an operations center.
+
+**Acceptance Criteria:**
+
+**Given** shadcn/ui is initialized with stone base
+**When** the design system is applied via `src/app/globals.css`
+**Then** all CSS custom properties from the UX spec are defined:
+- Brand colors: `--color-turmeric` (#E6B04B), `--color-chili` (#C5351F), `--color-coriander` (#4A7C59), `--color-cinnamon` (#5D4037), `--color-cream` (#FFF8DC)
+- Semantic colors: `--color-background`, `--color-surface`, `--color-text-primary`, `--color-text-secondary`, `--color-border`, etc.
+- Status colors: `--color-status-done`, `--color-status-in-progress`, `--color-status-blocked`, `--color-status-to-do`, `--color-status-in-review`
+- Role badge colors for all 4 roles
+**And** shadcn/ui CSS variables (`--primary`, `--accent`, `--destructive`, etc.) are overridden with spice palette values
+**And** the typography scale uses Inter font stack with sizes from `--text-xs` (12px) to `--text-4xl` (36px)
+**And** the spacing scale uses 4px base unit from `--space-1` (4px) to `--space-12` (48px)
+**And** elevation shadows use Cinnamon-tinted rgba (warm tone)
+**And** border radius tokens are defined (`--radius-sm` through `--radius-full`)
+**And** animation tokens are defined (`--transition-fast`, `--transition-normal`, `--transition-slow`, `--transition-spring`)
+**And** role-specific theming works via `data-role` attribute on `<body>` element
+**And** `prefers-reduced-motion: reduce` disables shimmer and slide animations
+**And** body text (Cinnamon on Cream) passes WCAG AAA contrast (8.1:1)
+**And** button text (white on brand colors) passes WCAG AA contrast
+
+### Story 1.4: Shared UI Components & Error Handling Infrastructure
+
+As a developer,
+I want reusable shared components and a structured error handling system,
+So that all features have consistent loading states, error recovery, and utility patterns.
+
+**Acceptance Criteria:**
+
+**Given** the design system tokens are in place
+**When** the shared components are implemented in `src/components/shared/`
+**Then** `<WidgetSkeleton variant="chart|table|stats|list" />` renders shimmer loading states matching widget card dimensions
+**And** `<WidgetError />` displays an error message with a retry button styled with ghost button pattern
+**And** `<ErrorBoundary fallback={<WidgetError />}>` wraps children and catches React render errors
+**And** `<StalenessIndicator updatedAt={timestamp} />` displays nothing when <2min, secondary text when 2-10min, amber badge >10min, Chili Red badge >30min
+**And** `<RoleGate allowedRoles={[...]}>` conditionally renders children based on user role (renders nothing for unauthorized, not greyed-out)
+**And** `<RelativeTime timestamp={date} />` displays relative timestamps ("5 min ago", "1 hour ago")
+**And** `src/lib/errors.ts` exports `AppError` base class with `AuthError`, `IntegrationError`, `ValidationError`, `RateLimitError` subclasses
+**And** each error class includes `code` (string), `message` (string), and optional `data` properties
+**And** `src/lib/logger.ts` exports a structured JSON logger with `{ level, message, correlationId, source, timestamp, data }` format
+**And** logger supports levels: `debug`, `info`, `warn`, `error` with source tags (`webhook:jira`, `webhook:github`, `auth`, `ai`, `realtime`, `admin`)
+**And** `src/lib/constants.ts` exports app-wide constants (`MAX_JIRA_CALLS_PER_MINUTE`, `JWT_EXPIRY_HOURS`, `STALENESS_AMBER_MS`, `STALENESS_RED_MS`)
+
+### Story 1.5: Zustand Stores & Client State Infrastructure
+
+As a developer,
+I want lightweight client-side state stores for UI concerns and environment configuration documented,
+So that dashboard interactivity has a consistent state management pattern separate from server data.
+
+**Acceptance Criteria:**
+
+**Given** Zustand is installed
+**When** the stores are created in `src/stores/`
+**Then** `useDashboardStore` manages `activeRole` (display preference) and dashboard view state
+**And** `useFilterStore` manages dashboard filter selections (project, date range, status)
+**And** `useSidebarStore` manages sidebar open/collapsed state
+**And** all stores use `camelCase` action naming (e.g., `setActiveRole()`, `toggleSidebar()`, `updateFilter()`, `resetFilters()`)
+**And** stores use `useShallow()` for multi-property selections to prevent unnecessary re-renders
+**And** no business logic or server data is stored in Zustand — stores hold UI state only
+**And** `src/types/roles.ts` exports the `Role` enum (`admin`, `developer`, `qa`, `stakeholder`) and `RolePermissions` type
+**And** `src/types/api.ts` exports `ApiResponse<T>` (`{ data: T, error: null } | { data: null, error: ApiError }`) and `ApiError` types
+**And** `src/types/database.ts` placeholder exists for Supabase generated types
