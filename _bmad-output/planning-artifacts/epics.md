@@ -1348,3 +1348,168 @@ So that my custom visualizations persist across sessions and my dashboard always
 **When** a user opens the AI sidebar
 **Then** widget generation resumes normally without manual intervention
 **And** previously queued report requests (from Story 7.1) are retried automatically
+
+---
+
+## Epic 8: System Administration & Observability
+
+Admin-only pages for integration configuration, system health monitoring, AI usage tracking, dead letter event investigation, and in-app notifications — ensuring administrators can diagnose, configure, and maintain all external integrations from within the dashboard.
+
+### Story 8.1: Integration Configuration Admin Page
+
+As an admin user,
+I want a page to configure, test, and monitor Jira and GitHub integration connections,
+So that I can set up integrations, rotate credentials, and verify connectivity without touching environment variables or server config.
+
+**Acceptance Criteria:**
+
+**Given** an admin user navigates to `/admin/integrations`
+**When** the page renders
+**Then** the page is protected by Edge Middleware RBAC — only users with the `admin` role (from JWT claims) can access it
+**And** non-admin users are redirected to their role-appropriate dashboard (never shown a 403 page)
+**And** the page uses a Server Component wrapper composing from `src/modules/admin/components/integration-health.tsx`
+
+**Given** the integrations page is displayed
+**When** the integration cards render
+**Then** a card is shown for each integration: Jira, GitHub, and Anthropic AI (FR54)
+**And** each card displays: integration name + logo, connection status (Connected / Disconnected / Error), last successful sync timestamp (FR51), last webhook received timestamp with "last seen" relative time (FR52), and a status indicator (Coriander Green for connected, Turmeric Gold for degraded, Chili Red for error)
+
+**Given** an admin wants to configure integration credentials
+**When** they click "Configure" on an integration card
+**Then** a form appears for entering/updating credentials:
+  - Jira: Base URL, email, API token, webhook secret
+  - GitHub: OAuth token, webhook secret
+  - Anthropic: API key
+**And** credentials are validated with Zod at the form boundary before submission
+**And** API keys are never exposed to the client — only masked hints are shown (e.g., "sk-...a3f7") (NFR-S3, NFR-S9)
+**And** the Server Action returns `{ data: { updated: true }, error: null }` on success — never throws (code-style rule)
+
+**Given** an admin clicks "Test Connection" for an integration
+**When** the connectivity test runs
+**Then** the system makes a lightweight API call to verify credentials (e.g., Jira: fetch current user, GitHub: fetch authenticated user)
+**And** success shows a Coriander Green "Connection verified" toast
+**And** failure shows a Chili Red error message with the specific error (e.g., "401 Unauthorized — check your API token")
+**And** credentials are stored server-side only — environment variables or encrypted Supabase secrets (NFR-S3)
+
+**Given** one integration is down
+**When** the page renders
+**Then** the failed integration shows its error state but does NOT affect the status display of other integrations (NFR-I8 — integration failure isolation)
+
+### Story 8.2: System Health Dashboard & Dead Letter Monitor
+
+As an admin user,
+I want a system health page showing webhook pipeline health, dead letter events, and the ability to inspect and retry failed events,
+So that I can diagnose data pipeline issues and ensure no webhook events are permanently lost.
+
+**Acceptance Criteria:**
+
+**Given** an admin user navigates to `/admin/system-health` (or `/admin/system`)
+**When** the page renders
+**Then** the page is admin-only (Edge Middleware RBAC, JWT role check)
+**And** the page composes from `src/modules/admin/components/webhook-monitor.tsx`
+
+**Given** the system health overview section renders
+**When** webhook pipeline metrics are displayed
+**Then** the following metrics are shown:
+  - Webhook success rate: processed / total received, displayed as percentage with color coding (≥99% green, ≥95% amber, <95% red) (NFR-I1)
+  - Events processed today: count with trend vs yesterday
+  - Average processing latency: time from receipt to dashboard update (NFR-I3: target <5 min)
+  - Dead letter queue depth: count of unresolved failed events
+**And** each metric uses the standard metric card format from Epic 3 Story 3.3
+
+**Given** the dead letter events section renders
+**When** failed events are listed
+**Then** a table displays: event ID, source (Jira/GitHub), event type, failure reason, failure timestamp, retry count, and status (pending/retried/resolved)
+**And** rows are sorted by most recent failure first
+**And** clicking a row expands to show: raw payload (JSON, syntax highlighted), full error stack trace, correlation ID, and pipeline step where failure occurred
+**And** dead letter events are available for investigation within 1 hour of failure (NFR-I6)
+
+**Given** an admin wants to retry a dead letter event
+**When** they click "Retry" on a failed event
+**Then** the Server Action at `src/modules/admin/actions/retry-dead-letter.ts` reprocesses the raw payload through the full webhook pipeline (validate → dedup → parse → upsert → revalidate → broadcast)
+**And** the action returns `{ data: { retried: true, eventId }, error: null }` on success
+**And** on retry failure, the error is appended to the event's retry history (not overwritten)
+**And** a "Retry All" button is available for bulk retry of all pending dead letter events
+
+**Given** rate limit events are logged
+**When** the rate limit section renders
+**Then** it shows: recent 429 responses with remaining quota and retry timing (FR56)
+**And** a warning banner appears when API consumption exceeds 50% of limits (FR56)
+**And** Jira shows calls/minute vs limit; GitHub shows requests/hour vs 5,000 limit (NFR-I4, NFR-I5)
+
+### Story 8.3: AI Usage Tracking & Cost Dashboard
+
+As an admin user,
+I want a dashboard widget showing AI API costs, query counts, and model usage breakdown,
+So that I can monitor spending against the $50/month budget and adjust model routing if costs are trending high.
+
+**Acceptance Criteria:**
+
+**Given** an admin views the system health page or admin dashboard
+**When** the AI cost tracker widget renders
+**Then** the widget composes from `src/modules/admin/components/ai-cost-tracker.tsx`
+**And** it displays: current month total spend (dollar amount, large text), budget consumption bar ($0–$50 range with fill), daily spend trend (sparkline or bar chart for last 30 days), total query count this month, and model split breakdown (Haiku vs Sonnet query counts + cost per model) (FR53)
+
+**Given** the monthly AI spend data is loaded from the `ai_usage` Supabase table
+**When** the budget bar renders
+**Then** the fill color is Coriander Green when <60%, Turmeric Gold when 60-80%, and Chili Red when >80%
+**And** at 80% ($40), a `warn` level log is emitted and an in-app notification is generated (ARCH-11 budget alert)
+**And** the $50 ceiling and 80% threshold are referenced from configuration, not hardcoded
+
+**Given** individual AI request costs are tracked
+**When** an admin drills into the cost breakdown
+**Then** a table shows: date, query count, Haiku queries, Sonnet queries, total tokens, estimated cost
+**And** the most expensive individual requests are highlighted (top 5 by token count)
+
+**Given** the token budget enforcement is active (FR55)
+**When** the widget renders
+**Then** it shows the per-request cap (4,000 tokens) and per-session cap (8,000 tokens) as reference
+**And** a count of requests that hit the token cap is displayed ("X requests capped this month")
+
+**Given** the AI provider has been unavailable during the month
+**When** the widget renders
+**Then** downtime periods are shown as gaps in the daily trend chart
+**And** a "AI Availability" percentage is displayed (uptime / total hours this month)
+
+### Story 8.4: Notification System & Admin Alerting
+
+As an admin user,
+I want in-app notifications for critical system events like webhook failures, integration disconnections, and AI budget thresholds,
+So that I am immediately aware of issues requiring my attention without monitoring dashboards continuously.
+
+**Acceptance Criteria:**
+
+**Given** the notification bell icon exists in the page header (Epic 3 Story 3.1)
+**When** unread notifications exist
+**Then** a Chili Red badge shows the unread count on the bell icon
+**And** clicking the bell opens a dropdown panel with a chronological list of notifications
+**And** each notification shows: icon (type-specific), title, description, relative timestamp, and read/unread state
+
+**Given** a system event occurs that warrants admin notification
+**When** the event is processed
+**Then** a notification record is created in the Supabase `notifications` table (linked to admin user IDs)
+**And** the following events generate notifications:
+  - Webhook failure: "Jira webhook processing failed — [event type] — [error summary]"
+  - Dead letter queue growth: "X failed events in dead letter queue — review required"
+  - Integration disconnection: "[Integration] connection lost — last successful sync [timestamp]"
+  - AI budget threshold: "AI spend has reached 80% ($40) of monthly budget ($50)"
+  - Webhook refresh failure: "Jira webhook auto-refresh failed — [project key] — manual re-registration may be required" (GAP-C1: two consecutive failures trigger notification)
+  - Rate limit warning: "[Integration] API consumption exceeds 50% — [current/limit]" (FR56)
+
+**Given** an admin reads a notification
+**When** they click on it
+**Then** the notification is marked as read (visual state changes to muted)
+**And** if the notification is actionable (e.g., dead letter failure), clicking navigates to the relevant admin page (e.g., `/admin/system-health`)
+**And** a "Mark all as read" button is available at the top of the dropdown
+
+**Given** the notification system operates
+**When** notifications are created
+**Then** they are written using the Supabase admin client (service role)
+**And** RLS policies ensure only the target user can read their own notifications
+**And** Supabase Realtime pushes new notifications to connected admin clients on the `dashboard:admin` channel
+**And** notifications older than 30 days are eligible for cleanup (soft delete)
+
+**Given** a non-admin user is logged in
+**When** system-level events occur
+**Then** admin notifications are NOT visible to non-admin users (completely absent from their notification feed)
+**And** non-admin users only see notifications relevant to their role (e.g., "Your assigned issue CUR-42 was updated")
