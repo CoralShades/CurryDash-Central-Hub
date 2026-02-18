@@ -11,6 +11,7 @@ import {
 } from './metric-card'
 import { ActivityFeed } from './activity-feed'
 import { BlockerCard } from './blocker-card'
+import { SprintProgressWidget } from '@/modules/jira/components/sprint-progress-widget'
 
 interface WidgetGridProps {
   role: Role
@@ -27,9 +28,10 @@ function resolveWidget(config: WidgetConfig) {
     case 'prs-merged':        return <PrsMergedWidget />
     case 'bugs-open':         return <BugsOpenWidget />
     case 'ci-status':         return <CiStatusWidget />
-    case 'team-activity':     return <ActivityFeed />
-    case 'blockers':          return <BlockerCard />
-    default:                  return <WidgetPlaceholder config={config} />
+    case 'team-activity':      return <ActivityFeed />
+    case 'blockers':           return <BlockerCard />
+    case 'sprint-progress':    return <SprintProgressWidget />
+    default:                   return <WidgetPlaceholder config={config} />
   }
 }
 
