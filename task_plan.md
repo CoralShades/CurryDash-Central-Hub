@@ -1,51 +1,68 @@
-# Task Plan: System-Level Test Design — CurryDash Central Hub
+# Task Plan: Ralph Loop Integration — CurryDash Central Hub
 
 ## Goal
-Produce a system-level testability review of the CurryDash architecture (Phase 3 — Solutioning).
+Set up the Ralph Loop autonomous implementation system integrated with BMAD v6 workflows. Complete remaining Phase 3 gaps, then create full Ralph infrastructure for Phase 4 implementation.
 
 ## Reference
-- **Workflow:** `_bmad/bmm/workflows/testarch/test-design/`
-- **Mode:** System-Level (auto-detected — no sprint-status.yaml, implementation-readiness: required)
-- **Output:** `_bmad-output/test-design-system.md`
-- **Input Docs:**
-  - `_bmad-output/planning-artifacts/architecture.md` (948 lines)
-  - `_bmad-output/planning-artifacts/prd.md` (784 lines)
-  - `_bmad-output/planning-artifacts/epics.md` (8 epics, 136 requirements)
-- **KB Fragments:** nfr-criteria.md, test-levels-framework.md, risk-governance.md, test-quality.md
+- **Ralph Plugin:** Official `ralph-wiggum` from Claude Code plugins
+- **BMAD Status:** Phase 3 (Solutioning) — IR report says READY, epics.md Step 03 pending
+- **Planning Artifacts:** `_bmad-output/planning-artifacts/` (9 files, ~6,000 lines)
+- **Architecture:** 8 epics, 36 stories, 56 FRs, 46 NFRs, 18 ARCH decisions
 
-## Phases
+## Phase A: Complete BMAD Phase 3 Gaps
 
-### Preflight: Mode Detection
-- [x] Check for sprint-status.yaml — NOT found → System-Level Mode
-- [x] Check bmm-workflow-status.yaml — implementation-readiness: required → Phase 3 confirmed
+### A1: Fix Documentation Defects (per IR recommendations)
+- [ ] Fix Traceability Matrix FR1-FR9 (epics.md Appendix)
+- [ ] Fix Story Count Summary (Epic 1: 5, Epic 2: 5, Total: 36)
+- [ ] Add NFR-P8 to Epic 5 header
 
-### Step 1: Context Loading
-- [x] Load architecture.md (complete, 948 lines)
-- [x] Load prd.md (complete, 784 lines)
-- [x] Load epics.md (8 epic titles + FR mappings extracted)
-- [x] Load TEA knowledge base fragments (4 files)
-- [x] Check for existing test infrastructure — NONE (greenfield)
-- [x] Resolve config flags: tea_use_playwright_utils=true, tea_use_mcp_enhancements=true
+### A2: Update Workflow Status
+- [ ] Mark `create-epics-and-stories` as complete in bmm-workflow-status.yaml
+- [ ] Mark `implementation-readiness` as complete in bmm-workflow-status.yaml
+- [ ] Mark `test-design` as complete (already done but verify)
 
-### Step 1.5: System-Level Testability Review
-- [x] Testability Assessment (Controllability: PASS, Observability: PASS w/concerns, Reliability: PASS)
-- [x] ASR identification and risk scoring (12 ASRs, 2 high-priority score 6)
-- [x] Test Levels Strategy (40% Unit / 30% Integration / 30% E2E)
-- [x] NFR Testing Approach (Security, Performance, Reliability, Maintainability)
-- [x] Testability Concerns (no blockers, 6 manageable)
-- [x] Sprint 0 Recommendations (6 categories)
+## Phase B: Ralph Loop Infrastructure
 
-### Step 3: Completion
-- [x] Fix CRLF hook file blocker
-- [x] Write test-design-system.md output
-- [x] Update bmm-workflow-status.yaml
-- [x] Update planning files (progress.md)
+### B1: Install ralph-wiggum Plugin
+- [ ] Fetch plugin from official Claude Code repo
+- [ ] Install to project or user-level plugins directory
+- [ ] Verify `/ralph-loop` command is available
 
-## Requirements Summary
-| Category | Count |
-|----------|-------|
-| Functional Requirements (FRs) | 56 |
-| Non-Functional Requirements (NFRs) | 46 |
-| Architecture Additional Reqs | 18 |
-| UX Additional Reqs | 16 |
-| **Total Requirements** | **136** |
+### B2: Create Sub-Agent Definitions (.claude/agents/)
+- [ ] `ralph-implementer.md` — Haiku-based TDD implementation agent
+- [ ] `ralph-reviewer.md` — Sonnet-based code review agent
+- [ ] `ralph-qa.md` — Sonnet-based QA validation agent
+- [ ] `ralph-architect.md` — Opus escalation for architectural decisions
+
+### B3: Create Ralph Commands (.claude/commands/)
+- [ ] `ralph-bridge.md` — BMAD-to-Ralph plan translator
+- [ ] `ralph-run.md` — Ralph loop orchestration instructions
+
+### B4: Configuration
+- [ ] Update `.claude/settings.json` with Ralph-relevant permissions
+- [ ] Ensure MCP servers configured for Ralph iterations
+
+## Phase C: Generate Ralph Plan
+
+### C1: Run Ralph Bridge
+- [ ] Generate `.ralph-plan.md` from BMAD artifacts
+- [ ] Include story ordering, dependency chains, model assignments
+- [ ] Include architecture context summary
+
+### C2: Progress Tracking
+- [ ] Initialize `.ralph-progress.md` template
+- [ ] Update all planning files (progress.md, findings.md)
+
+## Model Strategy
+| Role | Model | Rationale |
+|------|-------|-----------|
+| Ralph orchestration | Sonnet | Orchestrates sub-agents, picks tasks |
+| Implementation (routine) | Haiku | 70%+ of coding work, fast and cheap |
+| Code review | Sonnet | Deeper analysis needed |
+| QA validation | Sonnet | Reasons about acceptance criteria |
+| Architecture decisions | Opus | Cross-cutting concerns only |
+
+## Dependencies
+- Phase A must complete before Phase C (clean artifacts needed for plan generation)
+- Phase B is independent and can run in parallel with Phase A
+- Phase C depends on both A and B
