@@ -681,3 +681,185 @@ So that I can monitor project progress without being overwhelmed by operational 
 **When** the page loads
 **Then** a friendly message displays: "CurryDash Central Hub is optimized for desktop. For the best experience, please use a laptop or tablet."
 **And** key metrics are shown in a simplified view (no charts, no AI sidebar)
+
+---
+
+## Epic 4: Jira Integration & Live Sprint Data
+
+Connect to Jira Cloud across all 6 configured projects, receive webhook events, cache data in Supabase, and display live sprint progress on the dashboard — with idempotent processing, rate-limit resilience, and automatic webhook refresh.
+
+### Story 4.1: Jira API Client & Authenticated Data Fetching
+
+As a system integrator,
+I want a Jira Cloud API client that authenticates securely and fetches sprint data, issues, and epics across all 6 configured projects,
+So that the dashboard can display accurate Jira data without direct API calls on every page load.
+
+**Acceptance Criteria:**
+
+**Given** the Jira environment variables (`JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`) are configured
+**When** the Jira client initializes
+**Then** it authenticates against Jira Cloud REST API v3 using API token authentication (FR20)
+**And** the client is implemented at `src/lib/jira-client.ts` following the existing codebase convention
+**And** TypeScript interfaces are defined for all Jira response types: `JiraIssue`, `JiraSprint`, `JiraEpic`, `JiraProject`, `JiraWebhookEvent`
+**And** all interfaces use `camelCase` properties (DB columns use `snake_case`, never mixed within the same layer per code-style rules)
+
+**Given** the client is authenticated
+**When** a data fetch is requested
+**Then** the client can fetch sprint data, issues, and epics across all 6 configured projects: CUR, CAD, CAR, CPFP, PACK, CCW (FR21)
+**And** fetched data is upserted into Supabase tables for cached dashboard queries (FR45)
+**And** the Supabase upsert uses the `admin` client (service role, bypasses RLS) since this is a system-level operation
+**And** never reads Jira APIs on page load — always from Supabase cache (ARCH-9, integration rules)
+
+**Given** the Jira API returns a 429 (rate limit) response
+**When** the client processes the response
+**Then** it retries with exponential backoff: 1s, 2s, 4s, 8s, max 4 retries (FR25)
+**And** each retry is logged at `warn` level with `{ message, correlationId, source: "webhook:jira", data: { attempt, delay } }`
+**And** after max retries, the error is logged at `error` level and an `IntegrationError` is thrown (per error class convention)
+
+**Given** any Jira API call fails with a non-rate-limit error
+**When** the error is caught
+**Then** it is wrapped in `IntegrationError` with the original status code and message
+**And** the function returns `{ data: null, error: { code, message } }` — never throws from public API surface (code-style rule)
+
+### Story 4.2: Jira Webhook Receiver & Validation Pipeline
+
+As a system integrator,
+I want a secure webhook endpoint that receives Jira events, validates them cryptographically, deduplicates, parses, and persists them,
+So that dashboard data stays fresh without polling and no invalid or duplicate events corrupt the cache.
+
+**Acceptance Criteria:**
+
+**Given** the webhook route handler exists at `/api/webhooks/jira`
+**When** a POST request arrives
+**Then** the handler executes the pipeline in this exact sequence: HMAC-SHA256 validate → Event ID dedup → Zod parse → Supabase upsert → `revalidateTag()` → Realtime broadcast → 200 OK (ARCH-7, ARCH-9, ARCH-14, integration rules)
+**And** the handler returns `NextResponse.json({ data, error }, { status })` with appropriate HTTP codes (code-style rule)
+
+**Given** a webhook payload arrives
+**When** the HMAC-SHA256 signature is validated
+**Then** the handler computes HMAC-SHA256 using the shared secret from `JIRA_WEBHOOK_SECRET` env var (FR23, NFR-S5)
+**And** if the signature does not match, the handler returns 401 Unauthorized immediately — no further processing
+**And** all payloads with invalid credentials are rejected (NFR-S5)
+
+**Given** a valid webhook payload arrives
+**When** the Event ID dedup check runs
+**Then** the handler queries the `webhook_events` table for the event ID (ARCH-14)
+**And** if the event ID already exists, the handler returns 200 OK without reprocessing (FR48 — idempotent)
+**And** if the event ID is new, it is inserted into `webhook_events` with timestamp before processing continues
+
+**Given** a new (non-duplicate) event
+**When** the payload is parsed
+**Then** Zod schemas validate the event structure at the API boundary (ARCH-17)
+**And** Zod schema names follow convention: `jiraWebhookEventSchema`, `jiraIssuePayloadSchema`
+**And** if validation fails, the raw payload + error is written to `dead_letter_events` table (FR50)
+**And** the handler returns 400 Bad Request
+
+**Given** a valid, non-duplicate, parsed event
+**When** data is persisted
+**Then** the event data is upserted to the appropriate Supabase table using the admin client
+**And** `revalidateTag('issues')` is called to trigger ISR cache invalidation (ARCH-9, FR46)
+**And** a Realtime broadcast is sent on the `dashboard:{role}` channel for connected clients (FR47)
+**And** the handler returns 200 OK
+
+**Given** any step in the pipeline fails with a transient error
+**When** the error is caught
+**Then** the raw payload + error details are written to `dead_letter_events` for manual investigation (FR50)
+**And** structured log entry at `error` level: `{ message, correlationId, source: "webhook:jira", data: { eventId, step, error } }`
+**And** a correlation ID is generated per event and flows through the entire pipeline (integration rules)
+
+### Story 4.3: Webhook Idempotency, Event Ordering & Burst Handling
+
+As a system integrator,
+I want webhook processing that handles duplicates, out-of-order delivery, transient failures, and traffic bursts gracefully,
+So that dashboard data remains consistent even when Jira delivers events unreliably.
+
+**Acceptance Criteria:**
+
+**Given** Jira delivers the same webhook event multiple times
+**When** the duplicate events are processed
+**Then** only the first delivery modifies data; subsequent deliveries return 200 OK with no side effects (FR48)
+**And** the `webhook_events` dedup table is checked before any data mutation
+
+**Given** Jira delivers events out of chronological order
+**When** an older event arrives after a newer event for the same entity
+**Then** the handler compares event timestamps and skips the older event if a newer one has already been processed (FR49)
+**And** the skipped event is logged at `info` level with reason "out-of-order: newer event already processed"
+
+**Given** a webhook processing step fails with a transient error (network timeout, DB connection)
+**When** the retry logic activates
+**Then** the handler retries up to 3 times with exponential backoff: 1s, 5s, 30s (NFR-R4)
+**And** after all retries are exhausted, the event is written to `dead_letter_events` with the raw payload and all error details (FR50)
+**And** the handler returns 500 with a structured error response
+
+**Given** a burst of webhook events arrives (e.g., bulk Jira update)
+**When** 50+ events arrive within 1 minute
+**Then** all events are processed without data loss (NFR-SC4: 50 events/min MVP target)
+**And** if the queue overflows, excess events are logged to `dead_letter_events` rather than dropped silently (NFR-R7)
+**And** webhook delivery success rate remains ≥95% after retries (NFR-I1)
+
+### Story 4.4: Sprint Progress Dashboard Widget & Cache Revalidation
+
+As a project manager,
+I want a sprint progress widget on the dashboard that shows live progress across all 6 Jira projects,
+So that I can see at a glance how each team is tracking against their sprint commitments.
+
+**Acceptance Criteria:**
+
+**Given** the dashboard grid is rendered and Jira data is cached in Supabase
+**When** the Sprint Progress widget loads (Row 2 left: 6-column card)
+**Then** a sprint progress card displays data for the active sprint across all 6 projects (FR11, FR21)
+**And** the card header shows "Sprint [name]" with the sprint date range (start — end)
+**And** each project row shows: project key/name, progress bar (stories completed / total), percentage, and story point count
+**And** progress bars use `--color-success` for completed portion, `--color-surface-alt` for remaining
+**And** the 6 projects displayed are: CUR, CAD, CAR, CPFP, PACK, CCW (FR21)
+
+**Given** a Jira webhook event is received and processed
+**When** `revalidateTag('issues')` is called by the webhook handler
+**Then** the next page request serves fresh ISR data with updated sprint progress (ARCH-9, FR46)
+**And** connected dashboard clients receive a Realtime broadcast and update the widget without page reload (FR47)
+
+**Given** the sprint progress data is stale
+**When** data age exceeds thresholds
+**Then** an amber staleness badge appears when data is >10 minutes old
+**And** a Chili Red staleness badge appears when data is >30 minutes old (FR18 from Epic 3)
+
+**Given** a user clicks on a project row in the sprint progress widget
+**When** the drill-down activates
+**Then** a detail view shows all issues in that project's active sprint: issue key, title, status, assignee, story points
+**And** issues are grouped by status column (To Do, In Progress, Done)
+**And** blocker issues show the Chili Red left-border accent (FR15 from Epic 3)
+
+**Given** the Jira integration is not yet connected or has failed
+**When** the widget renders
+**Then** it shows a graceful empty state: "Connect Jira to see sprint progress" with a link to integration settings
+**And** the widget does NOT crash — `<ErrorBoundary>` catches any errors and shows `<WidgetError />` (FR19)
+
+### Story 4.5: Jira Webhook Auto-Refresh & Integration Health Monitoring
+
+As a system administrator,
+I want Jira webhook registrations to auto-refresh before expiry and integration health to be monitored,
+So that the Jira data pipeline never silently breaks due to expired webhooks.
+
+**Acceptance Criteria:**
+
+**Given** Jira webhooks have a 30-day expiry
+**When** a cron job runs on a 25-day cycle
+**Then** a secured route handler at `/api/cron/refresh-webhooks` re-registers all Jira webhook subscriptions (FR24)
+**And** the route is secured by `CRON_SECRET` header validation — unauthenticated requests return 401
+**And** the cron handler uses the Supabase admin client (service role)
+
+**Given** a webhook refresh succeeds
+**When** the new registration is confirmed
+**Then** the new webhook ID and expiry date are logged at `info` level
+**And** the previous webhook registration is deregistered to avoid duplicates
+
+**Given** a webhook refresh fails
+**When** the error is caught
+**Then** the failure is written to `dead_letter_events` with the error details (FR50)
+**And** an `error` level log is emitted: `{ message: "Webhook refresh failed", correlationId, source: "webhook:jira", data: { projectKey, error } }`
+**And** the system continues operating with the existing webhook until it expires (graceful degradation)
+
+**Given** the Jira integration encounters a persistent failure (API unreachable, auth expired)
+**When** the failure is detected
+**Then** the integration failure is isolated — it does not affect GitHub integration or AI features (integration failure isolation)
+**And** dashboard widgets that depend on Jira data show staleness badges and degrade gracefully
+**And** the System Health page (admin-only) displays Jira integration status with last-successful-sync timestamp
