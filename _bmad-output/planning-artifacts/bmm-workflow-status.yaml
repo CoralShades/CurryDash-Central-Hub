@@ -72,10 +72,10 @@ workflow_status:
         note: "Completed 2026-02-17 — 8-step architecture: context analysis, starter template, 20+ decisions (5 categories), implementation patterns, project structure (~120 files), validation (56 FRs + 46 NFRs covered), 4 critical gaps resolved"
 
       - id: "create-epics-and-stories"
-        status: "required"
+        status: "_bmad-output/planning-artifacts/epics.md"
         agent: "pm"
         command: "/bmad:bmm:workflows:create-epics-and-stories"
-        note: "Break down PRD into implementable epics and stories"
+        note: "Completed 2026-02-18 — Steps 01-02 complete (8 epics, 36 stories, full FR/NFR/ARCH/UX coverage). Step 03 deferred — monolithic epics.md sufficient for Ralph bridge consumption."
 
       - id: "test-design"
         status: "_bmad-output/test-design-system.md"
@@ -84,10 +84,10 @@ workflow_status:
         note: "Completed 2026-02-18 — System-Level Mode: testability PASS (no blockers), 3 high-priority ASRs mitigated, 40/30/30 test split, Sprint 0 recommendations"
 
       - id: "implementation-readiness"
-        status: "required"
+        status: "_bmad-output/planning-artifacts/implementation-readiness-report-2026-02-18.md"
         agent: "architect"
         command: "/bmad:bmm:workflows:check-implementation-readiness"
-        note: "Gate check — validates PRD + Architecture + Epics + UX"
+        note: "Completed 2026-02-18 — READY: 100% FR/NFR coverage, 36/36 story quality PASS, 0 critical issues, 3 major (doc defects, all fixed)"
 
   - phase: 4
     name: "Implementation"

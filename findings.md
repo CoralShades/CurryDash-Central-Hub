@@ -1,56 +1,91 @@
-# Findings: System-Level Test Design — CurryDash Central Hub
+# Findings: Ralph Loop Integration — CurryDash Central Hub
 
-## Testability Assessment
+## BMAD Phase 3 Status Discovery
 
-### Controllability — PASS
-- Supabase RLS + Auth.js v5 JWT claims enable fine-grained role control in tests
-- Webhook pipeline has clear entry points (POST endpoints) for test injection
-- Config-driven widget registry allows selective component testing
-- AI stack has explicit graceful degradation paths (testable failure modes)
+### Implementation Readiness: ALREADY COMPLETE
+- IR report exists at `_bmad-output/planning-artifacts/implementation-readiness-report-2026-02-18.md`
+- Verdict: **READY — Proceed to Implementation**
+- Scorecard: 100% FR coverage, 100% NFR coverage, 36/36 story quality PASS
+- 0 critical issues, 3 major (all documentation defects), 2 minor
+- `bmm-workflow-status.yaml` NOT updated — still shows "required"
 
-### Observability — PASS (with concerns)
-- Structured logging (`{ message, correlationId, source, data }`) enables assertion on log output
-- Realtime channels (`dashboard:{role}`) are observable via Supabase client subscriptions
-- **Concern:** No explicit metrics/telemetry layer beyond logging — monitoring assertions will need custom helpers
-- **Concern:** AI token budget tracking (request/session/monthly) needs test instrumentation
+### Documentation Defects to Fix (from IR)
+1. **Traceability Matrix FR1-FR9** — Appendix has wrong descriptions and story mappings
+2. **Story Count Summary** — Epic 1 claims 3 (actual 5), Epic 2 claims 4 (actual 5), Total claims 33 (actual 36)
+3. **NFR-P8 in Epic 5 header** — Implemented in Stories 5.2/5.4 but missing from header
 
-### Reliability — PASS
-- Per-widget ErrorBoundary isolation prevents cascade failures
-- Dead letter queue captures webhook failures for test verification
-- Correlation IDs flow through entire pipeline — enables end-to-end trace assertions
-- ISR + revalidateTag pattern provides deterministic cache invalidation for tests
+### Create Epics & Stories: Steps 01-02 Complete
+- Step 03 pending but may not be blocking — all 36 stories with full AC exist in monolithic `epics.md`
+- Ralph bridge can work with monolithic file (stories have clear heading structure)
+- Individual story files in `epics-and-stories/epic-N/story-N.md` format would be ideal but not required
 
-## High-Priority ASRs (Score >= 6)
+## Ralph Wiggum Plugin Analysis
 
-### ASR-1: Three-Layer RBAC Consistency (Score: 6 = P2 × I3)
-- **Risk:** Edge middleware, Server Components, and Supabase RLS must all agree on role enforcement
-- **Mitigation:** E2E auth matrix tests — every role × every route × every RLS policy
-- **Test Level:** Integration (middleware + server) + E2E (full stack)
+### How It Works
+- Official plugin at `github.com/anthropics/claude-code/tree/main/plugins/ralph-wiggum`
+- Uses a Stop hook that blocks exit and feeds the same prompt back
+- Prompt never changes between iterations — Claude reads modified files and git history
+- Commands: `/ralph-loop "<prompt>" --max-iterations N --completion-promise "TEXT"`
+- Cancel: `/cancel-ralph`
 
-### ASR-2: AI Graceful Degradation (Score: 6 = P2 × I3)
-- **Risk:** AI service unavailability must never crash the dashboard
-- **Mitigation:** Mock AI responses, test `<AiStatus />` indicator, verify dashboard functions without AI
-- **Test Level:** Integration (component isolation) + E2E (full flow)
+### Key Design Principles
+- Iteration > Perfection — loop refines work
+- Failures are data — predictable and informative
+- Persistence wins — files persist between iterations
+- Operator skill matters — prompt quality determines success
 
-## Test Levels Strategy
-| Level | Ratio | Focus |
-|-------|-------|-------|
-| Unit | 40% | Zod schemas, utility functions, Zustand stores, error classes |
-| Integration | 30% | Supabase queries, webhook pipeline, auth middleware, AI tools |
-| E2E | 30% | Role-based flows, dashboard rendering, real-time updates, cross-cutting |
+### Good For
+- Well-defined tasks with clear success criteria (our stories have Given/When/Then AC)
+- Tasks requiring iteration and refinement (TDD cycle)
+- Greenfield projects (our case exactly)
+- Tasks with automatic verification (tests, linters)
 
-## Key Architectural Patterns Affecting Testing
-1. **Webhook pipeline** (HMAC → dedup → Zod → upsert → revalidateTag → Realtime) — needs end-to-end pipeline tests
-2. **Config-driven widgets** — registry-based testing, widget isolation via ErrorBoundary
-3. **Server/Client component split** — Server components need Supabase mock, Client components need browser environment
-4. **Four Supabase client variants** — each needs appropriate test context (browser, server, middleware, admin)
-5. **MCP precedence chain** (live → cache → citation) — needs timeout simulation tests
+## Model Routing Strategy
 
-## Hook File CRLF Issue
-- All three `.claude/hooks/*.sh` files had Windows CRLF line endings
-- Caused "syntax error: unexpected end of file" on WSL bash execution
-- Fixed with `sed -i 's/\r$//'` on all three files
-- Root cause: files created/edited on Windows side of WSL
+### Task Tool Integration
+- Claude Code's `Task` tool supports `model` parameter: "haiku", "sonnet", "opus"
+- Sub-agent definitions in `.claude/agents/` provide context but don't set model
+- Ralph orchestrator (running on Sonnet) delegates via Task tool with model selection
+- Cost estimate per epic: ~$15-28 (Haiku 70%, Sonnet 25%, Opus 5%)
+
+### Model Assignment Criteria
+| Complexity | Model | Examples |
+|------------|-------|---------|
+| Simple | Haiku | CRUD, boilerplate, test writing, schema migrations |
+| Moderate | Sonnet | Integration logic, auth flows, webhook pipeline, code review |
+| Complex | Opus | Cross-cutting architectural decisions, stuck task diagnosis |
+
+## Architecture Context for Ralph
+
+### Epic Priority Chain
+```
+Epic 1 (Foundation) → Epic 2 (Auth) → Epic 3 (Dashboard Shell)
+                                        ├→ Epic 4 (Jira) ─────┐
+                                        ├→ Epic 5 (GitHub) ───┤
+                                        └→ Epic 8 (Admin) ────┤
+                                                               ├→ Epic 6 (AI Assistant)
+                                                               └→ Epic 7 (AI Reports)
+```
+
+### Sprint Recommendation (from IR)
+1. Sprint 1: Epic 1 + Epic 2 (Foundation + Auth)
+2. Sprint 2: Epic 3 (Dashboard Shell)
+3. Sprint 3: Epic 4 + 5 in parallel (Jira + GitHub integrations)
+4. Sprint 4: Epic 6 + 8 (AI Assistant + Admin)
+5. Sprint 5: Epic 7 (AI Reports)
+
+### Story Count by Epic
+| Epic | Stories | Recommended Model |
+|------|---------|-------------------|
+| Epic 1: Foundation | 5 | Haiku (boilerplate-heavy) |
+| Epic 2: Auth | 5 | Sonnet (security-critical) |
+| Epic 3: Dashboard | 5 | Haiku/Sonnet mix |
+| Epic 4: Jira | 5 | Sonnet (integration logic) |
+| Epic 5: GitHub | 4 | Sonnet (integration logic) |
+| Epic 6: AI Assistant | 5 | Sonnet (AI + MCP complexity) |
+| Epic 7: AI Reports | 4 | Sonnet (AI generation) |
+| Epic 8: Admin | 3 | Haiku (CRUD admin pages) |
+| **Total** | **36** | |
 
 ---
-*Updated 2026-02-18 — System-Level testability review complete*
+*Updated 2026-02-18 — Ralph Loop integration analysis complete*
