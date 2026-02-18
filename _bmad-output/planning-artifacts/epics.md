@@ -419,3 +419,125 @@ So that dashboard interactivity has a consistent state management pattern separa
 **And** `src/types/roles.ts` exports the `Role` enum (`admin`, `developer`, `qa`, `stakeholder`) and `RolePermissions` type
 **And** `src/types/api.ts` exports `ApiResponse<T>` (`{ data: T, error: null } | { data: null, error: ApiError }`) and `ApiError` types
 **And** `src/types/database.ts` placeholder exists for Supabase generated types
+
+---
+
+## Epic 2: Identity & Access Management
+
+Users can register, log in, and access role-appropriate content with security enforced at every layer — from routing to data queries.
+
+### Story 2.1: Auth.js Configuration & Login Page
+
+As a user,
+I want to log in using email magic link, Google OAuth, or GitHub OAuth and land on my role-appropriate dashboard,
+So that I can securely access Central Hub using my preferred authentication method.
+
+**Acceptance Criteria:**
+
+**Given** Auth.js v5 is configured with SupabaseAdapter
+**When** a user navigates to `/login`
+**Then** the login page renders a centered card (max-width 400px) on Cream background with the CurryDash logo above
+**And** the card contains an email input with "Send Magic Link" button, an "or" divider, and Google OAuth and GitHub OAuth buttons
+**And** no sidebar or header is rendered on the login page (authentication-focused layout)
+**And** clicking "Send Magic Link" sends a magic link email to the provided address and shows a confirmation message
+**And** clicking Google OAuth redirects to Google's consent screen and back to Central Hub on success
+**And** clicking GitHub OAuth redirects to GitHub's authorization page and back to Central Hub on success
+**And** on successful authentication, a JWT session is created with the user's role injected via JWT callback
+**And** the JWT includes `role` claim from the user's database record
+**And** the user is redirected to their role-appropriate dashboard: Admin → `/admin`, Developer → `/dev`, QA → `/qa`, Stakeholder → `/stakeholder`
+**And** all authentication flows use HTTPS exclusively (NFR-S1)
+**And** no sensitive data appears in browser console or client-side logs (NFR-S9)
+
+### Story 2.2: Session Management & Security Hardening
+
+As a user,
+I want my session to remain active during my workday but expire securely when unused,
+So that I have a seamless experience without compromising account security.
+
+**Acceptance Criteria:**
+
+**Given** a user has successfully authenticated
+**When** a JWT session is created
+**Then** the JWT expires after 24 hours (NFR-S2)
+**And** a sliding refresh mechanism extends the session when the user is actively using the app
+**And** session tokens are stored in HTTP-only cookies (not localStorage)
+**And** CSRF protection is active on all state-mutating API routes (NFR-S10)
+**And** HSTS headers are set on all responses
+**And** when a session expires while a user is on a page, the next API call returns 401
+**And** on 401, a toast displays "Your session has expired" and the user is redirected to `/login` after 2 seconds
+**And** the page the user was on is stored in `sessionStorage` for post-login redirect
+**And** after re-login, the user is returned to the page they were on before expiry
+**And** the Supabase client variants are configured correctly:
+  - `src/lib/supabase/client.ts` for browser (Client Components)
+  - `src/lib/supabase/server.ts` for Server Components (read-only)
+  - `src/lib/supabase/middleware.ts` for Middleware (cookie refresh)
+  - `src/lib/supabase/admin.ts` for service role (webhooks, cron — bypasses RLS)
+
+### Story 2.3: Edge Middleware & Route-Level RBAC
+
+As a system administrator,
+I want route-level access control enforced at the edge before any page renders,
+So that unauthorized users never see content they shouldn't access, without any server round-trips for role checks.
+
+**Acceptance Criteria:**
+
+**Given** `src/middleware.ts` is configured as Edge Middleware
+**When** any request hits a protected route
+**Then** the middleware reads the JWT from the session cookie and extracts the `role` claim
+**And** no database calls are made in middleware — role comes from JWT claims only
+**And** unauthenticated users (no valid JWT) accessing any protected route are redirected to `/login` (FR8)
+**And** authenticated users accessing routes outside their role scope are silently redirected to their role-appropriate dashboard — no error flash shown (FR9, UX principle P2)
+**And** route-to-role mapping is enforced:
+  - `/admin/*` — Admin role only
+  - `/dev/*` — Developer role only
+  - `/qa/*` — QA role only
+  - `/stakeholder/*` — Stakeholder role only
+**And** public routes (`/login`, `/register`, `/api/webhooks/*`) are accessible without authentication
+**And** the Supabase cookie is refreshed on each middleware pass to keep the session alive
+
+### Story 2.4: Server-Side Authorization & Supabase RLS Policies
+
+As a system administrator,
+I want data-level access control enforced at both the server component layer and database layer,
+So that the three-layer RBAC model (edge + server + database) is complete with no gaps.
+
+**Acceptance Criteria:**
+
+**Given** Edge Middleware enforces route-level access (Story 2.3)
+**When** a Server Component fetches data
+**Then** an `auth()` helper function in `src/lib/auth.ts` reads the session and returns the current user with their role
+**And** Server Components call `auth()` to verify role before rendering protected content or executing queries (FR4)
+**And** Supabase RLS policies are created on every table containing user or project data (NFR-S7):
+  - Admin role: read/write access to all rows
+  - Developer role: read access to project data, read/write to own assignments
+  - QA role: read access to project data, read/write to QA-related records
+  - Stakeholder role: read-only access to aggregate project data (no individual developer metrics)
+**And** RLS policies use `auth.jwt()->>'role'` to determine access level (FR5)
+**And** the AI assistant cannot access or return data beyond the user's role permissions (NFR-S8)
+**And** no security-by-UI-hiding — if data is forbidden, it's not in the query result, not just hidden in the UI (NFR-S6)
+**And** API keys (Jira, GitHub, Anthropic) are only accessible from server-side code, never exposed to client components (NFR-S3)
+
+### Story 2.5: Admin User Management
+
+As an admin user,
+I want to create, view, edit, and deactivate user accounts with role assignments,
+So that I can control who has access to Central Hub and what they can do.
+
+**Acceptance Criteria:**
+
+**Given** an admin user navigates to `/admin/users`
+**When** the page loads
+**Then** a data table displays all registered users with columns: Name, Email, Role, Status, Actions (FR7)
+**And** the table supports column sorting, search/filter bar, and pagination (10/25/50 per page)
+**And** row hover shows a Cream tint highlight
+**And** a "+" Add User" primary button is displayed above the table
+**And** clicking "Add User" opens a modal dialog with: Email input (required), Role dropdown (Admin/Developer/QA/Stakeholder), Cancel and Create buttons
+**And** on Create submission, the input is validated with Zod, a new user account is created via Server Action, and a toast confirms success (FR6)
+**And** the new user appears in the table immediately without page refresh
+**And** clicking "Edit" on an existing user opens a modal with prefilled fields and a role reassignment dropdown
+**And** on Edit submission, changes are saved via Server Action, toast confirms, and the table updates
+**And** clicking "Deactivate" shows a confirmation dialog: "Deactivate [name]? They will lose access."
+**And** on confirmation, the user is deactivated (status changes to inactive, row shows muted state)
+**And** the Server Action returns `{ data, error }` pattern — never throws (code-style rule)
+**And** empty state shows "No team members yet." with an "Add User" button
+**And** loading state shows skeleton rows (5 rows of grey bars)
