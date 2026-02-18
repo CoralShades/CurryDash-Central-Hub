@@ -1198,3 +1198,153 @@ So that users only see data appropriate to their role and the dashboard never br
 **Then** the system targets a 70% accuracy floor as a go/no-go gate
 **And** below threshold: AI scope reduces to report generation only (structured output from structured data = higher accuracy)
 **And** accuracy is measured by admin review of AI responses vs actual project data (manual process in MVP)
+
+---
+
+## Epic 7: AI Reports & Widget Generation
+
+Enable AI-powered sprint status reports, stakeholder progress summaries, and natural-language widget generation — with data freshness timestamps, persistent widget configs, and pre-built fallbacks when AI is unavailable.
+
+### Story 7.1: AI Sprint Status Report Generation
+
+As a project manager,
+I want to request a sprint status report via the AI chat and receive a structured report generated from live Jira data,
+So that I can quickly produce accurate sprint updates without manually compiling data from multiple projects.
+
+**Acceptance Criteria:**
+
+**Given** a user sends a message like "Generate a sprint status report" in the AI sidebar
+**When** the Mastra report agent processes the request
+**Then** the request routes to Claude Sonnet (complex query, multi-tool analysis) per model routing rules (ARCH-11, FR38)
+**And** the report agent is `src/mastra/agents/report-agent.ts` with dedicated report tools at `src/mastra/tools/report-tools.ts`
+**And** the agent invokes Jira MCP tools to query current sprint data across all 6 projects (CUR, CAD, CAR, CPFP, PACK, CCW)
+**And** the MCP query follows the 5s timeout → Supabase cache fallback → source citation pattern (ARCH-10)
+
+**Given** the report agent has gathered sprint data
+**When** the report is generated
+**Then** the report includes: sprint name and date range, per-project story completion (done / total + percentage), overall velocity trend (current vs previous sprint), blocker summary (count + top 3 by age), and a brief narrative summary
+**And** the report is formatted in structured markdown for readability
+**And** total report generation time is <15 seconds (NFR-P7)
+
+**Given** any AI-generated report references project data
+**When** the report renders in the chat sidebar
+**Then** a "Data as of [timestamp]" footer is appended indicating when the underlying data was last refreshed (FR40)
+**And** the timestamp reflects either the live MCP query time or the Supabase cache timestamp, whichever was used
+**And** the data source is cited: "Based on Jira JQL query across CUR, CAD, CAR, CPFP, PACK, CCW" (FR35)
+
+**Given** the AI provider is unavailable when a report is requested
+**When** the request fails
+**Then** the failed report request is queued for retry when the service recovers (graceful degradation — reports only, not chat)
+**And** the user sees: "Report generation is temporarily unavailable. Your request has been queued and will complete when the AI service recovers."
+**And** queued requests are stored with the original parameters so they can be retried without user re-entry
+
+**Given** the report is generated successfully
+**When** the user views it in the sidebar
+**Then** they can copy the full report text to clipboard via a "Copy report" button
+**And** the report respects role-based filtering — stakeholder-generated reports show aggregate data only (no individual developer attribution)
+
+### Story 7.2: AI Stakeholder Progress Summary
+
+As a stakeholder,
+I want to request a high-level progress summary via the AI chat that presents business metrics without technical details,
+So that I can quickly understand project health and communicate status to executive leadership.
+
+**Acceptance Criteria:**
+
+**Given** a stakeholder sends a message like "Give me a progress summary" in the AI sidebar
+**When** the Mastra report agent processes the request
+**Then** the request routes to Claude Sonnet (complex report generation) (ARCH-11, FR39)
+**And** the agent queries both Jira and GitHub data via MCP tools for a holistic view
+
+**Given** the report agent generates the stakeholder summary
+**When** the summary renders
+**Then** it includes: overall project health indicator (on track / at risk / behind), milestone completion percentage, key achievements this sprint (aggregated — e.g., "12 features delivered, 8 bugs resolved"), risk items and blockers (business impact framing, not technical details), and a forward-looking outlook
+**And** the summary does NOT include: individual developer names, code-level details, specific PR numbers, CI/CD pipeline details, or GitHub code links (FR34 — stakeholder role filtering)
+**And** all data references include source citations (FR35)
+**And** "Data as of [timestamp]" footer is present (FR40)
+
+**Given** a user with Developer or QA role requests a progress summary
+**When** the report generates
+**Then** the summary includes technical details appropriate to their role (specific issue keys, PR numbers, CI status)
+**And** role context comes from JWT claims, not client-side state
+
+**Given** the report completes
+**When** the total generation time is measured
+**Then** it completes within <15 seconds (NFR-P7)
+**And** the user sees streaming partial output as the report is generated (FR31 — SSE streaming)
+
+### Story 7.3: AI Widget Generation via Natural Language
+
+As an authenticated user,
+I want to describe a dashboard widget in natural language and have the AI generate it,
+So that I can create custom visualizations without writing code or filing requests to the development team.
+
+**Acceptance Criteria:**
+
+**Given** a user sends a message like "Show me a chart of bugs by priority" in the AI sidebar
+**When** the Mastra dashboard agent processes the request
+**Then** the agent interprets the natural language description and generates a widget configuration (FR41)
+**And** the request routes to Claude Sonnet (complex generation task) (ARCH-11)
+
+**Given** the AI generates a widget configuration
+**When** the configuration is produced
+**Then** it specifies: widget type (metric card, bar chart, line chart, pie chart, or data table), data source query (Jira JQL, GitHub API, or Supabase query), display properties (title, axis labels, colors using CSS custom properties, grid column span), and refresh behavior (FR42)
+**And** the widget type is one of: metric card, bar chart, line chart, pie chart, or data table (FR42)
+**And** chart colors use spice-theme CSS custom properties — never hardcoded hex values (design-system rules)
+
+**Given** the AI has generated a widget config
+**When** the widget preview renders
+**Then** it appears inline in the AI sidebar as a live preview
+**And** the user can interact with the preview (hover for tooltips, click for drill-down if applicable)
+**And** the widget is wrapped in `<ErrorBoundary fallback={<WidgetError />}>` (FR19)
+**And** total widget generation + render time is <20 seconds (NFR-P6)
+
+**Given** the user is satisfied with the preview
+**When** they click "Add to dashboard"
+**Then** the widget configuration is validated with Zod before persistence
+**And** a confirmation appears: "Widget added to your dashboard"
+**And** the widget appears in the dashboard grid at the next available position
+
+**Given** the AI generates an invalid or broken widget config
+**When** the preview fails to render
+**Then** the error boundary catches it and shows `<WidgetError />`
+**And** the AI acknowledges: "The widget couldn't be rendered. Would you like me to try a different approach?"
+
+### Story 7.4: Widget Persistence & Pre-Built Fallbacks
+
+As an authenticated user,
+I want AI-generated widgets to be saved permanently to my dashboard and have reliable pre-built widgets available when AI is unavailable,
+So that my custom visualizations persist across sessions and my dashboard always has useful content.
+
+**Acceptance Criteria:**
+
+**Given** a user confirms adding an AI-generated widget to their dashboard
+**When** the "Add to dashboard" action fires
+**Then** the widget configuration is persisted to the Supabase `dashboard_widgets` table (FR43)
+**And** the config includes: user ID, widget type, data source, display properties, grid position, and creation timestamp
+**And** the Server Action returns `{ data: { widgetId }, error: null }` on success (code-style rule)
+**And** the Supabase upsert respects RLS — users can only create widgets for their own dashboard
+
+**Given** a user returns to their dashboard in a new session
+**When** the dashboard page loads
+**Then** all persisted AI-generated widgets are loaded from Supabase and rendered alongside default widgets
+**And** AI-generated widgets are rendered using the same `<ErrorBoundary>` and `<WidgetSkeleton>` patterns as built-in widgets
+**And** widget load order: built-in widgets first (from widget registry), then AI-generated widgets appended
+
+**Given** a user wants to manage their AI-generated widgets
+**When** they interact with a persisted widget
+**Then** a small "..." menu on the widget card offers: "Remove from dashboard" and "Regenerate"
+**And** "Remove" soft-deletes the widget config (sets `deleted_at` timestamp, does not hard-delete)
+**And** "Regenerate" sends the original natural-language prompt back to the AI for a fresh generation
+
+**Given** AI widget generation is unavailable (AI provider down)
+**When** the dashboard renders
+**Then** pre-built static widgets serve as fallback content so the dashboard is never empty (FR44)
+**And** the widget registry in `src/modules/dashboard/config/widget-registry.ts` includes default static widgets for each role
+**And** static widgets display current data from Supabase cache (not dependent on AI)
+**And** previously persisted AI-generated widgets continue to render from their saved config (they don't require AI to display)
+
+**Given** the AI becomes available after an outage
+**When** a user opens the AI sidebar
+**Then** widget generation resumes normally without manual intervention
+**And** previously queued report requests (from Story 7.1) are retried automatically
