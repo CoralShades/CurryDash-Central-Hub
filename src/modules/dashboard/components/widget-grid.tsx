@@ -1,10 +1,34 @@
 import type { Role } from '@/types/roles'
+import type { WidgetConfig } from '../config/widget-registry'
 import { widgetRegistry } from '../config/widget-registry'
 import { WidgetCard } from './widget-card'
 import { WidgetPlaceholder } from './widget-placeholder'
+import {
+  StoriesCompletedWidget,
+  PrsMergedWidget,
+  BugsOpenWidget,
+  CiStatusWidget,
+} from './metric-card'
+import { ActivityFeed } from './activity-feed'
 
 interface WidgetGridProps {
   role: Role
+}
+
+/**
+ * Resolves widget.id → React component.
+ * New widget implementations are registered here as they ship.
+ * Falls back to WidgetPlaceholder for unimplemented widget IDs.
+ */
+function resolveWidget(config: WidgetConfig) {
+  switch (config.id) {
+    case 'stories-completed': return <StoriesCompletedWidget />
+    case 'prs-merged':        return <PrsMergedWidget />
+    case 'bugs-open':         return <BugsOpenWidget />
+    case 'ci-status':         return <CiStatusWidget />
+    case 'team-activity':     return <ActivityFeed />
+    default:                  return <WidgetPlaceholder config={config} />
+  }
 }
 
 /**
@@ -35,7 +59,7 @@ export function WidgetGrid({ role }: WidgetGridProps) {
           style={{ gridColumn: `span ${config.colSpan}` }}
         >
           <WidgetCard config={config}>
-            <WidgetPlaceholder config={config} />
+            {resolveWidget(config)}
           </WidgetCard>
         </div>
       ))}
