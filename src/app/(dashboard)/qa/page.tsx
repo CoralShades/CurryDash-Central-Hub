@@ -1,13 +1,12 @@
 import { requireAuth } from '@/lib/auth'
+import { WidgetGrid } from '@/modules/dashboard/components/widget-grid'
+
+export const metadata = {
+  title: 'QA Dashboard | CurryDash',
+}
 
 export default async function QaDashboardPage() {
   await requireAuth('qa')
 
-  return (
-    <div>
-      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-        QA dashboard — widgets coming in Story 3.2
-      </p>
-    </div>
-  )
+  return <WidgetGrid role="qa" />
 }
