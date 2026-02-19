@@ -2,7 +2,10 @@
 
 import { CopilotChat } from '@copilotkit/react-ui'
 import '@copilotkit/react-ui/styles.css'
+import { Sparkles, X } from 'lucide-react'
 import { useDashboardStore } from '@/stores/use-dashboard-store'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { AI_UNAVAILABLE_MESSAGE } from './ai-status'
 
 /** Width of the AI chat sidebar in pixels. */
@@ -36,12 +39,7 @@ export function AiSidebar() {
         <div
           aria-hidden="true"
           onClick={closeAiSidebar}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 49,
-            backgroundColor: 'rgba(0, 0, 0, 0.15)',
-          }}
+          className="fixed inset-0 z-49 bg-black/15"
         />
       )}
 
@@ -49,82 +47,46 @@ export function AiSidebar() {
       <aside
         aria-label="AI assistant"
         aria-hidden={!isAiSidebarOpen}
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: `${AI_SIDEBAR_WIDTH}px`,
-          zIndex: 50,
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: 'hsl(var(--background))',
-          borderLeft: '1px solid hsl(var(--border))',
-          boxShadow: '-4px 0 16px rgba(0, 0, 0, 0.08)',
-          transform: isAiSidebarOpen ? 'translateX(0)' : `translateX(${AI_SIDEBAR_WIDTH}px)`,
-          transition: 'transform 0.25s ease',
-          // Pointer-events: only interactive when open
-          pointerEvents: isAiSidebarOpen ? 'auto' : 'none',
-        }}
+        style={{ width: `${AI_SIDEBAR_WIDTH}px` }}
+        className={cn(
+          'fixed top-0 right-0 bottom-0 z-50 flex flex-col',
+          'bg-background border-l border-border shadow-[-4px_0_16px_rgba(0,0,0,0.08)]',
+          'transition-transform duration-300',
+          isAiSidebarOpen
+            ? 'translate-x-0 pointer-events-auto'
+            : 'translate-x-full pointer-events-none',
+        )}
       >
         {/* Header */}
-        <div
-          style={{
-            height: '56px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0 1rem',
-            borderBottom: '1px solid hsl(var(--border))',
-            flexShrink: 0,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="h-14 flex items-center justify-between px-4 border-b border-border shrink-0">
+          <div className="flex items-center gap-2">
             {/* Sparkle icon — muted when unavailable */}
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={isAiAvailable ? 'var(--color-turmeric)' : 'hsl(var(--muted-foreground))'}
-              strokeWidth={1.5}
-              style={{ width: '20px', height: '20px' }}
+            <Sparkles
+              className={cn(
+                'h-5 w-5',
+                isAiAvailable ? 'text-[var(--color-turmeric)]' : 'text-muted-foreground',
+              )}
               aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 003.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 00-3.09 3.09z"
-              />
-            </svg>
-            <span style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'hsl(var(--foreground))' }}>
+            />
+            <span className="font-semibold text-[0.9375rem] text-foreground">
               AI Assistant
             </span>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             onClick={closeAiSidebar}
             aria-label="Close AI assistant"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '32px',
-              height: '32px',
-              borderRadius: 'var(--radius-md)',
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-              color: 'hsl(var(--foreground))',
-            }}
+            className="h-8 w-8"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} style={{ width: '18px', height: '18px' }} aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+            <X className="h-4 w-4" aria-hidden="true" />
+          </Button>
         </div>
 
         {/* Chat area — only render when open to avoid unnecessary rendering */}
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="flex-1 overflow-hidden flex flex-col">
           {isAiSidebarOpen && (
             isAiAvailable ? (
               <CopilotChat
@@ -139,37 +101,17 @@ export function AiSidebar() {
               <div
                 role="status"
                 aria-live="polite"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flex: 1,
-                  padding: '2rem 1.5rem',
-                  gap: '0.75rem',
-                  textAlign: 'center',
-                  color: 'hsl(var(--muted-foreground))',
-                }}
+                className="flex flex-col items-center justify-center flex-1 px-6 py-8 gap-3 text-center text-muted-foreground"
               >
                 {/* Muted sparkle icon */}
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.5}
-                  style={{ width: '40px', height: '40px', opacity: 0.4 }}
+                <Sparkles
+                  className="h-10 w-10 opacity-40"
                   aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 003.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 00-3.09 3.09z"
-                  />
-                </svg>
-                <p style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'hsl(var(--foreground))', margin: 0 }}>
+                />
+                <p className="font-semibold text-[0.9375rem] text-foreground m-0">
                   {AI_UNAVAILABLE_MESSAGE}
                 </p>
-                <p style={{ fontSize: '0.875rem', margin: 0, lineHeight: 1.5 }}>
+                <p className="text-sm m-0 leading-relaxed">
                   {AI_UNAVAILABLE_FALLBACK}
                 </p>
               </div>

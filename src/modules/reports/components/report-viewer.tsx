@@ -1,5 +1,6 @@
 'use client'
 
+import { Card, CardContent } from '@/components/ui/card'
 import type { GeneratedReport } from '../types'
 
 interface ReportViewerProps {
@@ -24,61 +25,31 @@ export function ReportViewer({ report, streamingContent, isStreaming }: ReportVi
   if (!content && !isStreaming) return null
 
   return (
-    <div
+    <Card
       role="region"
       aria-label="Generated report"
       aria-live="polite"
-      style={{
-        borderRadius: 'var(--radius-lg)',
-        border: '1px solid hsl(var(--border))',
-        backgroundColor: 'hsl(var(--card))',
-        padding: '1.5rem',
-        marginTop: '1rem',
-      }}
+      className="mt-4"
     >
-      {/* Report content */}
-      <pre
-        style={{
-          fontFamily: 'inherit',
-          fontSize: '0.875rem',
-          lineHeight: 1.7,
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-          color: 'hsl(var(--foreground))',
-          margin: 0,
-        }}
-      >
-        {content}
-        {isStreaming && (
-          <span
-            aria-hidden="true"
-            style={{
-              display: 'inline-block',
-              width: '2px',
-              height: '1em',
-              backgroundColor: 'var(--color-turmeric)',
-              marginLeft: '2px',
-              verticalAlign: 'text-bottom',
-              animation: 'pulse 1s infinite',
-            }}
-          />
-        )}
-      </pre>
+      <CardContent className="pt-6">
+        {/* Report content */}
+        <pre className="font-sans text-sm leading-relaxed whitespace-pre-wrap break-words text-foreground m-0">
+          {content}
+          {isStreaming && (
+            <span
+              aria-hidden="true"
+              className="inline-block w-0.5 h-[1em] bg-[var(--color-turmeric)] ml-0.5 align-text-bottom animate-pulse"
+            />
+          )}
+        </pre>
 
-      {/* Metadata footer — shown once streaming is complete */}
-      {generatedAt && !isStreaming && (
-        <div
-          style={{
-            marginTop: '1rem',
-            paddingTop: '0.75rem',
-            borderTop: '1px solid hsl(var(--border))',
-            fontSize: '0.75rem',
-            color: 'hsl(var(--muted-foreground))',
-          }}
-        >
-          Generated at {new Date(generatedAt).toLocaleString()}
-        </div>
-      )}
-    </div>
+        {/* Metadata footer — shown once streaming is complete */}
+        {generatedAt && !isStreaming && (
+          <div className="mt-4 pt-3 border-t border-border text-xs text-muted-foreground">
+            Generated at {new Date(generatedAt).toLocaleString()}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }

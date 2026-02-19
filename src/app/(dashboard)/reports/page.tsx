@@ -30,20 +30,13 @@ export default async function ReportsPage() {
   const roleLabel = role ? ROLE_LABELS[role] : undefined
 
   return (
-    <div style={{ maxWidth: '800px' }}>
+    <div className="max-w-[800px]">
       {/* Page header */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1
-          style={{
-            fontSize: '1.5rem',
-            fontWeight: 700,
-            color: 'hsl(var(--foreground))',
-            margin: '0 0 0.375rem',
-          }}
-        >
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-foreground mb-1.5">
           Progress Reports
         </h1>
-        <p style={{ fontSize: '0.9375rem', color: 'hsl(var(--muted-foreground))', margin: 0 }}>
+        <p className="text-[0.9375rem] text-muted-foreground">
           AI-generated project status summaries tailored to your role. Data sourced from Jira and
           GitHub.
         </p>
