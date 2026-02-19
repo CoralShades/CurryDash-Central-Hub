@@ -79,7 +79,7 @@ Every story follows this cycle:
    - Unit tests: co-located beside source files (e.g., `jira-client.test.ts`)
    - E2E tests: in top-level `e2e/` directory
 2. Implement minimum code to pass (GREEN)
-3. Run tests: `npm test`
+3. Run tests: `npx vitest run`
 4. Refactor if needed while keeping tests green
 5. Run full test suite to check for regressions
 
