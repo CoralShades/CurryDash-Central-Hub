@@ -732,26 +732,29 @@ export interface Database {
       system_health: {
         Row: {
           id: string
-          service: string
+          source: string
           status: string
-          latency_ms: number | null
-          checked_at: string
+          last_event_at: string | null
+          metadata: Record<string, unknown>
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
-          service: string
-          status: string
-          latency_ms?: number | null
-          checked_at?: string
+          source: string
+          status?: string
+          last_event_at?: string | null
+          metadata?: Record<string, unknown>
           created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
-          service?: string
+          source?: string
           status?: string
-          latency_ms?: number | null
-          checked_at?: string
+          last_event_at?: string | null
+          metadata?: Record<string, unknown>
+          updated_at?: string
         }
         Relationships: []
       }

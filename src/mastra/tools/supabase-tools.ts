@@ -197,7 +197,7 @@ export const getSystemHealthTool = createTool({
     const supabase = getSupabaseAdmin()
 
     let data:
-      | { service: string; status: string; latency_ms: number | null; checked_at: string }[]
+      | { source: string; status: string; last_event_at: string | null; updated_at: string }[]
       | null = null
     let error: { message: string } | null = null
 
@@ -206,8 +206,8 @@ export const getSystemHealthTool = createTool({
         (async () =>
           supabase
             .from('system_health')
-            .select('service, status, latency_ms, checked_at')
-            .order('checked_at', { ascending: false }))(),
+            .select('source, status, last_event_at, updated_at')
+            .order('updated_at', { ascending: false }))(),
         SUPABASE_TIMEOUT_MS
       )
       data = result.data
@@ -236,11 +236,11 @@ export const getSystemHealthTool = createTool({
       }
     }
 
-    // Return latest entry per service
+    // Return latest entry per source integration
     const latest = Object.values(
       (data ?? []).reduce<Record<string, NonNullable<typeof data>[0]>>((acc, row) => {
-        if (!acc[row.service]) {
-          acc[row.service] = row
+        if (!acc[row.source]) {
+          acc[row.source] = row
         }
         return acc
       }, {})

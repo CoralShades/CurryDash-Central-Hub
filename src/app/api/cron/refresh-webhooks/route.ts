@@ -154,11 +154,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     })
 
     // ─── Step 5: Record health status ────────────────────────────────────────
-    await supabase.from('system_health').insert({
-      service: 'jira:webhook',
-      status: 'healthy',
-      checked_at: new Date().toISOString(),
-    })
+    await supabase.from('system_health').upsert(
+      { source: 'jira', status: 'connected', last_event_at: new Date().toISOString() },
+      { onConflict: 'source' }
+    )
 
     return NextResponse.json(
       {
@@ -193,11 +192,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     })
 
     // Record health failure
-    await supabase.from('system_health').insert({
-      service: 'jira:webhook',
-      status: 'degraded',
-      checked_at: new Date().toISOString(),
-    })
+    await supabase.from('system_health').upsert(
+      { source: 'jira', status: 'error', metadata: { errorMessage: errorMessage } },
+      { onConflict: 'source' }
+    )
 
     return NextResponse.json(
       {
