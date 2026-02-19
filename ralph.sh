@@ -143,14 +143,32 @@ find_next_story() {
 
 extract_story_content() {
   local sid="$1"
-  # Extract story block from .ralph-plan.md
-  awk "/### \[EPIC-[0-9]+\] Story ${sid}:/,/^### \[EPIC-/" "$PLAN_FILE" | head -n -1
+  local content
+  content=$(awk -v sid="$sid" '
+    $0 ~ "### \\[EPIC-[0-9]+\\] Story " sid ":" { found=1; next }
+    found && /^### \[EPIC-/ { exit }
+    found { print }
+  ' "$PLAN_FILE")
+  if [[ -z "$content" ]]; then
+    echo "Error: No story content found for story $sid in $PLAN_FILE" >&2
+    echo "       Verify header format: ### [EPIC-N] Story X.Y: Title" >&2
+    return 1
+  fi
+  echo "$content"
 }
 
 extract_acceptance_criteria() {
   local sid="$1"
-  # Extract from epics.md — find the story section
-  awk "/### Story ${sid}:/,/^### Story [0-9]|^---$|^## Epic [0-9]/" "$EPICS_FILE" | head -n -1
+  local content
+  content=$(awk -v sid="$sid" '
+    $0 ~ "### Story " sid ":" { found=1; next }
+    found && (/^### Story [0-9]/ || /^---$/ || /^## Epic [0-9]/) { exit }
+    found { print }
+  ' "$EPICS_FILE")
+  if [[ -z "$content" ]]; then
+    echo "Warning: No acceptance criteria found for story $sid in $EPICS_FILE" >&2
+  fi
+  echo "$content"
 }
 
 extract_architecture_section() {
@@ -183,8 +201,15 @@ build_prompt() {
   local story_content
   local acceptance_criteria
   local arch_section
+  local tmp_story tmp_ac tmp_arch
 
-  story_content=$(extract_story_content "$sid")
+  tmp_story=$(mktemp) || { echo "Error: mktemp failed" >&2; return 1; }
+  tmp_ac=$(mktemp)    || { rm -f "$tmp_story"; echo "Error: mktemp failed" >&2; return 1; }
+  tmp_arch=$(mktemp)  || { rm -f "$tmp_story" "$tmp_ac"; echo "Error: mktemp failed" >&2; return 1; }
+  # shellcheck disable=SC2064
+  trap "rm -f '$tmp_story' '$tmp_ac' '$tmp_arch'" RETURN
+
+  story_content=$(extract_story_content "$sid") || return 1
   acceptance_criteria=$(extract_acceptance_criteria "$sid")
   arch_section=$(extract_architecture_section "$sid")
 
@@ -202,12 +227,6 @@ ${story_content}"
   local prompt
   prompt=$(<"$PROMPT_TEMPLATE")
 
-  # Use temp files for multi-line sed substitution
-  local tmp_story tmp_ac tmp_arch
-  tmp_story=$(mktemp)
-  tmp_ac=$(mktemp)
-  tmp_arch=$(mktemp)
-
   echo "$story_content" > "$tmp_story"
   echo "$acceptance_criteria" > "$tmp_ac"
   echo "$arch_section" > "$tmp_arch"
@@ -216,8 +235,6 @@ ${story_content}"
   prompt="${prompt//\{\{STORY_CONTENT\}\}/$(cat "$tmp_story")}"
   prompt="${prompt//\{\{ACCEPTANCE_CRITERIA\}\}/$(cat "$tmp_ac")}"
   prompt="${prompt//\{\{ARCHITECTURE_SECTION\}\}/$(cat "$tmp_arch")}"
-
-  rm -f "$tmp_story" "$tmp_ac" "$tmp_arch"
 
   echo "$prompt"
 }
@@ -268,8 +285,16 @@ check_epic_completion() {
 }
 
 update_sprint_status() {
-  if [[ -x "$SPRINT_STATUS_SCRIPT" ]]; then
-    "$SPRINT_STATUS_SCRIPT" 2>/dev/null || true
+  if [[ ! -f "$SPRINT_STATUS_SCRIPT" ]]; then
+    echo "Warning: $SPRINT_STATUS_SCRIPT not found — skipping sprint status update" >&2
+    return 0
+  fi
+  if [[ ! -x "$SPRINT_STATUS_SCRIPT" ]]; then
+    echo "Warning: $SPRINT_STATUS_SCRIPT is not executable — skipping sprint status update" >&2
+    return 0
+  fi
+  if ! "$SPRINT_STATUS_SCRIPT"; then
+    echo "Warning: Sprint status update failed (exit $?) — continuing loop" >&2
   fi
 }
 
@@ -330,7 +355,24 @@ while true; do
   fi
 
   # Run Claude with fresh context
-  output=$(echo "$prompt" | claude -p --dangerously-skip-permissions --verbose 2>&1) || true
+  # Note: --dangerously-skip-permissions required for non-interactive automation —
+  # the settings.json allowlist restricts individual commands within the session.
+  claude_exit=0
+  output=$(echo "$prompt" | claude -p --dangerously-skip-permissions --verbose 2>&1) || claude_exit=$?
+
+  if [[ $claude_exit -ne 0 ]]; then
+    echo "ERROR: claude -p exited with code $claude_exit for story $current_story" >&2
+    echo "       Last 20 lines of output:" >&2
+    echo "$output" | tail -20 >&2
+    NO_PROGRESS_COUNT=$((NO_PROGRESS_COUNT + 1))
+    echo "Treating as no-progress. Stall count: $NO_PROGRESS_COUNT/$NO_PROGRESS_THRESHOLD"
+    if [[ $NO_PROGRESS_COUNT -ge $NO_PROGRESS_THRESHOLD ]]; then
+      echo "CIRCUIT BREAKER: $NO_PROGRESS_THRESHOLD consecutive Claude failures. Stopping." >&2
+      exit 1
+    fi
+    sleep "$SLEEP_SECONDS"
+    continue
+  fi
 
   # Check for rate limit
   if echo "$output" | grep -qi "rate.limit\|429\|usage limit\|too many requests"; then
@@ -348,7 +390,9 @@ while true; do
     NO_PROGRESS_COUNT=0
 
     # Push as safety net
-    git push origin "$CURRENT_BRANCH" 2>/dev/null || true
+    if ! git push origin "$CURRENT_BRANCH" 2>&1; then
+      echo "Warning: git push failed — commits are local only. Run: git push origin $CURRENT_BRANCH" >&2
+    fi
   elif echo "$output" | grep -q "STORY_BLOCKED"; then
     reason=$(echo "$output" | grep "STORY_BLOCKED:" | tail -1 | sed 's/.*STORY_BLOCKED: //')
     echo "Story $current_story BLOCKED: $reason"
@@ -358,7 +402,9 @@ while true; do
     echo ""
     echo "ALL STORIES COMPLETE!"
     update_sprint_status
-    git push origin "$CURRENT_BRANCH" 2>/dev/null || true
+    if ! git push origin "$CURRENT_BRANCH" 2>&1; then
+      echo "Warning: git push failed — commits are local only. Run: git push origin $CURRENT_BRANCH" >&2
+    fi
     break
   else
     echo "WARNING: Story $current_story ended without clear signal."

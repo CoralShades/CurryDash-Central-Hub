@@ -57,9 +57,20 @@ proceed to Phase 4 with a WIP commit.
 
 ## Phase 5: Signal (REQUIRED — output exactly one)
 
-- Success: `STORY_COMPLETE`
-- Failure: `STORY_BLOCKED: {specific reason why}`
-- All done: `<promise>ALL_STORIES_COMPLETE</promise>`
+Output the appropriate signal so the orchestrating layer can respond:
+
+- **Story complete** (detected by ralph.sh or ralph-run.md loop):
+  `STORY_COMPLETE`
+
+- **Story blocked** (detected by ralph.sh or ralph-run.md loop):
+  `STORY_BLOCKED: {specific reason why}`
+
+- **All stories done** (detected by ralph-wiggum stop hook when running via /ralph-loop):
+  `<promise>ALL_STORIES_COMPLETE</promise>`
+
+Note: `STORY_COMPLETE` and `STORY_BLOCKED:` are plain-text signals read by the
+shell/agent loop. `<promise>ALL_STORIES_COMPLETE</promise>` is an XML tag
+specifically detected by the ralph-wiggum plugin's stop hook.
 
 ## Rules
 

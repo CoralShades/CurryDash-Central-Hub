@@ -150,7 +150,10 @@ derive_epic_status() {
   fi
 }
 
-# Generate YAML
+# Generate YAML atomically — write to temp then mv to avoid partial output on failure
+tmp_output=$(mktemp "$(dirname "$OUTPUT_FILE")/sprint-status.XXXXXX")
+trap "rm -f '$tmp_output'" EXIT
+
 {
   echo "# Sprint Status — CurryDash Central Hub"
   echo "# Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -183,8 +186,10 @@ derive_epic_status() {
 
     echo "  epic-${epic_num}-retrospective: $([ "$epic_stat" = "done" ] && echo "optional" || echo "n/a")"
   done
-} > "$OUTPUT_FILE"
+} > "$tmp_output"
 
+mv "$tmp_output" "$OUTPUT_FILE"
+trap - EXIT
 echo "Generated: $OUTPUT_FILE"
 echo ""
 
