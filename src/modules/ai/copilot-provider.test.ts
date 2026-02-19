@@ -19,6 +19,12 @@ vi.mock('@/stores/use-dashboard-store', () => ({
   })),
   useAiSidebar: vi.fn(() => ({ isOpen: false, toggle: vi.fn() })),
 }))
+// Prevent next-auth → next/server resolution failure in Vitest
+vi.mock('@/lib/auth', () => ({ auth: vi.fn().mockResolvedValue(null), requireAuth: vi.fn() }))
+vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: vi.fn(() => ({})) }))
+vi.mock('@/modules/reports/actions/save-widget', () => ({
+  saveWidget: vi.fn().mockResolvedValue({ data: { id: 'test-widget' }, error: null }),
+}))
 
 import type React from 'react'
 
