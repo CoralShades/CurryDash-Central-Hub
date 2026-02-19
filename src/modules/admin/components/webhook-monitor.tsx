@@ -4,6 +4,9 @@ import {
   getRateLimitStatus,
 } from '../actions/retry-dead-letter'
 import { DeadLetterTable } from './dead-letter-table'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -13,10 +16,10 @@ function formatLatency(ms: number): string {
   return `${Math.round(ms / 60_000)}min`
 }
 
-function successRateColor(rate: number): string {
-  if (rate >= 99) return 'var(--color-coriander)'
-  if (rate >= 95) return 'var(--color-turmeric)'
-  return 'var(--color-chili)'
+function successRateColorClass(rate: number): string {
+  if (rate >= 99) return 'text-coriander'
+  if (rate >= 95) return 'text-turmeric'
+  return 'text-chili'
 }
 
 // ── Metric Card ───────────────────────────────────────────────────────────────
@@ -25,81 +28,45 @@ interface SystemMetricCardProps {
   label: string
   value: string | number
   subtext: string
-  valueColor?: string
+  valueColorClass?: string
   progressPercent?: number
-  progressColor?: string
+  progressColorClass?: string
 }
 
 function SystemMetricCard({
   label,
   value,
   subtext,
-  valueColor,
+  valueColorClass,
   progressPercent,
-  progressColor,
+  progressColorClass,
 }: SystemMetricCardProps) {
   return (
-    <div
-      style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        border: '1px solid var(--color-border)',
-        padding: '20px 24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-      }}
-    >
-      <p
-        style={{
-          margin: 0,
-          fontSize: '11px',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          color: '#9ca3af',
-        }}
-      >
-        {label}
-      </p>
-      <p
-        style={{
-          margin: 0,
-          fontSize: '2rem',
-          fontWeight: 700,
-          lineHeight: 1,
-          color: valueColor ?? 'var(--color-text)',
-        }}
-      >
-        {value}
-      </p>
-      <p style={{ margin: 0, fontSize: '12px', color: '#6b7280' }}>{subtext}</p>
-      {progressPercent !== undefined && (
-        <div
-          style={{
-            height: '4px',
-            backgroundColor: 'var(--color-border)',
-            borderRadius: '2px',
-            overflow: 'hidden',
-            marginTop: '4px',
-          }}
-          role="progressbar"
-          aria-valuenow={progressPercent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
+    <Card>
+      <CardContent className="flex flex-col gap-2 pt-5">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <p className={cn('text-4xl font-bold leading-none', valueColorClass ?? 'text-foreground')}>
+          {value}
+        </p>
+        <p className="text-xs text-muted-foreground">{subtext}</p>
+        {progressPercent !== undefined && (
           <div
-            style={{
-              height: '100%',
-              width: `${progressPercent}%`,
-              backgroundColor: progressColor ?? 'var(--color-coriander)',
-              borderRadius: '2px',
-              transition: 'width 0.3s ease',
-            }}
-          />
-        </div>
-      )}
-    </div>
+            className="h-1 bg-border rounded-sm overflow-hidden mt-1"
+            role="progressbar"
+            aria-valuenow={progressPercent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div
+              className={cn('h-full rounded-sm transition-all duration-300', progressColorClass ?? 'bg-coriander')}
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -122,95 +89,69 @@ function RateLimitCard({
   last429At,
   showWarning,
 }: RateLimitCardProps) {
-  const barColor =
+  const barColorClass =
     usedPercent >= 80
-      ? 'var(--color-chili)'
+      ? 'bg-chili'
       : usedPercent >= 50
-        ? 'var(--color-turmeric)'
-        : 'var(--color-coriander)'
+        ? 'bg-turmeric'
+        : 'bg-coriander'
 
   return (
-    <div
-      style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        border: `1px solid ${showWarning ? 'var(--color-turmeric)' : 'var(--color-border)'}`,
-        padding: '20px 24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>{name}</h4>
-        {showWarning && (
-          <span
-            style={{
-              padding: '3px 10px',
-              borderRadius: '12px',
-              fontSize: '11px',
-              fontWeight: 600,
-              color: 'var(--color-turmeric)',
-              backgroundColor: '#FFF8DC',
-            }}
-            role="alert"
-          >
-            ⚠ &gt;50% consumed
-          </span>
-        )}
-      </div>
-
-      {/* Usage bar */}
-      <div>
-        <div
-          style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}
-        >
-          <span style={{ fontSize: '12px', color: '#6b7280' }}>Usage</span>
-          <span style={{ fontSize: '12px', fontWeight: 600 }}>{usedPercent}%</span>
+    <Card className={cn(showWarning && 'border-turmeric')}>
+      <CardContent className="flex flex-col gap-3 pt-5">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <h4 className="text-[15px] font-semibold">{name}</h4>
+          {showWarning && (
+            <Badge
+              variant="outline"
+              className="text-[11px] font-semibold text-turmeric bg-turmeric/10 border-turmeric/20"
+              role="alert"
+            >
+              &gt;50% consumed
+            </Badge>
+          )}
         </div>
-        <div
-          style={{
-            height: '6px',
-            backgroundColor: 'var(--color-border)',
-            borderRadius: '3px',
-            overflow: 'hidden',
-          }}
-          role="progressbar"
-          aria-valuenow={usedPercent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
+
+        {/* Usage bar */}
+        <div>
+          <div className="flex justify-between mb-1.5">
+            <span className="text-xs text-muted-foreground">Usage</span>
+            <span className="text-xs font-semibold">{usedPercent}%</span>
+          </div>
           <div
-            style={{
-              height: '100%',
-              width: `${usedPercent}%`,
-              backgroundColor: barColor,
-              borderRadius: '3px',
-              transition: 'width 0.3s ease',
-            }}
-          />
+            className="h-1.5 bg-border rounded-full overflow-hidden"
+            role="progressbar"
+            aria-valuenow={usedPercent}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div
+              className={cn('h-full rounded-full transition-all duration-300', barColorClass)}
+              style={{ width: `${usedPercent}%` }}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Stats */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-          <span style={{ color: '#6b7280' }}>Limit</span>
-          <span style={{ fontWeight: 500 }}>{limitLabel}</span>
+        {/* Stats */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Limit</span>
+            <span className="font-medium">{limitLabel}</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Remaining</span>
+            <span className="font-medium">{remainingLabel}</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Last 429</span>
+            <span className={cn('font-medium', last429At ? 'text-chili' : 'text-muted-foreground')}>
+              {last429At ? formatRelativeTime(last429At) : 'None recorded'}
+            </span>
+          </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-          <span style={{ color: '#6b7280' }}>Remaining</span>
-          <span style={{ fontWeight: 500 }}>{remainingLabel}</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-          <span style={{ color: '#6b7280' }}>Last 429</span>
-          <span style={{ fontWeight: 500, color: last429At ? 'var(--color-chili)' : '#9ca3af' }}>
-            {last429At ? formatRelativeTime(last429At) : 'None recorded'}
-          </span>
-        </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -247,49 +188,36 @@ export async function WebhookMonitor() {
   const rateLimit = rateLimitResult.data
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
+    <div className="flex flex-col gap-9">
       {/* ── Section 1: Webhook Pipeline Metrics ─────────────────────────────── */}
       <section>
-        <h2
-          style={{
-            margin: '0 0 16px 0',
-            fontSize: '18px',
-            fontWeight: 600,
-            color: 'var(--color-text)',
-          }}
-        >
+        <h2 className="mb-4 text-lg font-semibold">
           Webhook Pipeline Health
         </h2>
 
         {metricsResult.error ? (
           <div
-            style={{
-              padding: '16px',
-              backgroundColor: '#FEE2E2',
-              borderRadius: '8px',
-              color: 'var(--color-chili)',
-              fontSize: '14px',
-            }}
+            className="p-4 bg-destructive/10 rounded-lg text-chili text-sm"
             role="alert"
           >
             Failed to load webhook metrics. Please refresh the page.
           </div>
         ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-              gap: '16px',
-            }}
-          >
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
             {/* Success Rate */}
             <SystemMetricCard
               label="Webhook Success Rate"
               value={`${metrics?.successRate ?? 0}%`}
               subtext="processed / total received today"
-              valueColor={successRateColor(metrics?.successRate ?? 0)}
+              valueColorClass={successRateColorClass(metrics?.successRate ?? 0)}
               progressPercent={metrics?.successRate ?? 0}
-              progressColor={successRateColor(metrics?.successRate ?? 0)}
+              progressColorClass={
+                (metrics?.successRate ?? 0) >= 99
+                  ? 'bg-coriander'
+                  : (metrics?.successRate ?? 0) >= 95
+                    ? 'bg-turmeric'
+                    : 'bg-chili'
+              }
             />
 
             {/* Events Today */}
@@ -308,12 +236,12 @@ export async function WebhookMonitor() {
               label="Avg Processing Latency"
               value={metrics ? formatLatency(metrics.avgLatencyMs) : '—'}
               subtext="receipt → dashboard update (target <5min)"
-              valueColor={
+              valueColorClass={
                 metrics?.avgLatencyMs && metrics.avgLatencyMs > 300_000
-                  ? 'var(--color-chili)'
+                  ? 'text-chili'
                   : metrics?.avgLatencyMs && metrics.avgLatencyMs > 120_000
-                    ? 'var(--color-turmeric)'
-                    : 'var(--color-coriander)'
+                    ? 'text-turmeric'
+                    : 'text-coriander'
               }
             />
 
@@ -322,8 +250,8 @@ export async function WebhookMonitor() {
               label="Dead Letter Queue Depth"
               value={metrics?.deadLetterDepth ?? 0}
               subtext="unresolved failed events"
-              valueColor={
-                (metrics?.deadLetterDepth ?? 0) > 0 ? 'var(--color-chili)' : 'var(--color-coriander)'
+              valueColorClass={
+                (metrics?.deadLetterDepth ?? 0) > 0 ? 'text-chili' : 'text-coriander'
               }
             />
           </div>
@@ -332,35 +260,23 @@ export async function WebhookMonitor() {
 
       {/* ── Section 2: Dead Letter Events ──────────────────────────────────── */}
       <section>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', marginBottom: '16px' }}>
-          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>
+        <div className="flex items-baseline gap-3 mb-4">
+          <h2 className="text-lg font-semibold">
             Dead Letter Events
           </h2>
           {events.length > 0 && (
-            <span
-              style={{
-                padding: '2px 10px',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: 'var(--color-chili)',
-                backgroundColor: '#FEE2E2',
-              }}
+            <Badge
+              variant="outline"
+              className="text-xs font-semibold text-chili bg-chili/10 border-chili/20"
             >
               {events.length}
-            </span>
+            </Badge>
           )}
         </div>
 
         {eventsResult.error ? (
           <div
-            style={{
-              padding: '16px',
-              backgroundColor: '#FEE2E2',
-              borderRadius: '8px',
-              color: 'var(--color-chili)',
-              fontSize: '14px',
-            }}
+            className="p-4 bg-destructive/10 rounded-lg text-chili text-sm"
             role="alert"
           >
             Failed to load dead letter events. Please refresh the page.
@@ -372,14 +288,7 @@ export async function WebhookMonitor() {
 
       {/* ── Section 3: Rate Limit Status ────────────────────────────────────── */}
       <section>
-        <h2
-          style={{
-            margin: '0 0 16px 0',
-            fontSize: '18px',
-            fontWeight: 600,
-            color: 'var(--color-text)',
-          }}
-        >
+        <h2 className="mb-4 text-lg font-semibold">
           API Rate Limits
         </h2>
 
@@ -387,21 +296,10 @@ export async function WebhookMonitor() {
         {rateLimit &&
           (rateLimit.jiraUsedPercent >= 50 || rateLimit.githubUsedPercent >= 50) && (
             <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '12px 16px',
-                backgroundColor: '#FFF8DC',
-                border: '1px solid var(--color-turmeric)',
-                borderRadius: '8px',
-                marginBottom: '16px',
-                fontSize: '14px',
-                color: '#92400e',
-              }}
+              className="flex items-center gap-3 p-3 px-4 bg-turmeric/10 border border-turmeric rounded-lg mb-4 text-sm text-amber-900"
               role="alert"
             >
-              <span style={{ fontSize: '18px' }}>⚠️</span>
+              <span className="text-lg">⚠️</span>
               <span>
                 API consumption exceeds 50% of limits.{' '}
                 {rateLimit.jiraUsedPercent >= 50 && rateLimit.githubUsedPercent >= 50
@@ -415,25 +313,13 @@ export async function WebhookMonitor() {
 
         {rateLimitResult.error ? (
           <div
-            style={{
-              padding: '16px',
-              backgroundColor: '#FEE2E2',
-              borderRadius: '8px',
-              color: 'var(--color-chili)',
-              fontSize: '14px',
-            }}
+            className="p-4 bg-destructive/10 rounded-lg text-chili text-sm"
             role="alert"
           >
             Failed to load rate limit status.
           </div>
         ) : (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-              gap: '20px',
-            }}
-          >
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-5">
             <RateLimitCard
               name="Jira"
               usedPercent={rateLimit?.jiraUsedPercent ?? 0}

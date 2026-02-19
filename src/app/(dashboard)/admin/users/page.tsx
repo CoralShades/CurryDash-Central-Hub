@@ -52,40 +52,26 @@ export default async function AdminUsersPage() {
   }
 
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: 700 }}>
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">
           User Management
         </h1>
-        <p style={{ margin: 0, color: '#666', fontSize: '14px' }}>
+        <p className="text-muted-foreground text-sm">
           Manage team members, assign roles, and control access
         </p>
       </div>
 
       {error && (
         <div
-          style={{
-            marginBottom: '16px',
-            padding: '12px 16px',
-            backgroundColor: '#FEE2E2',
-            color: 'var(--color-chili)',
-            borderRadius: '8px',
-            fontSize: '14px',
-          }}
+          className="mb-4 px-4 py-3 bg-destructive/10 text-chili rounded-lg text-sm"
           role="alert"
         >
           {error}
         </div>
       )}
 
-      <div
-        style={{
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          border: '1px solid var(--color-border)',
-          padding: '20px',
-        }}
-      >
+      <div className="bg-card rounded-lg border border-border p-5">
         <UserTableClient initialUsers={users} />
       </div>
     </div>

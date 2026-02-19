@@ -15,12 +15,12 @@ export default async function AdminIntegrationsPage() {
   await requireAuth('admin')
 
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: 700 }}>
+    <div className="p-6">
+      <div className="mb-7">
+        <h1 className="text-3xl font-bold mb-2">
           Integration Management
         </h1>
-        <p style={{ margin: 0, color: '#6b7280', fontSize: '14px' }}>
+        <p className="text-muted-foreground text-sm">
           Configure and monitor Jira, GitHub, and Anthropic AI connections
         </p>
       </div>

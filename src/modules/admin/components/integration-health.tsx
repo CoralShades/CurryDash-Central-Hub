@@ -1,31 +1,48 @@
+import { CheckCircle2, AlertTriangle, XCircle, Wifi, WifiOff } from 'lucide-react'
 import { getIntegrationStatuses } from '@/modules/admin/actions/configure-integration'
 import type { IntegrationInfo, IntegrationStatus } from '@/modules/admin/actions/configure-integration'
 import { IntegrationConfigForm } from './integration-config-form'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
-// Status display config
+// Status display config using design system tokens
 const STATUS_CONFIG: Record<
   IntegrationStatus,
-  { label: string; color: string; dotColor: string }
+  {
+    label: string
+    textClass: string
+    bgClass: string
+    Icon: React.ComponentType<{ className?: string }>
+    ConnIcon: React.ComponentType<{ className?: string }>
+  }
 > = {
   connected: {
     label: 'Connected',
-    color: 'var(--color-coriander)',
-    dotColor: 'var(--color-coriander)',
+    textClass: 'text-coriander',
+    bgClass: 'bg-coriander/10',
+    Icon: CheckCircle2,
+    ConnIcon: Wifi,
   },
   disconnected: {
     label: 'Disconnected',
-    color: '#6b7280',
-    dotColor: '#6b7280',
+    textClass: 'text-muted-foreground',
+    bgClass: 'bg-muted',
+    Icon: WifiOff,
+    ConnIcon: WifiOff,
   },
   error: {
     label: 'Error',
-    color: 'var(--color-chili)',
-    dotColor: 'var(--color-chili)',
+    textClass: 'text-chili',
+    bgClass: 'bg-chili/10',
+    Icon: XCircle,
+    ConnIcon: WifiOff,
   },
   unknown: {
     label: 'Unknown',
-    color: 'var(--color-turmeric)',
-    dotColor: 'var(--color-turmeric)',
+    textClass: 'text-turmeric',
+    bgClass: 'bg-turmeric/10',
+    Icon: AlertTriangle,
+    ConnIcon: Wifi,
   },
 }
 
@@ -54,77 +71,52 @@ interface IntegrationCardProps {
 
 function IntegrationCard({ info }: IntegrationCardProps) {
   const statusCfg = STATUS_CONFIG[info.status]
+  const { Icon } = statusCfg
 
   return (
-    <div
-      style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        border: '1px solid var(--color-border)',
-        padding: '24px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '28px', lineHeight: 1 }}>
+    <Card className="flex flex-col gap-4">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl leading-none">
             {INTEGRATION_ICONS[info.integration] ?? '🔗'}
           </span>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>{info.name}</h3>
+          <h3 className="text-lg font-semibold">{info.name}</h3>
         </div>
 
         {/* Status indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span
-            style={{
-              width: '10px',
-              height: '10px',
-              borderRadius: '50%',
-              backgroundColor: statusCfg.dotColor,
-              display: 'inline-block',
-              flexShrink: 0,
-            }}
-          />
-          <span style={{ fontSize: '13px', fontWeight: 500, color: statusCfg.color }}>
-            {statusCfg.label}
-          </span>
+        <div className={cn('flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium', statusCfg.bgClass, statusCfg.textClass)}>
+          <Icon className="h-3.5 w-3.5 shrink-0" />
+          <span>{statusCfg.label}</span>
         </div>
-      </div>
+      </CardHeader>
 
-      {/* Error message if any */}
-      {info.errorMessage && (
-        <div
-          style={{
-            padding: '8px 12px',
-            backgroundColor: '#FEE2E2',
-            borderRadius: '6px',
-            fontSize: '13px',
-            color: 'var(--color-chili)',
-          }}
-          role="alert"
-        >
-          {info.errorMessage}
-        </div>
-      )}
+      <CardContent className="flex flex-col gap-4">
+        {/* Error message if any */}
+        {info.errorMessage && (
+          <div
+            className="px-3 py-2 bg-chili/10 rounded-md text-sm text-chili"
+            role="alert"
+          >
+            {info.errorMessage}
+          </div>
+        )}
 
-      {/* Timestamps */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-          <span style={{ color: '#6b7280' }}>Last sync</span>
-          <span style={{ fontWeight: 500 }}>{formatTimestamp(info.lastSyncAt)}</span>
+        {/* Timestamps */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Last sync</span>
+            <span className="font-medium">{formatTimestamp(info.lastSyncAt)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Last webhook</span>
+            <span className="font-medium">{formatTimestamp(info.lastWebhookAt)}</span>
+          </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-          <span style={{ color: '#6b7280' }}>Last webhook</span>
-          <span style={{ fontWeight: 500 }}>{formatTimestamp(info.lastWebhookAt)}</span>
-        </div>
-      </div>
 
-      {/* Configure button — client component */}
-      <IntegrationConfigForm info={info} />
-    </div>
+        {/* Configure button — client component */}
+        <IntegrationConfigForm info={info} />
+      </CardContent>
+    </Card>
   )
 }
 
@@ -140,13 +132,7 @@ export async function IntegrationHealth() {
   if (error) {
     return (
       <div
-        style={{
-          padding: '16px',
-          backgroundColor: '#FEE2E2',
-          borderRadius: '8px',
-          color: 'var(--color-chili)',
-          fontSize: '14px',
-        }}
+        className="p-4 bg-destructive/10 rounded-lg text-chili text-sm"
         role="alert"
       >
         Failed to load integration statuses. Please refresh the page.
@@ -155,13 +141,7 @@ export async function IntegrationHealth() {
   }
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-        gap: '20px',
-      }}
-    >
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5">
       {(integrations ?? []).map((info) => (
         <IntegrationCard key={info.integration} info={info} />
       ))}
