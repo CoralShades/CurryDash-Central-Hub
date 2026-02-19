@@ -9,6 +9,7 @@ import {
   githubPrPayloadSchema,
   githubWorkflowRunPayloadSchema,
 } from '@/lib/schemas/github-webhook-schema'
+import { sendAdminNotification } from '@/modules/notifications/lib/send-notification'
 
 const SOURCE = 'webhook:github' as const
 
@@ -179,6 +180,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       payload: parsedBody,
       error: envelopeResult.error,
     })
+    void sendAdminNotification({
+      type: 'webhook_failure',
+      title: 'GitHub webhook processing failed',
+      message: `${eventType} — payload validation failed`,
+      actionUrl: '/admin/system-health',
+    })
     return NextResponse.json(
       { data: null, error: { code: 'INVALID_PAYLOAD', message: 'Payload validation failed' } },
       { status: 400 }
@@ -307,6 +314,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       eventType,
       payload: parsedBody,
       error: err,
+    })
+    void sendAdminNotification({
+      type: 'webhook_failure',
+      title: 'GitHub webhook processing failed',
+      message: `${eventType} — ${err instanceof Error ? err.message : 'processing error'}`,
+      actionUrl: '/admin/system-health',
     })
     return NextResponse.json(
       { data: null, error: { code: 'PROCESSING_ERROR', message: 'Failed to process GitHub webhook' } },

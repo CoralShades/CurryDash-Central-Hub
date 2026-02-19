@@ -7,6 +7,7 @@ import {
   jiraWebhookEventSchema,
   jiraIssuePayloadSchema,
 } from '@/lib/schemas/jira-webhook-schema'
+import { sendAdminNotification } from '@/modules/notifications/lib/send-notification'
 
 const SOURCE = 'webhook:jira' as const
 
@@ -219,6 +220,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       payload: parsedBody,
       error: parseResult.error,
     })
+    void sendAdminNotification({
+      type: 'webhook_failure',
+      title: 'Jira webhook processing failed',
+      message: `${eventType} — payload validation failed`,
+      actionUrl: '/admin/system-health',
+    })
     return NextResponse.json(
       { data: null, error: { code: 'INVALID_PAYLOAD', message: 'Payload validation failed' } },
       { status: 400 }
@@ -353,6 +360,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       payload: parsedBody,
       error: err,
       retryCount: upsertAttempts,
+    })
+    void sendAdminNotification({
+      type: 'webhook_failure',
+      title: 'Jira webhook processing failed',
+      message: `${eventType} — failed after ${upsertAttempts} retries`,
+      actionUrl: '/admin/system-health',
     })
     return NextResponse.json(
       { data: null, error: { code: 'PROCESSING_ERROR', message: 'Failed to process webhook event after retries' } },
