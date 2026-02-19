@@ -1,4 +1,5 @@
 import { LoginForm } from '@/modules/auth/components/login-form'
+import { Card } from '@/components/ui/card'
 
 export const metadata = {
   title: 'Sign In — CurryDash Central Hub',
@@ -6,31 +7,21 @@ export const metadata = {
 
 export default function LoginPage() {
   return (
-    <main
-      className="flex min-h-screen flex-col items-center justify-center px-4"
-      style={{ backgroundColor: 'hsl(var(--background))' }}
-    >
+    <main className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
       {/* Logo / wordmark */}
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold" style={{ color: 'var(--color-cinnamon)' }}>
+        <h1 className="text-2xl font-bold text-cinnamon">
           CurryDash
         </h1>
-        <p className="mt-1 text-sm" style={{ color: 'var(--color-text-muted)' }}>
+        <p className="mt-1 text-sm text-muted-foreground">
           Central Hub
         </p>
       </div>
 
       {/* Auth card */}
-      <div
-        className="w-full rounded-xl p-8 shadow-lg"
-        style={{
-          maxWidth: '400px',
-          backgroundColor: 'hsl(var(--card))',
-          boxShadow: 'var(--shadow-lg)',
-        }}
-      >
+      <Card className="w-full max-w-[400px] p-8 shadow-lg">
         <LoginForm />
-      </div>
+      </Card>
     </main>
   )
 }
