@@ -337,6 +337,116 @@ export interface Database {
         }
         Relationships: []
       }
+      github_workflow_runs: {
+        Row: {
+          id: string
+          run_id: number
+          github_repo_id: string
+          workflow_name: string
+          workflow_id: number | null
+          head_branch: string | null
+          head_sha: string | null
+          event: string | null
+          status: string
+          conclusion: string | null
+          html_url: string | null
+          run_number: number | null
+          duration_seconds: number | null
+          raw_payload: Json
+          github_created_at: string | null
+          github_updated_at: string | null
+          synced_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          run_id: number
+          github_repo_id: string
+          workflow_name: string
+          workflow_id?: number | null
+          head_branch?: string | null
+          head_sha?: string | null
+          event?: string | null
+          status: string
+          conclusion?: string | null
+          html_url?: string | null
+          run_number?: number | null
+          duration_seconds?: number | null
+          raw_payload?: Json
+          github_created_at?: string | null
+          github_updated_at?: string | null
+          synced_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          run_id?: number
+          github_repo_id?: string
+          workflow_name?: string
+          workflow_id?: number | null
+          head_branch?: string | null
+          head_sha?: string | null
+          event?: string | null
+          status?: string
+          conclusion?: string | null
+          html_url?: string | null
+          run_number?: number | null
+          duration_seconds?: number | null
+          raw_payload?: Json
+          github_created_at?: string | null
+          github_updated_at?: string | null
+          synced_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'github_workflow_runs_github_repo_id_fkey'
+            columns: ['github_repo_id']
+            isOneToOne: false
+            referencedRelation: 'github_repos'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      github_commit_activity: {
+        Row: {
+          id: string
+          github_repo_id: string
+          commit_date: string
+          commit_count: number
+          author_count: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          github_repo_id: string
+          commit_date: string
+          commit_count?: number
+          author_count?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          github_repo_id?: string
+          commit_date?: string
+          commit_count?: number
+          author_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'github_commit_activity_github_repo_id_fkey'
+            columns: ['github_repo_id']
+            isOneToOne: false
+            referencedRelation: 'github_repos'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       github_pull_requests: {
         Row: {
           id: string
@@ -702,6 +812,8 @@ export type DbJiraProject = Database['public']['Tables']['jira_projects']['Row']
 export type DbJiraIssue = Database['public']['Tables']['jira_issues']['Row']
 export type DbGithubRepo = Database['public']['Tables']['github_repos']['Row']
 export type DbGithubPR = Database['public']['Tables']['github_pull_requests']['Row']
+export type DbGithubWorkflowRun = Database['public']['Tables']['github_workflow_runs']['Row']
+export type DbGithubCommitActivity = Database['public']['Tables']['github_commit_activity']['Row']
 export type DbWebhookEvent = Database['public']['Tables']['webhook_events']['Row']
 export type DbDeadLetterEvent = Database['public']['Tables']['dead_letter_events']['Row']
 export type DbNotification = Database['public']['Tables']['notifications']['Row']

@@ -13,6 +13,7 @@ import { ActivityFeed } from './activity-feed'
 import { BlockerCard } from './blocker-card'
 import { SprintProgressWidget } from '@/modules/jira/components/sprint-progress-widget'
 import { PrStatusWidget } from '@/modules/github/components/pr-status-widget'
+import { CicdStatusWidget } from '@/modules/github/components/cicd-status-widget'
 
 interface WidgetGridProps {
   role: Role
@@ -33,6 +34,7 @@ function resolveWidget(config: WidgetConfig, role: Role) {
     case 'blockers':           return <BlockerCard />
     case 'sprint-progress':    return <SprintProgressWidget />
     case 'pr-status':          return <PrStatusWidget role={role} />
+    case 'cicd-pipeline':      return <CicdStatusWidget />
     default:                   return <WidgetPlaceholder config={config} />
   }
 }
