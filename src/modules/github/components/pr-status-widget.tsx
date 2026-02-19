@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { StalenessIndicator } from '@/components/shared/staleness-indicator'
-import { PrStatusCard } from './pr-status-card'
+import { PrStatusCard, extractReviewStatus, extractCiStatus } from './pr-status-card'
 import type { Role } from '@/types/roles'
 
 export interface PullRequestRow {
@@ -49,7 +49,7 @@ export async function PrStatusWidget({ role }: PrStatusWidgetProps) {
       .select(`
         id, pr_number, title, state, author_login, author_avatar_url,
         head_branch, base_branch, is_draft, additions, deletions,
-        changed_files, merged_at, github_created_at, github_updated_at,
+        changed_files, merged_at, raw_payload, github_created_at, github_updated_at,
         synced_at, created_at, updated_at,
         github_repos!github_pull_requests_repo_id_fkey (
           full_name, name
@@ -72,6 +72,7 @@ export async function PrStatusWidget({ role }: PrStatusWidgetProps) {
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const repo = row.github_repos as any
+        const rawPayload = (row.raw_payload ?? {}) as Record<string, unknown>
 
         return {
           id: row.id,
@@ -84,9 +85,9 @@ export async function PrStatusWidget({ role }: PrStatusWidgetProps) {
           baseBranch: row.base_branch,
           repoFullName: repo?.full_name ?? 'unknown/repo',
           repoName: repo?.name ?? 'unknown',
-          htmlUrl: null, // not stored in current schema
-          reviewStatus: 'pending' as const, // populated from webhook raw_payload in future
-          ciStatus: null as PullRequestRow['ciStatus'],
+          htmlUrl: (rawPayload.html_url as string | null) ?? null,
+          reviewStatus: extractReviewStatus(rawPayload),
+          ciStatus: extractCiStatus(rawPayload),
           additions: row.additions,
           deletions: row.deletions,
           changedFiles: row.changed_files,

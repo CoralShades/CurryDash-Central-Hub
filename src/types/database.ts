@@ -353,6 +353,7 @@ export interface Database {
           deletions: number
           changed_files: number
           merged_at: string | null
+          raw_payload: Json
           github_created_at: string | null
           github_updated_at: string | null
           synced_at: string | null
@@ -374,6 +375,7 @@ export interface Database {
           deletions?: number
           changed_files?: number
           merged_at?: string | null
+          raw_payload?: Json
           github_created_at?: string | null
           github_updated_at?: string | null
           synced_at?: string | null
@@ -395,6 +397,7 @@ export interface Database {
           deletions?: number
           changed_files?: number
           merged_at?: string | null
+          raw_payload?: Json
           github_created_at?: string | null
           github_updated_at?: string | null
           synced_at?: string | null

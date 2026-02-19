@@ -246,9 +246,17 @@ export const widgetRegistry: Record<Role, WidgetConfig[]> = {
     {
       id: 'sprint-progress',
       title: 'Sprint Progress',
-      colSpan: 12,
+      colSpan: 6,
       skeletonVariant: 'chart',
       dataSource: 'jira',
+      refreshBehavior: 'realtime',
+    },
+    {
+      id: 'pr-status',
+      title: 'Pull Requests',
+      colSpan: 6,
+      skeletonVariant: 'table',
+      dataSource: 'github',
       refreshBehavior: 'realtime',
     },
     {

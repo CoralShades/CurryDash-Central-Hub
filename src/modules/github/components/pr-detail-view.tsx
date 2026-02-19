@@ -88,6 +88,34 @@ export function PrDetailView({ pr, onClose }: PrDetailViewProps) {
           gap: 'var(--space-4)',
         }}
       >
+        {/* Breadcrumbs */}
+        <nav aria-label="Breadcrumb">
+          <ol
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              listStyle: 'none',
+              margin: 0,
+              padding: 0,
+              fontSize: '0.6875rem',
+              color: 'var(--color-text-muted)',
+              flexWrap: 'wrap',
+            }}
+          >
+            <li>Dashboard</li>
+            <li aria-hidden="true">›</li>
+            <li>Pull Requests</li>
+            <li aria-hidden="true">›</li>
+            <li
+              style={{ color: 'var(--color-text)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '200px' }}
+              title={`${pr.repoFullName}#${pr.prNumber} (${pr.title})`}
+            >
+              {pr.repoFullName}#{pr.prNumber}
+            </li>
+          </ol>
+        </nav>
+
         {/* Header */}
         <div
           style={{

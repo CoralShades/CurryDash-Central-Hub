@@ -5,7 +5,7 @@ import type { PullRequestRow } from './pr-status-widget'
 import { PrDetailView } from './pr-detail-view'
 import type { Role } from '@/types/roles'
 
-type FilterOption = 'all' | 'needs_review' | 'changes_requested' | 'ready_to_merge'
+export type FilterOption = 'all' | 'needs_review' | 'changes_requested' | 'ready_to_merge'
 
 interface PrStatusCardProps {
   prs: PullRequestRow[]
@@ -20,6 +20,53 @@ export function formatAge(dateStr: string): string {
   if (days < 7) return `${days}d ago`
   const weeks = Math.floor(days / 7)
   return `${weeks}w ago`
+}
+
+/** Filter PRs by review status filter option. */
+export function filterPrsByStatus(prs: PullRequestRow[], filter: FilterOption): PullRequestRow[] {
+  if (filter === 'all') return prs
+  if (filter === 'needs_review') return prs.filter((pr) => pr.reviewStatus === 'pending')
+  if (filter === 'changes_requested') return prs.filter((pr) => pr.reviewStatus === 'changes_requested')
+  if (filter === 'ready_to_merge') return prs.filter((pr) => pr.reviewStatus === 'approved')
+  return prs
+}
+
+/** Aggregate PR counts for the stakeholder summary view. */
+export function getStakeholderSummary(prs: PullRequestRow[]): { openCount: number; mergedThisWeek: number } {
+  const oneWeekAgo = new Date()
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+  const openCount = prs.filter((pr) => pr.state === 'open').length
+  const mergedThisWeek = prs.filter((pr) => {
+    if (!pr.mergedAt) return false
+    return new Date(pr.mergedAt) >= oneWeekAgo
+  }).length
+  return { openCount, mergedThisWeek }
+}
+
+/** Build the breadcrumb label string for a PR detail view. */
+export function buildPrBreadcrumb(repoFullName: string, prNumber: number, title: string): string {
+  return `Dashboard > Pull Requests > ${repoFullName}#${prNumber} (${title})`
+}
+
+/** Extract review status from GitHub PR raw_payload. Defaults to 'pending'. */
+export function extractReviewStatus(
+  rawPayload: Record<string, unknown>
+): PullRequestRow['reviewStatus'] {
+  const status = rawPayload?.review_status
+  if (status === 'approved') return 'approved'
+  if (status === 'changes_requested') return 'changes_requested'
+  return 'pending'
+}
+
+/** Extract CI status from GitHub PR raw_payload. Returns null when not present. */
+export function extractCiStatus(
+  rawPayload: Record<string, unknown>
+): PullRequestRow['ciStatus'] {
+  const status = rawPayload?.ci_status
+  if (status === 'success') return 'success'
+  if (status === 'failure') return 'failure'
+  if (status === 'pending') return 'pending'
+  return null
 }
 
 function ReviewStatusBadge({ status }: { status: PullRequestRow['reviewStatus'] }) {
@@ -71,7 +118,7 @@ function CiStatusIcon({ status }: { status: PullRequestRow['ciStatus'] }) {
 /**
  * PrStatusCard — Client Component with filter row and PR list.
  * Handles filter state and drill-down to PrDetailView.
- * Stakeholder view: titles only, no code links, no author details.
+ * Stakeholder view: aggregated summary only, no code links, no author details.
  */
 export function PrStatusCard({ prs, role }: PrStatusCardProps) {
   const [filter, setFilter] = useState<FilterOption>('all')
@@ -86,16 +133,38 @@ export function PrStatusCard({ prs, role }: PrStatusCardProps) {
     { key: 'ready_to_merge', label: 'Ready to Merge' },
   ]
 
-  const filteredPrs = prs.filter((pr) => {
-    if (filter === 'all') return true
-    if (filter === 'needs_review') return pr.reviewStatus === 'pending'
-    if (filter === 'changes_requested') return pr.reviewStatus === 'changes_requested'
-    if (filter === 'ready_to_merge') return pr.reviewStatus === 'approved'
-    return true
-  })
+  const filteredPrs = filterPrsByStatus(prs, filter)
+  const summary = getStakeholderSummary(prs)
 
   return (
     <>
+      {/* Stakeholder aggregated summary */}
+      {isStakeholder && (
+        <div
+          style={{
+            marginBottom: 'var(--space-3)',
+            padding: 'var(--space-2) var(--space-3)',
+            backgroundColor: 'var(--color-surface)',
+            borderRadius: 'var(--radius-sm)',
+            border: '1px solid var(--color-border)',
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: '0.8125rem',
+              color: 'var(--color-text-secondary)',
+            }}
+          >
+            <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{summary.openCount}</span>
+            {' '}PRs open
+            {' · '}
+            <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{summary.mergedThisWeek}</span>
+            {' '}merged this week
+          </p>
+        </div>
+      )}
+
       {/* Filter row */}
       <div
         style={{
@@ -164,6 +233,9 @@ export function PrStatusCard({ prs, role }: PrStatusCardProps) {
                 padding: 'var(--space-2) var(--space-3)',
                 backgroundColor: 'var(--color-surface)',
                 border: `1px solid ${pr.isStale ? 'var(--color-turmeric)' : 'var(--color-border)'}`,
+                borderLeft: pr.reviewStatus === 'changes_requested'
+                  ? '3px solid var(--color-turmeric)'
+                  : undefined,
                 borderRadius: 'var(--radius-sm)',
                 cursor: isStakeholder ? 'default' : 'pointer',
               }}
