@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/middleware'
 import type { Role } from '@/types/roles'
 
 /** Routes accessible without authentication */
-const PUBLIC_PATHS = ['/login', '/register', '/api/webhooks']
+const PUBLIC_PATHS = ['/login', '/register', '/api/webhooks', '/api/auth']
 
 /** Route prefix → required role mapping */
 const ROUTE_ROLE_MAP: Record<string, Role> = {
@@ -43,8 +43,19 @@ export default auth(async function middleware(request: NextRequest) {
   const response = NextResponse.next()
   createClient(request, response)
 
-  // Public routes — no auth required
+  // Public routes — no auth required (except /login redirect for auth'd users)
   if (isPublicPath(pathname)) {
+    // If an authenticated user with a role hits /login, redirect to their dashboard
+    if (pathname === '/login') {
+      // @ts-expect-error — Auth.js v5 augments NextRequest with .auth in middleware
+      const session = request.auth
+      const userRole = session?.user?.role as Role | null
+      if (userRole) {
+        const homeUrl = request.nextUrl.clone()
+        homeUrl.pathname = ROLE_HOME[userRole]
+        return NextResponse.redirect(homeUrl)
+      }
+    }
     return response
   }
 

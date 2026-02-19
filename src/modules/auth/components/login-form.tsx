@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 
 const SESSION_REDIRECT_KEY = 'redirectAfterLogin'
@@ -18,10 +19,16 @@ export function LoginForm() {
   const [isLoading, setIsLoading] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [callbackUrl, setCallbackUrl] = useState('/')
+  const searchParams = useSearchParams()
 
   useEffect(() => {
     setCallbackUrl(getAndClearRedirect())
-  }, [])
+    // Display Auth.js error from URL query params (e.g. ?error=OAuthCallbackError)
+    const urlError = searchParams.get('error')
+    if (urlError) {
+      setError(`Authentication failed: ${urlError}`)
+    }
+  }, [searchParams])
 
   async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault()

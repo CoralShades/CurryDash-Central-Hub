@@ -28,24 +28,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Skip to content — first focusable element for accessibility */}
         <a
           href="#main-content"
-          style={{
-            position: 'absolute',
-            top: '-100%',
-            left: '0',
-            zIndex: 100,
-            padding: '0.5rem 1rem',
-            backgroundColor: 'var(--color-turmeric)',
-            color: '#fff',
-            fontWeight: 600,
-            textDecoration: 'none',
-            borderRadius: '0 0 var(--radius-md) 0',
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.top = '0'
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.top = '-100%'
-          }}
+          className="sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-[100] focus:px-4 focus:py-2 focus:bg-[var(--color-turmeric)] focus:text-white focus:font-semibold focus:no-underline focus:rounded-br-md"
         >
           Skip to main content
         </a>

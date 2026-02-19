@@ -7,6 +7,8 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/
@@ -45,3 +47,9 @@ next-env.d.ts
 .claude/settings.local.json
 CLAUDE.local.md
 .codex/settings.local.toml
+
+# git worktrees
+.worktrees/
+
+# Playwright auth state (contains session cookies)
+e2e/.auth/
