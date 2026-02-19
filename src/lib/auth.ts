@@ -57,6 +57,72 @@ async function getUserRole(userId: string): Promise<Role | null> {
 }
 
 /**
+ * Ensures a public.users record exists for a given Auth.js user.
+ * Called as a fallback if the DB trigger hasn't fired yet (race condition).
+ * Creates the record with default role = developer.
+ */
+async function ensurePublicUser(userId: string, email?: string | null, name?: string | null, image?: string | null): Promise<Role | null> {
+  try {
+    const supabaseUrl = process.env.SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) return null
+
+    // First, look up the developer role ID
+    const roleRes = await fetch(
+      `${supabaseUrl}/rest/v1/roles?name=eq.developer&select=id`,
+      {
+        headers: {
+          apikey: supabaseServiceKey,
+          Authorization: `Bearer ${supabaseServiceKey}`,
+        },
+      }
+    )
+
+    if (!roleRes.ok) return null
+
+    const roles = (await roleRes.json()) as Array<{ id: string }>
+    const roleId = roles[0]?.id
+    if (!roleId) return null
+
+    // Upsert the user with developer role
+    const upsertRes = await fetch(
+      `${supabaseUrl}/rest/v1/users`,
+      {
+        method: 'POST',
+        headers: {
+          apikey: supabaseServiceKey,
+          Authorization: `Bearer ${supabaseServiceKey}`,
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates,return=representation',
+        },
+        body: JSON.stringify({
+          id: userId,
+          email: email ?? '',
+          full_name: name ?? null,
+          avatar_url: image ?? null,
+          role_id: roleId,
+        }),
+      }
+    )
+
+    if (!upsertRes.ok) {
+      logger.warn('Failed to upsert public user fallback', {
+        source: 'auth',
+        data: { status: upsertRes.status, userId },
+      })
+      return null
+    }
+
+    logger.info('Created public user via fallback', { source: 'auth', data: { userId } })
+    return 'developer'
+  } catch (error) {
+    logger.error('Error in ensurePublicUser fallback', { source: 'auth', data: { error, userId } })
+    return null
+  }
+}
+
+/**
  * Server Component helper — returns the current session user with role.
  * Throws AuthError if not authenticated or if the user's role is not one of the allowed roles.
  *
@@ -108,6 +174,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user?.id) {
         token.id = user.id
         token.role = await getUserRole(user.id)
+
+        // Fallback: if trigger hasn't created public.users yet, do it now
+        if (!token.role) {
+          token.role = await ensurePublicUser(user.id, user.email, user.name, user.image)
+        }
       }
 
       // On session update, re-fetch role to pick up admin changes
