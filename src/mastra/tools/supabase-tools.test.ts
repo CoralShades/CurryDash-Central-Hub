@@ -29,6 +29,14 @@ describe('getAiUsageSummaryTool', () => {
     })
     expect(result.success).toBe(true)
   })
+
+  it('inputSchema accepts optional sessionTokens for budget check', () => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = getAiUsageSummaryTool.inputSchema!.safeParse({
+      sessionTokens: 6000,
+    })
+    expect(result.success).toBe(true)
+  })
 })
 
 describe('getSystemHealthTool', () => {
@@ -39,5 +47,13 @@ describe('getSystemHealthTool', () => {
 
   it('has an execute function', () => {
     expect(typeof getSystemHealthTool.execute).toBe('function')
+  })
+
+  it('inputSchema accepts optional sessionTokens for budget check', () => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = getSystemHealthTool.inputSchema!.safeParse({
+      sessionTokens: 0,
+    })
+    expect(result.success).toBe(true)
   })
 })

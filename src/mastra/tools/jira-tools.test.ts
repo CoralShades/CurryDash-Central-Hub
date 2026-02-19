@@ -28,6 +28,28 @@ describe('getActiveSprintIssuesTool', () => {
     const result = getActiveSprintIssuesTool.inputSchema!.safeParse({})
     expect(result.success).toBe(false)
   })
+
+  it('inputSchema accepts optional sessionTokens for budget check', () => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = getActiveSprintIssuesTool.inputSchema!.safeParse({
+      projectKey: 'CD',
+      sessionTokens: 4000,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('inputSchema treats sessionTokens as optional (defaults to 0)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = getActiveSprintIssuesTool.inputSchema!.safeParse({
+      projectKey: 'CD',
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('description mentions live query and source citation', () => {
+    const desc = getActiveSprintIssuesTool.description.toLowerCase()
+    expect(desc).toMatch(/live|cache|source/i)
+  })
 })
 
 describe('getJiraProjectsSummaryTool', () => {
@@ -38,5 +60,13 @@ describe('getJiraProjectsSummaryTool', () => {
 
   it('has an execute function', () => {
     expect(typeof getJiraProjectsSummaryTool.execute).toBe('function')
+  })
+
+  it('inputSchema accepts optional sessionTokens for budget check', () => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = getJiraProjectsSummaryTool.inputSchema!.safeParse({
+      sessionTokens: 0,
+    })
+    expect(result.success).toBe(true)
   })
 })

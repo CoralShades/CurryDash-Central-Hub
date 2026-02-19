@@ -37,6 +37,20 @@ describe('getPullRequestsTool', () => {
     })
     expect(result.success).toBe(false)
   })
+
+  it('inputSchema accepts optional sessionTokens for budget check', () => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = getPullRequestsTool.inputSchema!.safeParse({
+      state: 'open',
+      sessionTokens: 3000,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('description mentions live query and source citation', () => {
+    const desc = getPullRequestsTool.description
+    expect(desc).toMatch(/live|cache|source/i)
+  })
 })
 
 describe('getWorkflowRunsTool', () => {
@@ -57,6 +71,14 @@ describe('getWorkflowRunsTool', () => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const result = getWorkflowRunsTool.inputSchema!.safeParse({
       limit: 20,
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('inputSchema accepts optional sessionTokens for budget check', () => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const result = getWorkflowRunsTool.inputSchema!.safeParse({
+      sessionTokens: 5000,
     })
     expect(result.success).toBe(true)
   })
