@@ -24,7 +24,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <CopilotProvider>
-      <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'hsl(var(--background))' }}>
+      <div className="flex min-h-screen bg-background">
         {/* Skip to content — first focusable element for accessibility */}
         <a
           href="#main-content"
@@ -42,7 +42,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         />
 
         {/* Main column */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div className="flex flex-1 flex-col min-w-0">
           <PageHeader
             userRole={userRole}
             userName={user.name}
@@ -53,14 +53,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <main
             id="main-content"
             tabIndex={-1}
-            style={{
-              flex: 1,
-              padding: 'var(--spacing-6, 1.5rem)',
-              maxWidth: '1440px',
-              width: '100%',
-              margin: '0 auto',
-              outline: 'none',
-            }}
+            className="flex-1 p-6 max-w-[1440px] w-full mx-auto outline-none"
           >
             {children}
           </main>

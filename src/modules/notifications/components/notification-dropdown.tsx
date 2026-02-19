@@ -1,7 +1,13 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { Bell, AlertTriangle, Inbox, Unplug, DollarSign, Timer, Info } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import {
   getNotifications,
@@ -10,23 +16,24 @@ import {
   markAllRead,
   type AppNotification,
 } from '../actions/manage-notifications'
+import type { LucideIcon } from 'lucide-react'
 
 interface NotificationDropdownProps {
   userRole?: string | null
 }
 
-const NOTIFICATION_ICONS: Record<string, string> = {
-  webhook_failure: '⚠',
-  dead_letter_growth: '📬',
-  integration_disconnect: '🔌',
-  ai_budget: '💰',
-  webhook_refresh_failure: '↺',
-  rate_limit_warning: '⏱',
-  info: 'ℹ',
+const NOTIFICATION_ICON_MAP: Record<string, LucideIcon> = {
+  webhook_failure: AlertTriangle,
+  dead_letter_growth: Inbox,
+  integration_disconnect: Unplug,
+  ai_budget: DollarSign,
+  webhook_refresh_failure: Timer,
+  rate_limit_warning: Timer,
+  info: Info,
 }
 
-function getNotificationIcon(type: string): string {
-  return NOTIFICATION_ICONS[type] ?? 'ℹ'
+function getNotificationIconComponent(type: string): LucideIcon {
+  return NOTIFICATION_ICON_MAP[type] ?? Info
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -46,7 +53,6 @@ export function NotificationDropdown({ userRole }: NotificationDropdownProps) {
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
 
   const loadNotifications = useCallback(async () => {
     setIsLoading(true)
@@ -83,28 +89,6 @@ export function NotificationDropdown({ userRole }: NotificationDropdownProps) {
     }
   }, [userRole, loadNotifications])
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  // Close dropdown on Escape
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape' && isOpen) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen])
-
   async function handleNotificationClick(notification: AppNotification) {
     if (!notification.isRead) {
       const result = await markAsRead({ notificationId: notification.id })
@@ -132,248 +116,111 @@ export function NotificationDropdown({ userRole }: NotificationDropdownProps) {
   }
 
   return (
-    <div ref={dropdownRef} style={{ position: 'relative' }}>
-      {/* Bell icon button */}
-      <button
-        type="button"
-        onClick={() => setIsOpen((v) => !v)}
-        aria-label={`View notifications${unreadCount > 0 ? ` — ${unreadCount} unread` : ''}`}
-        aria-expanded={isOpen}
-        aria-haspopup="dialog"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '36px',
-          height: '36px',
-          borderRadius: 'var(--radius-md)',
-          border: 'none',
-          background: isOpen ? 'rgba(197, 53, 31, 0.1)' : 'transparent',
-          cursor: 'pointer',
-          color: 'hsl(var(--foreground))',
-          position: 'relative',
-        }}
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.5}
-          width="20"
-          height="20"
-          aria-hidden="true"
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={`View notifications${unreadCount > 0 ? ` — ${unreadCount} unread` : ''}`}
+          aria-haspopup="dialog"
+          className={cn('h-9 w-9 relative', isOpen && 'bg-[rgba(197,53,31,0.1)]')}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
-          />
-        </svg>
+          <Bell className="h-5 w-5" aria-hidden="true" />
 
-        {/* Unread count badge (Chili Red — admin alert color) */}
-        {unreadCount > 0 && (
-          <span
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              top: '4px',
-              right: '4px',
-              minWidth: '16px',
-              height: '16px',
-              backgroundColor: 'var(--color-chili)',
-              color: '#fff',
-              fontSize: '0.625rem',
-              fontWeight: 700,
-              borderRadius: '999px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0 3px',
-              lineHeight: 1,
-            }}
-          >
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
-      </button>
-
-      {/* Dropdown panel */}
-      {isOpen && (
-        <div
-          role="dialog"
-          aria-label="Notifications"
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: 'calc(100% + 0.5rem)',
-            width: '360px',
-            maxHeight: '480px',
-            backgroundColor: 'hsl(var(--card))',
-            border: '1px solid hsl(var(--border))',
-            borderRadius: 'var(--radius-md)',
-            boxShadow: 'var(--shadow-md)',
-            zIndex: 50,
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Panel header */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0.75rem 1rem',
-              borderBottom: '1px solid hsl(var(--border))',
-              flexShrink: 0,
-            }}
-          >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: '0.9375rem',
-                fontWeight: 600,
-                color: 'hsl(var(--foreground))',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.375rem',
-              }}
+          {/* Unread count badge (Chili Red — admin alert color) */}
+          {unreadCount > 0 && (
+            <Badge
+              aria-hidden="true"
+              className="absolute top-1 right-1 min-w-[16px] h-4 bg-[var(--color-chili)] text-white text-[0.625rem] font-bold rounded-full flex items-center justify-center px-[3px] leading-none pointer-events-none"
             >
-              Notifications
-              {unreadCount > 0 && (
-                <span
-                  style={{
-                    fontSize: '0.6875rem',
-                    fontWeight: 600,
-                    color: 'var(--color-chili)',
-                    backgroundColor: 'rgba(197, 53, 31, 0.1)',
-                    padding: '0.125rem 0.375rem',
-                    borderRadius: '999px',
-                  }}
-                >
-                  {unreadCount} unread
-                </span>
-              )}
-            </h2>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Badge>
+          )}
+        </Button>
+      </PopoverTrigger>
 
+      <PopoverContent
+        align="end"
+        className="w-[360px] p-0"
+        role="dialog"
+        aria-label="Notifications"
+      >
+        {/* Panel header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+          <h2 className="m-0 text-[0.9375rem] font-semibold text-foreground flex items-center gap-1.5">
+            Notifications
             {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={handleMarkAllRead}
-                style={{
-                  fontSize: '0.75rem',
-                  color: 'var(--color-coriander)',
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  padding: '0.25rem 0',
-                  fontWeight: 500,
-                  flexShrink: 0,
-                }}
-              >
-                Mark all as read
-              </button>
+              <span className="text-[0.6875rem] font-semibold text-[var(--color-chili)] bg-[rgba(197,53,31,0.1)] px-1.5 py-0.5 rounded-full">
+                {unreadCount} unread
+              </span>
             )}
-          </div>
+          </h2>
 
-          {/* Notification list */}
-          <div style={{ overflowY: 'auto', flex: 1 }}>
-            {isLoading ? (
-              <div
-                style={{
-                  padding: '1.5rem 1rem',
-                  textAlign: 'center',
-                  color: 'var(--color-text-muted)',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Loading notifications…
-              </div>
-            ) : notifications.length === 0 ? (
-              <div
-                style={{
-                  padding: '2rem 1rem',
-                  textAlign: 'center',
-                  color: 'var(--color-text-muted)',
-                  fontSize: '0.875rem',
-                }}
-              >
-                No notifications
-              </div>
-            ) : (
-              <ul role="list" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {notifications.map((notification) => (
+          {unreadCount > 0 && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleMarkAllRead}
+              className="text-xs text-[var(--color-coriander)] h-auto py-1 px-0 font-medium shrink-0"
+            >
+              Mark all as read
+            </Button>
+          )}
+        </div>
+
+        {/* Notification list */}
+        {isLoading ? (
+          <div className="py-6 px-4 text-center text-muted-foreground text-sm">
+            Loading notifications…
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="py-8 px-4 text-center text-muted-foreground text-sm">
+            No notifications
+          </div>
+        ) : (
+          <ScrollArea className="max-h-[400px]">
+            <ul role="list" className="list-none m-0 p-0">
+              {notifications.map((notification) => {
+                const IconComponent = getNotificationIconComponent(notification.type)
+                return (
                   <li key={notification.id}>
                     <button
                       type="button"
                       onClick={() => handleNotificationClick(notification)}
-                      style={{
-                        width: '100%',
-                        textAlign: 'left',
-                        padding: '0.75rem 1rem',
-                        border: 'none',
-                        borderBottom: '1px solid hsl(var(--border))',
-                        background: notification.isRead
-                          ? 'transparent'
-                          : 'rgba(197, 53, 31, 0.04)',
-                        cursor: notification.actionUrl ? 'pointer' : 'default',
-                        display: 'flex',
-                        gap: '0.625rem',
-                        alignItems: 'flex-start',
-                      }}
+                      className={cn(
+                        'w-full text-left px-4 py-3 border-none border-b border-border flex gap-2.5 items-start',
+                        notification.isRead ? 'bg-transparent' : 'bg-[rgba(197,53,31,0.04)]',
+                        notification.actionUrl ? 'cursor-pointer hover:bg-muted' : 'cursor-default'
+                      )}
                     >
                       {/* Type icon */}
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          fontSize: '0.9375rem',
-                          flexShrink: 0,
-                          marginTop: '0.0625rem',
-                          lineHeight: 1,
-                          color: notification.isRead
-                            ? 'hsl(var(--muted-foreground))'
-                            : 'hsl(var(--foreground))',
-                        }}
-                      >
-                        {getNotificationIcon(notification.type)}
+                      <span aria-hidden="true" className="shrink-0 mt-0.5">
+                        <IconComponent
+                          className={cn(
+                            'h-4 w-4',
+                            notification.isRead ? 'text-muted-foreground' : 'text-foreground'
+                          )}
+                        />
                       </span>
 
                       {/* Content */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="flex-1 min-w-0">
                         <div
-                          style={{
-                            fontSize: '0.8125rem',
-                            fontWeight: notification.isRead ? 400 : 600,
-                            color: notification.isRead
-                              ? 'hsl(var(--muted-foreground))'
-                              : 'hsl(var(--foreground))',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            marginBottom: '0.1875rem',
-                          }}
+                          className={cn(
+                            'text-[0.8125rem] truncate mb-0.5',
+                            notification.isRead
+                              ? 'font-normal text-muted-foreground'
+                              : 'font-semibold text-foreground'
+                          )}
                         >
                           {notification.title}
                         </div>
-                        <div
-                          style={{
-                            fontSize: '0.75rem',
-                            color: 'var(--color-text-muted)',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            marginBottom: '0.1875rem',
-                          }}
-                        >
+                        <div className="text-xs text-muted-foreground truncate mb-0.5">
                           {notification.message}
                         </div>
-                        <div
-                          style={{
-                            fontSize: '0.6875rem',
-                            color: 'var(--color-text-muted)',
-                          }}
-                        >
+                        <div className="text-[0.6875rem] text-muted-foreground">
                           {formatRelativeTime(notification.createdAt)}
                         </div>
                       </div>
@@ -382,24 +229,17 @@ export function NotificationDropdown({ userRole }: NotificationDropdownProps) {
                       {!notification.isRead && (
                         <div
                           aria-hidden="true"
-                          style={{
-                            width: '7px',
-                            height: '7px',
-                            borderRadius: '50%',
-                            backgroundColor: 'var(--color-chili)',
-                            flexShrink: 0,
-                            marginTop: '0.3125rem',
-                          }}
+                          className="w-[7px] h-[7px] rounded-full bg-[var(--color-chili)] shrink-0 mt-1.5"
                         />
                       )}
                     </button>
                   </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+                )
+              })}
+            </ul>
+          </ScrollArea>
+        )}
+      </PopoverContent>
+    </Popover>
   )
 }

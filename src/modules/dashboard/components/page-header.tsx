@@ -3,6 +3,19 @@
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
+import { Sparkles } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 import { useDashboardStore } from '@/stores/use-dashboard-store'
 import type { Role } from '@/types/roles'
 import { NotificationDropdown } from '@/modules/notifications/components/notification-dropdown'
@@ -54,24 +67,11 @@ export function PageHeader({ userRole, userName, userEmail, userAvatar, lastUpda
   const router = useRouter()
   const pathname = usePathname()
   const { isAiSidebarOpen, isAiAvailable, toggleAiSidebar } = useDashboardStore()
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const userMenuRef = useRef<HTMLDivElement>(null)
   const freshnessLabel = useRelativeTime(lastUpdated)
 
   const pageTitle = Object.entries(PAGE_TITLES)
     .sort((a, b) => b[0].length - a[0].length)
     .find(([prefix]) => pathname.startsWith(prefix))?.[1] ?? 'Dashboard'
-
-  // Close user menu on outside click
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setUserMenuOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
 
   // Keyboard shortcuts
   const gKeyRef = useRef(false)
@@ -92,7 +92,6 @@ export function PageHeader({ userRole, userName, userEmail, userAvatar, lastUpda
 
       // Escape — close menus/modals
       if (e.key === 'Escape') {
-        setUserMenuOpen(false)
         return
       }
 
@@ -143,212 +142,112 @@ export function PageHeader({ userRole, userName, userEmail, userAvatar, lastUpda
     await signOut({ callbackUrl: '/login' })
   }
 
+  const userInitial = (userName ?? userEmail ?? 'U')[0].toUpperCase()
+
   return (
-    <header
-      style={{
-        height: '64px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 1.5rem',
-        backgroundColor: 'hsl(var(--background))',
-        borderBottom: '1px solid hsl(var(--border))',
-        position: 'sticky',
-        top: 0,
-        zIndex: 40,
-        gap: '1rem',
-      }}
-    >
-      {/* Page title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
-        <h1 style={{ fontSize: '1rem', fontWeight: 600, color: 'hsl(var(--foreground))', margin: 0, whiteSpace: 'nowrap' }}>
-          {pageTitle}
-        </h1>
-        {userRole === 'stakeholder' && (
-          <span
-            style={{
-              fontSize: '0.75rem',
-              padding: '0.125rem 0.375rem',
-              borderRadius: 'var(--radius-full)',
-              backgroundColor: 'hsl(var(--muted))',
-              color: 'var(--color-text-muted)',
-              fontWeight: 500,
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            Read-only
-          </span>
-        )}
-      </div>
+    <TooltipProvider>
+      <header className="h-16 flex items-center justify-between px-6 bg-background border-b border-border sticky top-0 z-40 gap-4">
+        {/* Page title */}
+        <div className="flex items-center gap-2 min-w-0">
+          <h1 className="text-base font-semibold text-foreground m-0 whitespace-nowrap">
+            {pageTitle}
+          </h1>
+          {userRole === 'stakeholder' && (
+            <Badge variant="secondary" className="whitespace-nowrap shrink-0 text-xs">
+              Read-only
+            </Badge>
+          )}
+        </div>
 
-      {/* Right side controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
-        {/* Data freshness */}
-        {lastUpdated && (
-          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-            Last updated: {freshnessLabel}
-          </span>
-        )}
+        {/* Right side controls */}
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Data freshness */}
+          {lastUpdated && (
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              Last updated: {freshnessLabel}
+            </span>
+          )}
 
-        {/* Notification bell — Story 8.4: live unread badge + dropdown */}
-        <NotificationDropdown userRole={userRole} />
+          {/* Notification bell — Story 8.4: live unread badge + dropdown */}
+          <NotificationDropdown userRole={userRole} />
 
-        {/* AI toggle — Turmeric Gold when active, muted/grey when AI unavailable */}
-        <button
-          type="button"
-          onClick={toggleAiSidebar}
-          aria-label={isAiSidebarOpen ? 'Close AI assistant (Cmd+K)' : 'Open AI assistant (Cmd+K)'}
-          aria-pressed={isAiSidebarOpen}
-          aria-disabled={!isAiAvailable}
-          title={!isAiAvailable ? 'AI assistant is temporarily unavailable' : undefined}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '36px',
-            height: '36px',
-            borderRadius: 'var(--radius-md)',
-            border: 'none',
-            background: isAiAvailable && isAiSidebarOpen ? 'rgba(230, 176, 75, 0.15)' : 'transparent',
-            cursor: 'pointer',
-            color: !isAiAvailable
-              ? 'hsl(var(--muted-foreground))'
-              : isAiSidebarOpen
-              ? 'var(--color-turmeric)'
-              : 'hsl(var(--foreground))',
-            opacity: !isAiAvailable ? 0.5 : 1,
-          }}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 003.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-          </svg>
-        </button>
-
-        {/* User dropdown */}
-        <div ref={userMenuRef} style={{ position: 'relative' }}>
-          <button
-            type="button"
-            onClick={() => setUserMenuOpen((v) => !v)}
-            aria-label="User menu"
-            aria-expanded={userMenuOpen}
-            aria-haspopup="menu"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.25rem 0.5rem',
-              borderRadius: 'var(--radius-md)',
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-            }}
-          >
-            <div
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                backgroundColor: 'var(--color-turmeric)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden',
-                flexShrink: 0,
-              }}
-            >
-              {userAvatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={userAvatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.75rem' }}>
-                  {(userName ?? userEmail ?? 'U')[0].toUpperCase()}
-                </span>
-              )}
-            </div>
-            {userRole && (
-              <span
-                style={{
-                  fontSize: '0.6875rem',
-                  padding: '0.125rem 0.375rem',
-                  borderRadius: '999px',
-                  backgroundColor: 'rgba(230, 176, 75, 0.15)',
-                  color: 'var(--color-turmeric)',
-                  fontWeight: 600,
-                  textTransform: 'capitalize',
-                }}
+          {/* AI toggle — Turmeric Gold when active, muted/grey when AI unavailable */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={toggleAiSidebar}
+                aria-label={isAiSidebarOpen ? 'Close AI assistant (Cmd+K)' : 'Open AI assistant (Cmd+K)'}
+                aria-pressed={isAiSidebarOpen}
+                aria-disabled={!isAiAvailable}
+                title={!isAiAvailable ? 'AI assistant is temporarily unavailable' : undefined}
+                className={cn(
+                  'h-9 w-9',
+                  !isAiAvailable && 'opacity-50',
+                  isAiAvailable && isAiSidebarOpen && 'bg-[rgba(230,176,75,0.15)] text-[var(--color-turmeric)]'
+                )}
               >
-                {userRole}
-              </span>
+                <Sparkles className="h-5 w-5" aria-hidden="true" />
+              </Button>
+            </TooltipTrigger>
+            {!isAiAvailable && (
+              <TooltipContent>AI assistant is temporarily unavailable</TooltipContent>
             )}
-          </button>
+          </Tooltip>
 
-          {userMenuOpen && (
-            <div
-              role="menu"
-              style={{
-                position: 'absolute',
-                right: 0,
-                top: 'calc(100% + 0.5rem)',
-                minWidth: '180px',
-                backgroundColor: 'hsl(var(--card))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: 'var(--radius-md)',
-                boxShadow: 'var(--shadow-md)',
-                zIndex: 50,
-                padding: '0.25rem 0',
-              }}
-            >
-              <div
-                style={{
-                  padding: '0.5rem 0.75rem',
-                  fontSize: '0.75rem',
-                  color: 'var(--color-text-muted)',
-                  borderBottom: '1px solid hsl(var(--border))',
-                  marginBottom: '0.25rem',
-                }}
+          {/* User dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                aria-label="User menu"
+                aria-haspopup="menu"
+                className="flex items-center gap-2 px-2 py-1 h-auto"
               >
+                <Avatar className="h-7 w-7 shrink-0">
+                  <AvatarImage src={userAvatar ?? undefined} alt="" />
+                  <AvatarFallback className="bg-[var(--color-turmeric)] text-white text-xs font-semibold">
+                    {userInitial}
+                  </AvatarFallback>
+                </Avatar>
+                {userRole && (
+                  <Badge
+                    variant="secondary"
+                    className="text-[0.6875rem] bg-[rgba(230,176,75,0.15)] text-[var(--color-turmeric)] font-semibold capitalize"
+                  >
+                    {userRole}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[180px]">
+              <div className="px-3 py-2 text-xs text-muted-foreground border-b border-border mb-1">
                 {userEmail}
               </div>
 
               {userRole && (
-                <a
-                  href={roleDashboardHref[userRole]}
-                  role="menuitem"
-                  style={{
-                    display: 'block',
-                    padding: '0.5rem 0.75rem',
-                    fontSize: '0.875rem',
-                    color: 'hsl(var(--foreground))',
-                    textDecoration: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-                  My Dashboard
-                </a>
+                <DropdownMenuItem asChild>
+                  <a href={roleDashboardHref[userRole]} className="cursor-pointer">
+                    My Dashboard
+                  </a>
+                </DropdownMenuItem>
               )}
 
-              <button
-                role="menuitem"
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
                 onClick={handleLogout}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '0.5rem 0.75rem',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-chili)',
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                }}
+                className="text-[var(--color-chili)] focus:text-[var(--color-chili)] cursor-pointer"
               >
                 Sign out
-              </button>
-            </div>
-          )}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </div>
-    </header>
+      </header>
+    </TooltipProvider>
   )
 }
