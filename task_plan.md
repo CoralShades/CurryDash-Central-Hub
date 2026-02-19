@@ -1,68 +1,44 @@
-# Task Plan: Ralph Loop Integration — CurryDash Central Hub
+# Post-Ralph Review, E2E Testing & Validation — Task Plan
 
-## Goal
-Set up the Ralph Loop autonomous implementation system integrated with BMAD v6 workflows. Complete remaining Phase 3 gaps, then create full Ralph infrastructure for Phase 4 implementation.
+## Phase 0: Setup & Baseline
+- [x] Create session files (task_plan.md, findings.md, progress.md)
+- [x] Baseline: vitest run — 353/356 pass (3 flaky timeouts, pre-existing)
+- [x] Baseline: npm run build — passes
+- [x] Baseline: playwright smoke — webServer timeout in worktree (expected, fixing in config)
 
-## Reference
-- **Ralph Plugin:** Official `ralph-wiggum` from Claude Code plugins
-- **BMAD Status:** Phase 3 (Solutioning) — IR report says READY, epics.md Step 03 pending
-- **Planning Artifacts:** `_bmad-output/planning-artifacts/` (9 files, ~6,000 lines)
-- **Architecture:** 8 epics, 36 stories, 56 FRs, 46 NFRs, 18 ARCH decisions
+## Phase 1: Auth Setup (USER ACTION REQUIRED)
+- [ ] GitHub OAuth App configured
+- [ ] .env.local vars set (AUTH_GITHUB_ID, AUTH_GITHUB_SECRET, NEXTAUTH_URL, NEXTAUTH_SECRET)
+- [ ] Manual login verified at /login -> "Continue with GitHub"
+- [ ] Supabase roles assigned (admin, developer, qa, stakeholder)
+- [ ] Playwright storageState captured per role
 
-## Phase A: Complete BMAD Phase 3 Gaps
+## Phase 2: BMAD Code Reviews
+- [ ] Epic 2: Auth & IAM (Critical)
+- [ ] Epic 4: Jira Integration (Critical)
+- [ ] Epic 5: GitHub Integration (Critical)
+- [ ] Epic 1: Foundation (Batch)
+- [ ] Epic 3: Dashboard Shell (Batch)
+- [ ] Epic 6: AI Assistant (Batch)
+- [ ] Epic 7: AI Reports (Batch)
+- [ ] Epic 8: Admin & Observability (Batch)
 
-### A1: Fix Documentation Defects (per IR recommendations)
-- [ ] Fix Traceability Matrix FR1-FR9 (epics.md Appendix)
-- [ ] Fix Story Count Summary (Epic 1: 5, Epic 2: 5, Total: 36)
-- [ ] Add NFR-P8 to Epic 5 header
+## Phase 3: E2E Test Suite
+- [ ] Update playwright.config.ts (multi-project)
+- [ ] Create e2e/helpers.ts
+- [ ] Create e2e/auth.setup.ts
+- [ ] Create unauth-login.spec.ts (11 tests)
+- [ ] Create admin-*.spec.ts (7 files)
+- [ ] Create dev-*.spec.ts (2 files)
+- [ ] Create qa-dashboard.spec.ts
+- [ ] Create stakeholder-*.spec.ts (2 files)
+- [ ] Delete smoke.spec.ts (absorbed)
 
-### A2: Update Workflow Status
-- [ ] Mark `create-epics-and-stories` as complete in bmm-workflow-status.yaml
-- [ ] Mark `implementation-readiness` as complete in bmm-workflow-status.yaml
-- [ ] Mark `test-design` as complete (already done but verify)
+## Phase 4: Test Execution & Verification
+- [ ] Run full E2E suite
+- [ ] Playwright MCP visual verification
+- [ ] Fix failures
 
-## Phase B: Ralph Loop Infrastructure
-
-### B1: Install ralph-wiggum Plugin
-- [ ] Fetch plugin from official Claude Code repo
-- [ ] Install to project or user-level plugins directory
-- [ ] Verify `/ralph-loop` command is available
-
-### B2: Create Sub-Agent Definitions (.claude/agents/)
-- [ ] `ralph-implementer.md` — Haiku-based TDD implementation agent
-- [ ] `ralph-reviewer.md` — Sonnet-based code review agent
-- [ ] `ralph-qa.md` — Sonnet-based QA validation agent
-- [ ] `ralph-architect.md` — Opus escalation for architectural decisions
-
-### B3: Create Ralph Commands (.claude/commands/)
-- [ ] `ralph-bridge.md` — BMAD-to-Ralph plan translator
-- [ ] `ralph-run.md` — Ralph loop orchestration instructions
-
-### B4: Configuration
-- [ ] Update `.claude/settings.json` with Ralph-relevant permissions
-- [ ] Ensure MCP servers configured for Ralph iterations
-
-## Phase C: Generate Ralph Plan
-
-### C1: Run Ralph Bridge
-- [ ] Generate `.ralph-plan.md` from BMAD artifacts
-- [ ] Include story ordering, dependency chains, model assignments
-- [ ] Include architecture context summary
-
-### C2: Progress Tracking
-- [ ] Initialize `.ralph-progress.md` template
-- [ ] Update all planning files (progress.md, findings.md)
-
-## Model Strategy
-| Role | Model | Rationale |
-|------|-------|-----------|
-| Ralph orchestration | Sonnet | Orchestrates sub-agents, picks tasks |
-| Implementation (routine) | Haiku | 70%+ of coding work, fast and cheap |
-| Code review | Sonnet | Deeper analysis needed |
-| QA validation | Sonnet | Reasons about acceptance criteria |
-| Architecture decisions | Opus | Cross-cutting concerns only |
-
-## Dependencies
-- Phase A must complete before Phase C (clean artifacts needed for plan generation)
-- Phase B is independent and can run in parallel with Phase A
-- Phase C depends on both A and B
+## Phase 5: Finalization
+- [ ] Full regression (vitest + playwright + build + tsc)
+- [ ] Commit & push
