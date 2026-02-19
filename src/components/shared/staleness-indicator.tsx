@@ -24,8 +24,7 @@ export function StalenessIndicator({ updatedAt }: StalenessIndicatorProps) {
   if (age >= STALENESS_RED_MS) {
     return (
       <span
-        className="rounded-full px-2 py-0.5 text-xs font-medium"
-        style={{ backgroundColor: 'var(--color-chili)', color: '#fff' }}
+        className="rounded-full bg-chili px-2 py-0.5 text-xs font-medium text-white"
         title={`Last updated: ${Math.round(age / 60000)} min ago`}
       >
         {Math.round(age / 60000)}m old
@@ -36,8 +35,7 @@ export function StalenessIndicator({ updatedAt }: StalenessIndicatorProps) {
   if (age >= STALENESS_AMBER_MS) {
     return (
       <span
-        className="rounded-full px-2 py-0.5 text-xs font-medium"
-        style={{ backgroundColor: 'var(--color-turmeric)', color: '#fff' }}
+        className="rounded-full bg-turmeric px-2 py-0.5 text-xs font-medium text-white"
         title={`Last updated: ${Math.round(age / 60000)} min ago`}
       >
         {Math.round(age / 60000)}m old
@@ -46,7 +44,7 @@ export function StalenessIndicator({ updatedAt }: StalenessIndicatorProps) {
   }
 
   return (
-    <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+    <span className="text-xs text-muted-foreground">
       Updated {Math.round(age / 60000)}m ago
     </span>
   )

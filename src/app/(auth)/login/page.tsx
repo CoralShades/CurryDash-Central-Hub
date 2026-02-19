@@ -1,7 +1,10 @@
+import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import { LoginForm } from '@/modules/auth/components/login-form'
 import { Card } from '@/components/ui/card'
+import { WidgetSkeleton } from '@/components/shared/widget-skeleton'
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Sign In — CurryDash Central Hub',
 }
 
@@ -20,7 +23,9 @@ export default function LoginPage() {
 
       {/* Auth card */}
       <Card className="w-full max-w-[400px] p-8 shadow-lg">
-        <LoginForm />
+        <Suspense fallback={<WidgetSkeleton variant="list" />}>
+          <LoginForm />
+        </Suspense>
       </Card>
     </main>
   )

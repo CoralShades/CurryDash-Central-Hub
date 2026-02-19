@@ -90,7 +90,7 @@ export function AiWidgetRenderer({ config, isPreview = false }: AiWidgetRenderer
             right: 0,
             zIndex: 10,
             backgroundColor: 'var(--color-turmeric)',
-            color: '#fff',
+            color: 'white',
             fontSize: '0.6875rem',
             fontWeight: 700,
             padding: '2px 8px',

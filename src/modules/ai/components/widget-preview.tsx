@@ -136,7 +136,7 @@ export function WidgetPreview({ config, status }: WidgetPreviewProps) {
                   borderRadius: 'var(--radius-md)',
                   border: 'none',
                   backgroundColor: 'var(--color-turmeric)',
-                  color: '#fff',
+                  color: 'white',
                   fontWeight: 600,
                   fontSize: '0.8125rem',
                   cursor: saveState === 'saving' ? 'not-allowed' : 'pointer',
