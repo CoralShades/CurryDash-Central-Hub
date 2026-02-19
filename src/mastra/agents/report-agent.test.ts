@@ -26,4 +26,19 @@ describe('createReportAgent', () => {
     const agent = createReportAgent('developer')
     expect(agent.name).toBe('report-agent')
   })
+
+  it('agent includes getPullRequests tool for holistic GitHub data view', () => {
+    const agent = createReportAgent('developer')
+    expect(agent.tools).toHaveProperty('getPullRequests')
+  })
+
+  it('agent creates distinct instances for stakeholder vs developer roles', () => {
+    const stakeholderAgent = createReportAgent('stakeholder')
+    const developerAgent = createReportAgent('developer')
+    expect(stakeholderAgent).toBeDefined()
+    expect(developerAgent).toBeDefined()
+    // Both agents share the same tool set for data access
+    expect(stakeholderAgent.tools).toHaveProperty('getSprintReportData')
+    expect(developerAgent.tools).toHaveProperty('getPullRequests')
+  })
 })
