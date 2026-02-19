@@ -1,51 +1,83 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import { useDashboardStore } from '@/stores/use-dashboard-store'
 
-type AiAvailability = 'checking' | 'available' | 'unavailable'
+/** Message shown when the AI backend is unreachable. */
+export const AI_UNAVAILABLE_MESSAGE = 'AI assistant is temporarily unavailable'
+
+/** Interval (ms) at which to re-check the AI endpoint when it was last unavailable. */
+const RECOVERY_POLL_INTERVAL_MS = 30_000
+
+/** Timeout (ms) for the health check request. */
+const HEALTH_CHECK_TIMEOUT_MS = 5_000
 
 /**
  * AiStatus — lightweight indicator showing whether the AI backend is reachable.
  *
- * Performs a HEAD request to /api/ai/copilotkit on mount and updates state.
- * On failure (network error, 401, 500, etc.) it shows an "AI unavailable" badge
- * so the user knows to expect no AI responses without crashing the dashboard.
+ * On mount it performs a HEAD request to /api/ai/copilotkit to determine
+ * availability, and writes the result to `useDashboardStore.isAiAvailable`.
+ * When unavailable it shows a badge and starts polling every 30 seconds to
+ * detect recovery — allowing the sidebar to resume without a page reload.
  *
  * Per ARCH-12: AI is an enhancement layer — the dashboard works without it.
  */
 export function AiStatus() {
-  const [status, setStatus] = useState<AiAvailability>('checking')
+  const { isAiAvailable, setAiAvailable } = useDashboardStore()
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  function clearPoll() {
+    if (pollRef.current !== null) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+  }
+
+  async function checkAvailability(): Promise<boolean> {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS)
+    try {
+      const res = await fetch('/api/ai/copilotkit', {
+        method: 'HEAD',
+        signal: controller.signal,
+      })
+      // 200 or 405 (method not allowed but endpoint exists) both mean available
+      return res.status < 500
+    } catch {
+      return false
+    } finally {
+      clearTimeout(timeoutId)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
 
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
+    checkAvailability().then((available) => {
+      if (cancelled) return
+      setAiAvailable(available)
 
-    fetch('/api/ai/copilotkit', {
-      method: 'HEAD',
-      signal: controller.signal,
+      if (!available) {
+        // Poll until recovery
+        pollRef.current = setInterval(async () => {
+          const recovered = await checkAvailability()
+          if (cancelled) return
+          if (recovered) {
+            setAiAvailable(true)
+            clearPoll()
+          }
+        }, RECOVERY_POLL_INTERVAL_MS)
+      }
     })
-      .then((res) => {
-        if (!cancelled) {
-          // 200 or 405 (method not allowed but endpoint exists) both mean available
-          setStatus(res.status < 500 ? 'available' : 'unavailable')
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setStatus('unavailable')
-      })
-      .finally(() => {
-        clearTimeout(timeoutId)
-      })
 
     return () => {
       cancelled = true
-      controller.abort()
+      clearPoll()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  if (status === 'checking' || status === 'available') {
+  if (isAiAvailable) {
     return null
   }
 
@@ -76,7 +108,7 @@ export function AiStatus() {
           flexShrink: 0,
         }}
       />
-      AI unavailable
+      {AI_UNAVAILABLE_MESSAGE}
     </div>
   )
 }

@@ -8,6 +8,7 @@ interface DashboardState {
   activeRole: Role | null
   currentView: DashboardView
   isAiSidebarOpen: boolean
+  isAiAvailable: boolean
   selectedWidgetId: string | null
   // Actions
   setActiveRole: (role: Role | null) => void
@@ -15,6 +16,7 @@ interface DashboardState {
   openAiSidebar: () => void
   closeAiSidebar: () => void
   toggleAiSidebar: () => void
+  setAiAvailable: (available: boolean) => void
   selectWidget: (id: string | null) => void
   resetDashboard: () => void
 }
@@ -23,6 +25,7 @@ const initialState = {
   activeRole: null as Role | null,
   currentView: 'overview' as DashboardView,
   isAiSidebarOpen: false,
+  isAiAvailable: true,
   selectedWidgetId: null as string | null,
 }
 
@@ -34,6 +37,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   openAiSidebar: () => set({ isAiSidebarOpen: true }),
   closeAiSidebar: () => set({ isAiSidebarOpen: false }),
   toggleAiSidebar: () => set((state) => ({ isAiSidebarOpen: !state.isAiSidebarOpen })),
+  setAiAvailable: (available) => set({ isAiAvailable: available }),
   selectWidget: (id) => set({ selectedWidgetId: id }),
   resetDashboard: () => set(initialState),
 }))

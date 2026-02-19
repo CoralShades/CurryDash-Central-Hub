@@ -52,7 +52,7 @@ function useRelativeTime(date: Date | null | undefined) {
 export function PageHeader({ userRole, userName, userEmail, userAvatar, lastUpdated }: PageHeaderProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { isAiSidebarOpen, toggleAiSidebar } = useDashboardStore()
+  const { isAiSidebarOpen, isAiAvailable, toggleAiSidebar } = useDashboardStore()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
   const freshnessLabel = useRelativeTime(lastUpdated)
@@ -213,12 +213,14 @@ export function PageHeader({ userRole, userName, userEmail, userAvatar, lastUpda
           </svg>
         </button>
 
-        {/* AI toggle (Turmeric Gold when active) */}
+        {/* AI toggle — Turmeric Gold when active, muted/grey when AI unavailable */}
         <button
           type="button"
           onClick={toggleAiSidebar}
           aria-label={isAiSidebarOpen ? 'Close AI assistant (Cmd+K)' : 'Open AI assistant (Cmd+K)'}
           aria-pressed={isAiSidebarOpen}
+          aria-disabled={!isAiAvailable}
+          title={!isAiAvailable ? 'AI assistant is temporarily unavailable' : undefined}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -227,9 +229,14 @@ export function PageHeader({ userRole, userName, userEmail, userAvatar, lastUpda
             height: '36px',
             borderRadius: 'var(--radius-md)',
             border: 'none',
-            background: isAiSidebarOpen ? 'rgba(230, 176, 75, 0.15)' : 'transparent',
+            background: isAiAvailable && isAiSidebarOpen ? 'rgba(230, 176, 75, 0.15)' : 'transparent',
             cursor: 'pointer',
-            color: isAiSidebarOpen ? 'var(--color-turmeric)' : 'hsl(var(--foreground))',
+            color: !isAiAvailable
+              ? 'hsl(var(--muted-foreground))'
+              : isAiSidebarOpen
+              ? 'var(--color-turmeric)'
+              : 'hsl(var(--foreground))',
+            opacity: !isAiAvailable ? 0.5 : 1,
           }}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5" aria-hidden="true">

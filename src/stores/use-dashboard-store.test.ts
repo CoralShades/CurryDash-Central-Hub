@@ -35,4 +35,21 @@ describe('useDashboardStore', () => {
     expect(useDashboardStore.getState().selectedWidgetId).toBe('widget-1')
     expect(useDashboardStore.getState().isAiSidebarOpen).toBe(true)
   })
+
+  it('isAiAvailable starts as true', () => {
+    expect(useDashboardStore.getState().isAiAvailable).toBe(true)
+  })
+
+  it('setAiAvailable updates availability state', () => {
+    useDashboardStore.getState().setAiAvailable(false)
+    expect(useDashboardStore.getState().isAiAvailable).toBe(false)
+    useDashboardStore.getState().setAiAvailable(true)
+    expect(useDashboardStore.getState().isAiAvailable).toBe(true)
+  })
+
+  it('resetDashboard resets isAiAvailable to true', () => {
+    useDashboardStore.getState().setAiAvailable(false)
+    useDashboardStore.getState().resetDashboard()
+    expect(useDashboardStore.getState().isAiAvailable).toBe(true)
+  })
 })

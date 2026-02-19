@@ -3,9 +3,14 @@
 import { CopilotChat } from '@copilotkit/react-ui'
 import '@copilotkit/react-ui/styles.css'
 import { useDashboardStore } from '@/stores/use-dashboard-store'
+import { AI_UNAVAILABLE_MESSAGE } from './ai-status'
 
 /** Width of the AI chat sidebar in pixels. */
 export const AI_SIDEBAR_WIDTH = 400
+
+/** Fallback body shown in the sidebar when the AI backend is unreachable. */
+export const AI_UNAVAILABLE_FALLBACK =
+  'The AI assistant is temporarily unavailable. Your dashboard continues to work fully — all Jira data, GitHub data, charts, and navigation are unaffected.'
 
 /**
  * AiSidebar — slide-in chat panel controlled by useDashboardStore.
@@ -17,9 +22,12 @@ export const AI_SIDEBAR_WIDTH = 400
  *
  * Uses CopilotChat (headless) rather than CopilotSidebar so we fully control
  * the panel visibility, width, and slide animation.
+ *
+ * When isAiAvailable is false, shows a friendly unavailability message instead
+ * of the chat interface so the sidebar never crashes due to AI issues.
  */
 export function AiSidebar() {
-  const { isAiSidebarOpen, closeAiSidebar } = useDashboardStore()
+  const { isAiSidebarOpen, closeAiSidebar, isAiAvailable } = useDashboardStore()
 
   return (
     <>
@@ -72,11 +80,11 @@ export function AiSidebar() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            {/* Sparkle icon */}
+            {/* Sparkle icon — muted when unavailable */}
             <svg
               viewBox="0 0 24 24"
               fill="none"
-              stroke="var(--color-turmeric)"
+              stroke={isAiAvailable ? 'var(--color-turmeric)' : 'hsl(var(--muted-foreground))'}
               strokeWidth={1.5}
               style={{ width: '20px', height: '20px' }}
               aria-hidden="true"
@@ -118,14 +126,54 @@ export function AiSidebar() {
         {/* Chat area — only render when open to avoid unnecessary rendering */}
         <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {isAiSidebarOpen && (
-            <CopilotChat
-              labels={{
-                title: 'AI Assistant',
-                initial: 'Hi! I can help you with your dashboard — sprint status, GitHub PRs, Jira issues, and more. What would you like to know?',
-                placeholder: 'Ask anything about your project…',
-              }}
-              className="copilot-chat-panel"
-            />
+            isAiAvailable ? (
+              <CopilotChat
+                labels={{
+                  title: 'AI Assistant',
+                  initial: 'Hi! I can help you with your dashboard — sprint status, GitHub PRs, Jira issues, and more. What would you like to know?',
+                  placeholder: 'Ask anything about your project…',
+                }}
+                className="copilot-chat-panel"
+              />
+            ) : (
+              <div
+                role="status"
+                aria-live="polite"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flex: 1,
+                  padding: '2rem 1.5rem',
+                  gap: '0.75rem',
+                  textAlign: 'center',
+                  color: 'hsl(var(--muted-foreground))',
+                }}
+              >
+                {/* Muted sparkle icon */}
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  style={{ width: '40px', height: '40px', opacity: 0.4 }}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 003.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 00-3.09 3.09z"
+                  />
+                </svg>
+                <p style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'hsl(var(--foreground))', margin: 0 }}>
+                  {AI_UNAVAILABLE_MESSAGE}
+                </p>
+                <p style={{ fontSize: '0.875rem', margin: 0, lineHeight: 1.5 }}>
+                  {AI_UNAVAILABLE_FALLBACK}
+                </p>
+              </div>
+            )
           )}
         </div>
       </aside>

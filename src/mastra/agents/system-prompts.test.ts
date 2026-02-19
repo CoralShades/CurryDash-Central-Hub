@@ -35,11 +35,13 @@ describe('buildSystemPrompt', () => {
     expect(lower).toMatch(/business|metric|stakeholder|overview|aggregate/)
   })
 
-  it('stakeholder prompt excludes individual developer attribution', () => {
+  it('stakeholder prompt instructs the AI not to attribute work to individual developers', () => {
     const prompt = buildSystemPrompt('stakeholder')
     const lower = prompt.toLowerCase()
-    // Stakeholder should NOT see individual developer names/attribution
-    expect(lower).not.toMatch(/individual developer|who wrote|blame|author attribution/)
+    // Should explicitly instruct NOT to show per-person breakdowns or developer names
+    expect(lower).toMatch(/no individual developer|per-person|avoid attributing|team.level/)
+    // Should NOT instruct: "show developer X did Y" type attributions
+    expect(lower).not.toMatch(/who wrote|blame|author attribution/)
   })
 
   it('stakeholder prompt excludes code-level details instruction', () => {
@@ -47,6 +49,18 @@ describe('buildSystemPrompt', () => {
     // Should include explicit instruction to avoid code details
     const lower = prompt.toLowerCase()
     expect(lower).toMatch(/aggregate|do not|avoid|business|high.level/)
+  })
+
+  it('stakeholder prompt explicitly prohibits code snippets and GitHub code links', () => {
+    const prompt = buildSystemPrompt('stakeholder')
+    const lower = prompt.toLowerCase()
+    expect(lower).toMatch(/code snippet|github.*link|code.*link|no code|never.*code/)
+  })
+
+  it('stakeholder prompt explicitly prohibits individual developer names', () => {
+    const prompt = buildSystemPrompt('stakeholder')
+    const lower = prompt.toLowerCase()
+    expect(lower).toMatch(/individual developer|developer name|per-person|no.*name/)
   })
 
   it('each role produces a distinct prompt', () => {

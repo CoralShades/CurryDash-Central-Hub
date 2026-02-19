@@ -70,3 +70,18 @@ describe('AiSidebar width', () => {
     expect(mod.AI_SIDEBAR_WIDTH).toBe(400)
   })
 })
+
+describe('AiStatus message', () => {
+  it('exports AI_UNAVAILABLE_MESSAGE constant', async () => {
+    const mod = await import('./ai-status')
+    expect(mod.AI_UNAVAILABLE_MESSAGE).toBe('AI assistant is temporarily unavailable')
+  })
+})
+
+describe('AiSidebar unavailability fallback', () => {
+  it('exports AI_UNAVAILABLE_FALLBACK constant', async () => {
+    const mod = await import('./ai-sidebar')
+    expect(typeof mod.AI_UNAVAILABLE_FALLBACK).toBe('string')
+    expect(mod.AI_UNAVAILABLE_FALLBACK.length).toBeGreaterThan(20)
+  })
+})
