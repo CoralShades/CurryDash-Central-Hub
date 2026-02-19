@@ -9,3 +9,7 @@ export const WEBHOOK_MAX_RETRIES = 3
 export const WIDGET_GRID_COLUMNS = 12
 export const SIDEBAR_WIDTH_EXPANDED = 256
 export const SIDEBAR_WIDTH_COLLAPSED = 64
+/** Monthly AI API spend ceiling in USD (ARCH-11) */
+export const AI_BUDGET_CEILING_USD = 50
+/** Fraction of budget at which a warn log + notification is triggered (0.8 = 80%) */
+export const AI_BUDGET_WARN_PERCENT = 0.8
