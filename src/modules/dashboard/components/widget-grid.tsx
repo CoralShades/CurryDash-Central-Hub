@@ -65,10 +65,10 @@ export async function WidgetGrid({ role }: WidgetGridProps) {
     <>
       {/* Mobile message — CSS hides .dashboard-grid and shows this at <768px */}
       <div className="dashboard-mobile-message">
-        <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: 'var(--space-2)' }}>
+        <p className="text-base font-semibold text-foreground mb-2">
           Best viewed on desktop
         </p>
-        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0 }}>
+        <p className="text-sm text-muted-foreground m-0">
           CurryDash Central Hub is optimised for desktop. For the best experience, please use a laptop or tablet.
         </p>
       </div>
@@ -78,7 +78,7 @@ export async function WidgetGrid({ role }: WidgetGridProps) {
         {staticWidgets.map((config) => (
           <div
             key={config.id}
-            style={{ gridColumn: `span ${config.colSpan}` }}
+            className={`col-span-${config.colSpan}`}
           >
             <WidgetCard config={config}>
               {resolveWidget(config, role)}
@@ -90,7 +90,7 @@ export async function WidgetGrid({ role }: WidgetGridProps) {
         {aiWidgets.map((widget) => (
           <div
             key={widget.id}
-            style={{ gridColumn: `span ${widget.config.colSpan}` }}
+            className={`col-span-${widget.config.colSpan}`}
           >
             <AiWidgetCard widgetId={widget.id} config={widget.config} />
           </div>

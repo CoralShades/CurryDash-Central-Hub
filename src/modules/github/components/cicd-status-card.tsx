@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import type { WorkflowRunRow, CommitActivityRow } from './cicd-status-widget'
 import { CommitActivityChart } from './commit-activity-chart'
+import { Badge } from '@/components/ui/badge'
+import { Check, X, Circle, Ban } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface CicdStatusCardProps {
   runs: WorkflowRunRow[]
@@ -124,21 +127,24 @@ export function buildCommitChartData(
 
 function RunStatusIcon({ status, conclusion }: { status: string; conclusion: string | null }) {
   const config = getRunStatusConfig(status, conclusion)
-  return (
-    <span
-      title={config.label}
-      aria-label={config.label}
-      style={{
-        color: config.colorVar,
-        fontSize: '0.875rem',
-        fontWeight: 600,
-        flexShrink: 0,
-        lineHeight: 1,
-      }}
-    >
-      {config.symbol}
-    </span>
-  )
+  const baseClass = 'h-3.5 w-3.5 flex-shrink-0'
+
+  if (status === 'completed') {
+    if (conclusion === 'success') {
+      return <Check className={cn(baseClass, 'text-coriander')} aria-label={config.label} />
+    }
+    if (conclusion === 'failure' || conclusion === 'timed_out') {
+      return <X className={cn(baseClass, 'text-chili')} aria-label={config.label} />
+    }
+    if (conclusion === 'cancelled') {
+      return <Ban className={cn(baseClass, 'text-muted-foreground')} aria-label={config.label} />
+    }
+  }
+  // in_progress, queued, skipped, unknown — use Circle with appropriate color
+  const colorClass = status === 'in_progress' || status === 'queued'
+    ? 'text-turmeric'
+    : 'text-muted-foreground'
+  return <Circle className={cn(baseClass, colorClass)} aria-label={config.label} />
 }
 
 // ---- Main component ----------------------------------------------------
@@ -165,46 +171,21 @@ export function CicdStatusCard({ runs, activity }: CicdStatusCardProps) {
   const latestRuns = Array.from(latestByWorkflow.values())
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 'var(--space-3)' }}>
+    <div className="flex flex-col h-full gap-3">
       {/* Summary row */}
       <div
-        style={{
-          display: 'flex',
-          gap: 'var(--space-4)',
-          padding: 'var(--space-2) var(--space-3)',
-          backgroundColor: 'var(--color-surface)',
-          borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--color-border)',
-          flexShrink: 0,
-        }}
+        className="flex gap-4 py-2 px-3 bg-muted/50 rounded-[var(--radius-sm)] border border-border flex-shrink-0"
         role="status"
         aria-label="CI/CD summary for last 24 hours"
       >
-        <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-          Last 24h:
-        </span>
-        <span style={{ fontSize: '0.8125rem', color: 'var(--color-coriander)', fontWeight: 600 }}>
-          {summary.passed} passed
-        </span>
-        <span style={{ fontSize: '0.8125rem', color: 'var(--color-chili)', fontWeight: 600 }}>
-          {summary.failed} failed
-        </span>
-        <span style={{ fontSize: '0.8125rem', color: 'var(--color-turmeric)', fontWeight: 600 }}>
-          {summary.running} running
-        </span>
+        <span className="text-[0.8125rem] text-muted-foreground">Last 24h:</span>
+        <span className="text-[0.8125rem] text-coriander font-semibold">{summary.passed} passed</span>
+        <span className="text-[0.8125rem] text-chili font-semibold">{summary.failed} failed</span>
+        <span className="text-[0.8125rem] text-turmeric font-semibold">{summary.running} running</span>
       </div>
 
       {/* Workflow run list */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-2)',
-          minHeight: 0,
-        }}
-      >
+      <div className="flex-1 overflow-y-auto flex flex-col gap-2 min-h-0">
         {latestRuns.map((run) => {
           const recurring = isRecurringFailure(run.workflowName, runs)
           const isFailed = run.conclusion === 'failure' || run.conclusion === 'timed_out'
@@ -214,78 +195,36 @@ export function CicdStatusCard({ runs, activity }: CicdStatusCardProps) {
             <div key={run.id}>
               <button
                 onClick={() => setExpandedRunId(isExpanded ? null : run.id)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: 'var(--space-2) var(--space-3)',
-                  backgroundColor: 'var(--color-surface)',
-                  border: `1px solid ${isFailed ? 'var(--color-chili)' : 'var(--color-border)'}`,
-                  borderLeft: isFailed
-                    ? '3px solid var(--color-chili)'
-                    : '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-sm)',
-                  cursor: 'pointer',
-                }}
+                className={cn(
+                  'block w-full text-left py-2 px-3',
+                  'bg-muted/50 border rounded-[var(--radius-sm)] cursor-pointer transition-colors hover:bg-muted',
+                  isFailed
+                    ? 'border-chili border-l-[3px] border-l-chili'
+                    : 'border-border'
+                )}
                 aria-label={`Workflow ${run.workflowName}: ${getRunStatusConfig(run.status, run.conclusion).label}`}
                 aria-expanded={isExpanded}
               >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--space-2)',
-                    flexWrap: 'wrap',
-                  }}
-                >
+                <div className="flex items-center gap-2 flex-wrap">
                   <RunStatusIcon status={run.status} conclusion={run.conclusion} />
 
-                  <span
-                    style={{
-                      fontSize: '0.8125rem',
-                      fontWeight: 500,
-                      color: 'var(--color-text)',
-                      flex: 1,
-                      minWidth: 0,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
+                  <span className="text-[0.8125rem] font-medium text-foreground flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
                     {run.workflowName}
                   </span>
 
                   {recurring && (
-                    <span
-                      style={{
-                        fontSize: '0.6875rem',
-                        fontWeight: 500,
-                        padding: '0.125rem 0.375rem',
-                        borderRadius: 'var(--radius-full)',
-                        backgroundColor: '#FDECEA',
-                        color: 'var(--color-chili)',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0,
-                      }}
-                    >
+                    <Badge className="text-[0.6875rem] font-medium rounded-full px-1.5 py-0 whitespace-nowrap flex-shrink-0 bg-destructive/10 text-chili border-0">
                       Recurring Failure
-                    </span>
+                    </Badge>
                   )}
 
                   {run.headBranch && (
-                    <span
-                      style={{
-                        fontSize: '0.6875rem',
-                        color: 'var(--color-text-muted)',
-                        fontFamily: 'monospace',
-                        flexShrink: 0,
-                      }}
-                    >
+                    <span className="text-[0.6875rem] text-muted-foreground font-mono flex-shrink-0">
                       {run.headBranch}
                     </span>
                   )}
 
-                  <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', flexShrink: 0 }}>
+                  <span className="text-[0.6875rem] text-muted-foreground flex-shrink-0">
                     {formatDuration(run.durationSeconds)}
                   </span>
                 </div>
@@ -293,45 +232,29 @@ export function CicdStatusCard({ runs, activity }: CicdStatusCardProps) {
 
               {/* Expanded detail panel */}
               {isExpanded && (
-                <div
-                  style={{
-                    padding: 'var(--space-3)',
-                    backgroundColor: 'var(--color-surface)',
-                    borderLeft: '3px solid var(--color-border)',
-                    borderRadius: '0 0 var(--radius-sm) var(--radius-sm)',
-                    marginTop: '-1px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 'var(--space-2)',
-                  }}
-                >
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                    <span style={{ fontWeight: 600 }}>Workflow:</span> {run.workflowName}
+                <div className="p-3 bg-muted/50 border-l-[3px] border-l-border rounded-b-[var(--radius-sm)] -mt-px flex flex-col gap-2">
+                  <div className="text-[0.8125rem] text-muted-foreground">
+                    <span className="font-semibold">Workflow:</span> {run.workflowName}
                   </div>
                   {run.headBranch && (
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                      <span style={{ fontWeight: 600 }}>Branch:</span> {run.headBranch}
+                    <div className="text-[0.8125rem] text-muted-foreground">
+                      <span className="font-semibold">Branch:</span> {run.headBranch}
                     </div>
                   )}
                   {run.event && (
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                      <span style={{ fontWeight: 600 }}>Trigger:</span> {run.event}
+                    <div className="text-[0.8125rem] text-muted-foreground">
+                      <span className="font-semibold">Trigger:</span> {run.event}
                     </div>
                   )}
-                  <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
-                    <span style={{ fontWeight: 600 }}>Duration:</span> {formatDuration(run.durationSeconds)}
+                  <div className="text-[0.8125rem] text-muted-foreground">
+                    <span className="font-semibold">Duration:</span> {formatDuration(run.durationSeconds)}
                   </div>
                   {run.htmlUrl && (
                     <a
                       href={run.htmlUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{
-                        fontSize: '0.8125rem',
-                        color: 'var(--color-turmeric)',
-                        textDecoration: 'underline',
-                        alignSelf: 'flex-start',
-                      }}
+                      className="text-[0.8125rem] text-turmeric underline self-start"
                       onClick={(e) => e.stopPropagation()}
                     >
                       Open in GitHub Actions →
@@ -345,7 +268,7 @@ export function CicdStatusCard({ runs, activity }: CicdStatusCardProps) {
       </div>
 
       {/* Commit activity chart */}
-      <div style={{ flexShrink: 0 }}>
+      <div className="flex-shrink-0">
         <CommitActivityChart data={chartData} weekCount={commitCount} />
       </div>
     </div>

@@ -1,3 +1,6 @@
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Progress } from '@/components/ui/progress'
+
 export type TrendDirection = 'up' | 'down' | 'neutral'
 
 export interface MetricCardProps {
@@ -10,16 +13,22 @@ export interface MetricCardProps {
   progressPercent?: number
 }
 
-const TREND_ICON: Record<TrendDirection, string> = {
-  up: '↑',
-  down: '↓',
-  neutral: '→',
-}
-
 function trendColor(trend: TrendDirection, isPositiveGood = true): string {
   if (trend === 'neutral') return 'var(--color-text-muted)'
   const isGood = isPositiveGood ? trend === 'up' : trend === 'down'
   return isGood ? 'var(--color-success)' : 'var(--color-error)'
+}
+
+function TrendIcon({ trend }: { trend: TrendDirection }) {
+  if (trend === 'up') return <TrendingUp className="h-3.5 w-3.5" aria-hidden="true" />
+  if (trend === 'down') return <TrendingDown className="h-3.5 w-3.5" aria-hidden="true" />
+  return <Minus className="h-3.5 w-3.5" aria-hidden="true" />
+}
+
+function progressColor(percent: number): string {
+  if (percent >= 80) return 'var(--color-success)'
+  if (percent >= 50) return 'var(--color-turmeric)'
+  return 'var(--color-error)'
 }
 
 /**
@@ -35,78 +44,39 @@ export function MetricCard({
   progressPercent,
 }: MetricCardProps) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', height: '100%' }}>
+    <div className="flex flex-col gap-3 h-full">
       {/* Label */}
-      <p
-        style={{
-          margin: 0,
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          color: 'var(--color-text-secondary)',
-        }}
-      >
+      <p className="m-0 text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground">
         {label}
       </p>
 
       {/* Value */}
-      <p
-        style={{
-          margin: 0,
-          fontSize: '1.875rem',
-          fontWeight: 600,
-          lineHeight: 1,
-          color: 'var(--color-text)',
-        }}
-      >
+      <p className="m-0 text-[1.875rem] font-semibold leading-none text-foreground">
         {value}
       </p>
 
       {/* Trend */}
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px',
-          fontSize: '0.8125rem',
-          color: trendColor(trend),
-        }}
+        className="flex items-center gap-1 text-[0.8125rem]"
+        style={{ color: trendColor(trend) }}
         aria-label={`${delta} ${period}`}
       >
-        <span aria-hidden="true">{TREND_ICON[trend]}</span>
+        <TrendIcon trend={trend} />
         <span>{delta}</span>
-        <span style={{ color: 'var(--color-text-muted)' }}>{period}</span>
+        <span className="text-muted-foreground">{period}</span>
       </div>
 
       {/* Optional mini progress bar */}
       {progressPercent !== undefined && (
-        <div
-          style={{
-            marginTop: 'auto',
-            height: '4px',
-            backgroundColor: 'var(--color-border)',
-            borderRadius: '2px',
-            overflow: 'hidden',
-          }}
-          role="progressbar"
-          aria-valuenow={progressPercent}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <div
-            style={{
-              height: '100%',
-              width: `${progressPercent}%`,
-              backgroundColor:
-                progressPercent >= 80
-                  ? 'var(--color-success)'
-                  : progressPercent >= 50
-                    ? 'var(--color-turmeric)'
-                    : 'var(--color-error)',
-              borderRadius: '2px',
-              transition: 'width 0.3s ease',
-            }}
+        <div className="mt-auto">
+          <Progress
+            value={progressPercent}
+            className="h-1"
+            style={
+              {
+                '--progress-indicator-color': progressColor(progressPercent),
+              } as React.CSSProperties
+            }
           />
         </div>
       )}

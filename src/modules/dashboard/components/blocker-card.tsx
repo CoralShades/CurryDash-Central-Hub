@@ -1,6 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { cn } from '@/lib/utils'
 
 export type BlockerSeverity = 'blocker' | 'warning'
 
@@ -66,153 +75,90 @@ const MOCK_BLOCKERS: BlockerItem[] = [
 ]
 
 interface DetailPanelProps {
-  item: BlockerItem
+  item: BlockerItem | null
+  open: boolean
   onClose: () => void
 }
 
-function DetailPanel({ item, onClose }: DetailPanelProps) {
+function DetailPanel({ item, open, onClose }: DetailPanelProps) {
+  if (!item) return null
+
   const handleCopyLink = () => {
     void navigator.clipboard.writeText(window.location.href + '#' + item.id)
   }
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 40,
-        display: 'flex',
-      }}
-    >
-      {/* Backdrop */}
-      <div
-        style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.3)' }}
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Panel */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Detail: ${item.key}`}
-        style={{
-          width: '420px',
-          maxWidth: '90vw',
-          backgroundColor: 'white',
-          boxShadow: 'var(--shadow-lg)',
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            padding: 'var(--space-5)',
-            borderBottom: '1px solid var(--color-border)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: 'var(--space-3)',
-          }}
-        >
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Breadcrumb */}
-            <p style={{ margin: '0 0 4px', fontSize: '0.6875rem', color: 'var(--color-text-muted)' }}>
-              Dashboard › Blockers & Alerts › {item.key}
-            </p>
-            <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, lineHeight: 1.4 }}>
-              <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>{item.key}</span>
-              {' '}
-              {item.title}
-            </h2>
-          </div>
-          <button
-            onClick={onClose}
-            aria-label="Close detail panel"
-            style={{
-              flexShrink: 0,
-              padding: '4px 8px',
-              backgroundColor: 'transparent',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
-              fontSize: '1rem',
-              lineHeight: 1,
-            }}
-          >
-            ✕
-          </button>
-        </div>
+    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
+      <SheetContent side="right" className="w-[420px] max-w-[90vw] flex flex-col p-0 overflow-y-auto">
+        <SheetHeader className="p-5 border-b border-border">
+          <p className="m-0 mb-1 text-[0.6875rem] text-muted-foreground">
+            Dashboard › Blockers & Alerts › {item.key}
+          </p>
+          <SheetTitle className="text-base font-semibold leading-[1.4] text-left">
+            <span className="text-muted-foreground font-medium">{item.key}</span>
+            {' '}
+            {item.title}
+          </SheetTitle>
+        </SheetHeader>
 
         {/* Body */}
-        <div style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', flex: 1 }}>
+        <div className="p-5 flex flex-col gap-4 flex-1">
           {/* Severity badge */}
           <div>
-            <span
-              style={{
-                display: 'inline-block',
-                padding: '4px 10px',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                backgroundColor: item.severity === 'blocker' ? '#FEE2E2' : '#FEF3C7',
-                color: item.severity === 'blocker' ? 'var(--color-chili)' : '#92400E',
-              }}
+            <Badge
+              variant={item.severity === 'blocker' ? 'destructive' : 'secondary'}
+              className={cn(
+                'text-xs font-semibold',
+                item.severity === 'blocker'
+                  ? 'bg-destructive/10 text-chili border-0'
+                  : 'bg-amber-100 text-amber-800 border-0'
+              )}
             >
-              {item.severity === 'blocker' ? '🔴 Blocker' : '⚠️ Warning'}
-            </span>
+              {item.severity === 'blocker' ? 'Blocker' : 'Warning'}
+            </Badge>
           </div>
 
           {/* Metadata grid */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 'var(--space-3)',
-              fontSize: '0.8125rem',
-            }}
-          >
+          <div className="grid grid-cols-2 gap-3 text-[0.8125rem]">
             {item.status && (
               <>
-                <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Status</span>
-                <span style={{ color: 'var(--color-text)' }}>{item.status}</span>
+                <span className="text-muted-foreground font-medium">Status</span>
+                <span className="text-foreground">{item.status}</span>
               </>
             )}
             {item.priority && (
               <>
-                <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Priority</span>
-                <span style={{ color: 'var(--color-text)' }}>{item.priority}</span>
+                <span className="text-muted-foreground font-medium">Priority</span>
+                <span className="text-foreground">{item.priority}</span>
               </>
             )}
             {item.assignee && (
               <>
-                <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Assignee</span>
-                <span style={{ color: 'var(--color-text)' }}>{item.assignee}</span>
+                <span className="text-muted-foreground font-medium">Assignee</span>
+                <span className="text-foreground">{item.assignee}</span>
               </>
             )}
             {item.daysBlocked !== undefined && (
               <>
-                <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Duration</span>
-                <span style={{ color: 'var(--color-chili)', fontWeight: 600 }}>
+                <span className="text-muted-foreground font-medium">Duration</span>
+                <span className="text-chili font-semibold">
                   {item.daysBlocked} day{item.daysBlocked !== 1 ? 's' : ''} blocked
                 </span>
               </>
             )}
             <>
-              <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Source</span>
-              <span style={{ color: 'var(--color-text)' }}>{item.source}</span>
+              <span className="text-muted-foreground font-medium">Source</span>
+              <span className="text-foreground">{item.source}</span>
             </>
           </div>
 
           {/* Description */}
           {item.description && (
             <div>
-              <p style={{ margin: '0 0 var(--space-2)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <p className="m-0 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-[0.05em]">
                 Description
               </p>
-              <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-text)', lineHeight: 1.6 }}>
+              <p className="m-0 text-sm text-foreground leading-[1.6]">
                 {item.description}
               </p>
             </div>
@@ -220,53 +166,29 @@ function DetailPanel({ item, onClose }: DetailPanelProps) {
         </div>
 
         {/* Actions footer */}
-        <div
-          style={{
-            padding: 'var(--space-4) var(--space-5)',
-            borderTop: '1px solid var(--color-border)',
-            display: 'flex',
-            gap: 'var(--space-3)',
-          }}
-        >
+        <div className="p-4 px-5 border-t border-border flex gap-3">
           {item.externalUrl && (
-            <a
-              href={item.externalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 14px',
-                backgroundColor: 'var(--color-primary)',
-                color: 'white',
-                borderRadius: 'var(--radius-sm)',
-                fontSize: '0.8125rem',
-                fontWeight: 500,
-                textDecoration: 'none',
-              }}
-            >
-              Open in {item.source} ↗
-            </a>
+            <Button asChild size="sm" className="text-[0.8125rem] font-medium">
+              <a
+                href={item.externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open in {item.source} ↗
+              </a>
+            </Button>
           )}
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleCopyLink}
-            style={{
-              padding: '8px 14px',
-              backgroundColor: 'transparent',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: '0.8125rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              color: 'var(--color-text)',
-            }}
+            className="text-[0.8125rem] font-medium"
           >
             Copy link
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   )
 }
 
@@ -286,129 +208,68 @@ export function BlockerCard({ items = MOCK_BLOCKERS }: BlockerCardProps) {
 
   return (
     <>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="flex flex-col h-full">
         {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 'var(--space-3)',
-          }}
-        >
-          <p
-            style={{
-              margin: 0,
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: 'var(--color-text-secondary)',
-            }}
-          >
+        <div className="flex items-center justify-between mb-3">
+          <p className="m-0 text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground">
             Blockers & Alerts
           </p>
 
           {blockers.length > 0 && (
-            <span
-              style={{
-                display: 'inline-block',
-                padding: '2px 8px',
-                backgroundColor: '#FEE2E2',
-                color: 'var(--color-chili)',
-                borderRadius: '999px',
-                fontSize: '0.6875rem',
-                fontWeight: 700,
-              }}
+            <Badge
+              variant="destructive"
+              className="bg-destructive/10 text-chili border-0 text-[0.6875rem] font-bold rounded-full px-2 py-0.5"
               aria-label={`${blockers.length} active blockers`}
             >
               {blockers.length} blocker{blockers.length !== 1 ? 's' : ''}
-            </span>
+            </Badge>
           )}
         </div>
 
         {/* Empty state */}
         {items.length === 0 ? (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 'var(--space-2)',
-            }}
-          >
-            <span style={{ fontSize: '1.5rem' }} aria-hidden="true">✓</span>
-            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--color-success)', fontWeight: 500 }}>
+          <div className="flex-1 flex flex-col items-center justify-center gap-2">
+            <span className="text-2xl" aria-hidden="true">✓</span>
+            <p className="m-0 text-sm text-emerald-600 font-medium">
               No blockers — all clear
             </p>
           </div>
         ) : (
-          <div
-            style={{
-              flex: 1,
-              overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 'var(--space-2)',
-            }}
-          >
+          <div className="flex-1 overflow-y-auto flex flex-col gap-2">
             {items.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setSelectedItem(item)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: 'var(--space-3) var(--space-3) var(--space-3) var(--space-4)',
-                  borderLeft: `4px solid ${item.severity === 'blocker' ? 'var(--color-chili)' : 'var(--color-turmeric)'}`,
-                  backgroundColor: 'var(--color-surface)',
-                  border: `1px solid var(--color-border)`,
-                  borderLeftWidth: '4px',
-                  borderLeftColor: item.severity === 'blocker' ? 'var(--color-chili)' : 'var(--color-turmeric)',
-                  borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
-                  cursor: 'pointer',
-                }}
+                className={cn(
+                  'block w-full text-left py-3 pr-3 pl-4',
+                  'bg-muted/50 border border-border rounded-r-[var(--radius-sm)]',
+                  'cursor-pointer transition-colors hover:bg-muted',
+                  item.severity === 'blocker'
+                    ? 'border-l-4 border-l-chili'
+                    : 'border-l-4 border-l-turmeric'
+                )}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-2)' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: 'var(--color-text-muted)' }}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[0.6875rem] font-semibold text-muted-foreground">
                       {item.key}
                     </span>
                     <p
-                      style={{
-                        margin: '2px 0 0',
-                        fontSize: '0.8125rem',
-                        color: 'var(--color-text)',
-                        fontWeight: 500,
-                        lineHeight: 1.4,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                      }}
+                      className={cn(
+                        'mt-0.5 text-[0.8125rem] text-foreground font-medium leading-[1.4]',
+                        'overflow-hidden line-clamp-2'
+                      )}
                     >
                       {item.title}
                     </p>
                   </div>
                   {item.daysBlocked !== undefined && (
-                    <span
-                      style={{
-                        flexShrink: 0,
-                        fontSize: '0.6875rem',
-                        color: 'var(--color-chili)',
-                        fontWeight: 600,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
+                    <span className="flex-shrink-0 text-[0.6875rem] text-chili font-semibold whitespace-nowrap">
                       blocked · {item.daysBlocked}d
                     </span>
                   )}
                 </div>
-                <p style={{ margin: '4px 0 0', fontSize: '0.6875rem', color: 'var(--color-text-muted)' }}>
+                <p className="mt-1 text-[0.6875rem] text-muted-foreground">
                   {item.source}
                 </p>
               </button>
@@ -418,12 +279,11 @@ export function BlockerCard({ items = MOCK_BLOCKERS }: BlockerCardProps) {
       </div>
 
       {/* Detail panel overlay */}
-      {selectedItem && (
-        <DetailPanel
-          item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-        />
-      )}
+      <DetailPanel
+        item={selectedItem}
+        open={selectedItem !== null}
+        onClose={() => setSelectedItem(null)}
+      />
     </>
   )
 }

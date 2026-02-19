@@ -1,7 +1,6 @@
-'use client'
-
-import { useState, Suspense } from 'react'
+import { Suspense } from 'react'
 import { ErrorBoundary, WidgetError, WidgetSkeleton } from '@/components/shared'
+import { Card } from '@/components/ui/card'
 import type { WidgetConfig } from '../config/widget-registry'
 
 interface WidgetCardProps {
@@ -13,32 +12,16 @@ interface WidgetCardProps {
  * Card shell wrapping each dashboard widget.
  * - ErrorBoundary: isolates crashes (FR19)
  * - Suspense: shows WidgetSkeleton while data loads
- * - Hover: elevates shadow for visual feedback
+ * - Hover: elevates shadow via CSS transition (no useState required)
  */
 export function WidgetCard({ config, children }: WidgetCardProps) {
-  const [isHovered, setIsHovered] = useState(false)
-
   return (
-    <div
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        backgroundColor: 'white',
-        borderRadius: 'var(--radius-md)',
-        boxShadow: isHovered ? 'var(--shadow-md)' : 'var(--shadow-sm)',
-        padding: 'var(--space-5)',
-        transition: 'box-shadow var(--transition-fast)',
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '160px',
-        overflow: 'hidden',
-      }}
-    >
+    <Card className="flex flex-col min-h-[160px] overflow-hidden p-5 shadow-sm transition-shadow hover:shadow-md">
       <ErrorBoundary fallback={<WidgetError />}>
         <Suspense fallback={<WidgetSkeleton variant={config.skeletonVariant} />}>
           {children}
         </Suspense>
       </ErrorBoundary>
-    </div>
+    </Card>
   )
 }
