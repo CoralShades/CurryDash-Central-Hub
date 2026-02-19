@@ -80,6 +80,7 @@ find_next_story() {
   local in_story=false
 
   while IFS= read -r line; do
+    line="${line%$'\r'}"  # Strip Windows CRLF \r (files on /mnt/d/ have \r\n endings)
     # Match story header: ### [EPIC-N] Story X.Y: Title
     if [[ "$line" =~ ^###[[:space:]]+\[EPIC-[0-9]+\][[:space:]]+Story[[:space:]]+([0-9]+\.[0-9]+): ]]; then
       story_id="${BASH_REMATCH[1]}"
