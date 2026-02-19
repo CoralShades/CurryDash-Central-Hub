@@ -9,7 +9,7 @@ test.describe('Unauthenticated — Login Page', () => {
 
   test('login page renders branding', async ({ page }) => {
     await page.goto('/login')
-    await expect(page.getByText('CurryDash Central Hub')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'CurryDash' })).toBeVisible()
   })
 
   test('login page shows sign-in heading', async ({ page }) => {
