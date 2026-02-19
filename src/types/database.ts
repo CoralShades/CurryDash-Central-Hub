@@ -611,6 +611,8 @@ export interface Database {
           position: number
           config: Json
           is_visible: boolean
+          is_ai_generated: boolean
+          deleted_at: string | null
           created_at: string
           updated_at: string
         }
@@ -621,6 +623,8 @@ export interface Database {
           position?: number
           config?: Json
           is_visible?: boolean
+          is_ai_generated?: boolean
+          deleted_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -631,6 +635,8 @@ export interface Database {
           position?: number
           config?: Json
           is_visible?: boolean
+          is_ai_generated?: boolean
+          deleted_at?: string | null
           updated_at?: string
         }
         Relationships: [

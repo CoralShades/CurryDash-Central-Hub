@@ -1,8 +1,11 @@
+import { auth } from '@/lib/auth'
 import type { Role } from '@/types/roles'
 import type { WidgetConfig } from '../config/widget-registry'
 import { widgetRegistry } from '../config/widget-registry'
 import { WidgetCard } from './widget-card'
 import { WidgetPlaceholder } from './widget-placeholder'
+import { AiWidgetCard } from './ai-widget-card'
+import { getUserWidgets } from '../actions/manage-widgets'
 import {
   StoriesCompletedWidget,
   PrsMergedWidget,
@@ -44,11 +47,19 @@ function resolveWidget(config: WidgetConfig, role: Role) {
  * Reads the widget registry for the given role and renders each widget
  * inside a WidgetCard (ErrorBoundary + Suspense) within a 12-column CSS Grid.
  *
+ * AI-generated widgets (from Supabase) are appended after static registry widgets (FR43, FR44).
+ *
  * Max width: 1440px, centered, with --space-6 padding and gap.
  * Widget colSpan maps to CSS grid-column: span {colSpan}.
  */
-export function WidgetGrid({ role }: WidgetGridProps) {
-  const widgets = widgetRegistry[role] ?? []
+export async function WidgetGrid({ role }: WidgetGridProps) {
+  const staticWidgets = widgetRegistry[role] ?? []
+
+  // Load persisted AI-generated widgets for the current user (FR43)
+  const session = await auth()
+  const aiWidgets = session?.user?.id
+    ? await getUserWidgets(session.user.id).then((r) => r.data ?? [])
+    : []
 
   return (
     <>
@@ -63,16 +74,27 @@ export function WidgetGrid({ role }: WidgetGridProps) {
       </div>
 
       <div className="dashboard-grid">
-      {widgets.map((config) => (
-        <div
-          key={config.id}
-          style={{ gridColumn: `span ${config.colSpan}` }}
-        >
-          <WidgetCard config={config}>
-            {resolveWidget(config, role)}
-          </WidgetCard>
-        </div>
-      ))}
+        {/* Static registry widgets first (FR44 — always available even without AI) */}
+        {staticWidgets.map((config) => (
+          <div
+            key={config.id}
+            style={{ gridColumn: `span ${config.colSpan}` }}
+          >
+            <WidgetCard config={config}>
+              {resolveWidget(config, role)}
+            </WidgetCard>
+          </div>
+        ))}
+
+        {/* AI-generated widgets appended after static widgets (FR43) */}
+        {aiWidgets.map((widget) => (
+          <div
+            key={widget.id}
+            style={{ gridColumn: `span ${widget.config.colSpan}` }}
+          >
+            <AiWidgetCard widgetId={widget.id} config={widget.config} />
+          </div>
+        ))}
       </div>
     </>
   )

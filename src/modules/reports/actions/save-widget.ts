@@ -62,6 +62,7 @@ export async function saveWidget(rawConfig: AiWidgetConfig): Promise<ApiResponse
       widget_type: validation.data.type,
       config: configWithRole,
       is_visible: true,
+      is_ai_generated: true,
     })
     .select('id')
     .single()
