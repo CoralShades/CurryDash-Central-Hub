@@ -128,6 +128,18 @@ export async function CicdStatusWidget() {
           textAlign: 'center',
         }}
       >
+        <p
+          style={{
+            margin: 0,
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: 'var(--color-text-secondary)',
+          }}
+        >
+          CI/CD Pipeline
+        </p>
         <span style={{ fontSize: '2rem' }} aria-hidden="true">⚙️</span>
         <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>
           Connect GitHub to see CI/CD status

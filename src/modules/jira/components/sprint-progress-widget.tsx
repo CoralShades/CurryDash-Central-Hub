@@ -120,6 +120,18 @@ export async function SprintProgressWidget() {
           textAlign: 'center',
         }}
       >
+        <p
+          style={{
+            margin: 0,
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: 'var(--color-text-secondary)',
+          }}
+        >
+          Sprint Progress
+        </p>
         <span style={{ fontSize: '2rem' }} aria-hidden="true">📋</span>
         <p style={{ margin: 0, fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>
           Connect Jira to see sprint progress

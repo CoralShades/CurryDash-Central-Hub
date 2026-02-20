@@ -39,7 +39,7 @@ export function AiSidebar() {
         <div
           aria-hidden="true"
           onClick={closeAiSidebar}
-          className="fixed inset-0 z-49 bg-black/15"
+          className="fixed inset-0 z-39 bg-black/15"
         />
       )}
 

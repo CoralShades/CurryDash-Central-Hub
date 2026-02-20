@@ -46,7 +46,7 @@ test.describe('Admin Dashboard', () => {
   test('page header shows user role badge', async ({ page }) => {
     await page.goto('/admin')
     await waitForDashboard(page)
-    await expect(page.locator('header').getByText('admin', { exact: false })).toBeVisible()
+    await expect(page.locator('header').getByText('admin', { exact: true })).toBeVisible()
     await screenshot(page, 'admin-header-role-badge')
   })
 })

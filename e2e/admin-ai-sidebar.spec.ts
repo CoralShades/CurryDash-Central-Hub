@@ -6,7 +6,7 @@ test.describe('Admin — AI Sidebar', () => {
     await page.goto('/admin')
     await waitForDashboard(page)
     await screenshot(page, 'admin-ai-toggle-button')
-    await expect(page.getByLabel(/AI assistant/)).toBeVisible()
+    await expect(page.getByLabel('Open AI assistant (Cmd+K)')).toBeVisible()
   })
 
   test('AI toggle button has correct initial label', async ({ page }) => {
