@@ -98,7 +98,7 @@ export async function WidgetGrid({ role }: WidgetGridProps) {
         {aiWidgets.map((widget) => (
           <div
             key={widget.id}
-            className={colSpanClass[widget.config.colSpan as WidgetColSpan]}
+            className={colSpanClass[widget.config.colSpan]}
           >
             <AiWidgetCard widgetId={widget.id} config={widget.config} />
           </div>
