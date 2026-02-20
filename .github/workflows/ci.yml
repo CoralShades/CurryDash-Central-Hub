@@ -31,3 +31,10 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          SUPABASE_URL: https://placeholder.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: placeholder-service-role-key-for-ci
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key-for-ci
+          NEXTAUTH_SECRET: placeholder-nextauth-secret-for-ci-builds-only
+          NEXTAUTH_URL: http://localhost:3000

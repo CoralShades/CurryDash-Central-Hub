@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { LoginForm } from '@/modules/auth/components/login-form'
 
 export const metadata = {
@@ -29,7 +30,9 @@ export default function LoginPage() {
           boxShadow: 'var(--shadow-lg)',
         }}
       >
-        <LoginForm />
+        <Suspense>
+          <LoginForm />
+        </Suspense>
       </div>
     </main>
   )
