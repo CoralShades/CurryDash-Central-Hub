@@ -27,26 +27,12 @@ export function CommitActivityChart({ data, weekCount }: CommitActivityChartProp
   const totalWidth = data.length * (barWidth + barGap) - barGap
 
   return (
-    <div
-      style={{
-        borderTop: '1px solid var(--color-border)',
-        paddingTop: 'var(--space-2)',
-      }}
-    >
-      <p
-        style={{
-          margin: '0 0 var(--space-2) 0',
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          color: 'var(--color-text-secondary)',
-        }}
-      >
+    <div className="border-t border-border pt-2">
+      <p className="m-0 mb-2 text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground">
         Commit Activity
       </p>
 
-      <div style={{ position: 'relative', userSelect: 'none' }}>
+      <div className="relative select-none">
         <svg
           width={totalWidth}
           height={chartHeight}
@@ -101,14 +87,8 @@ export function CommitActivityChart({ data, weekCount }: CommitActivityChartProp
         )}
       </div>
 
-      <p
-        style={{
-          margin: 'var(--space-2) 0 0 0',
-          fontSize: '0.75rem',
-          color: 'var(--color-text-secondary)',
-        }}
-      >
-        <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{weekCount}</span>
+      <p className="mt-2 text-xs text-muted-foreground">
+        <span className="font-semibold text-foreground">{weekCount}</span>
         {' '}commit{weekCount !== 1 ? 's' : ''} this week
       </p>
     </div>

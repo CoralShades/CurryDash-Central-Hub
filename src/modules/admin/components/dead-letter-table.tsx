@@ -1,19 +1,37 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import {
   retryDeadLetterEvent,
   bulkRetryDeadLetterEvents,
 } from '../actions/retry-dead-letter'
 import type { DeadLetterEvent, DeadLetterStatus } from '../actions/retry-dead-letter'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
 
 interface DeadLetterTableProps {
   events: DeadLetterEvent[]
 }
 
-const STATUS_STYLE: Record<DeadLetterStatus, { label: string; color: string; bg: string }> = {
-  pending: { label: 'Pending', color: 'var(--color-turmeric)', bg: '#FFF8DC' },
-  retried: { label: 'Retried', color: '#6b7280', bg: '#f3f4f6' },
+const STATUS_BADGE_STYLES: Record<DeadLetterStatus, string> = {
+  pending: 'bg-turmeric/10 text-turmeric border-turmeric/20',
+  retried: 'bg-muted text-muted-foreground border-border',
+}
+
+const STATUS_LABELS: Record<DeadLetterStatus, string> = {
+  pending: 'Pending',
+  retried: 'Retried',
 }
 
 function formatTimestamp(ts: string): string {
@@ -34,152 +52,59 @@ interface ExpandedRowProps {
 
 function ExpandedRow({ event }: ExpandedRowProps) {
   return (
-    <div
-      style={{
-        padding: '16px 20px',
-        backgroundColor: '#fafafa',
-        borderTop: '1px solid var(--color-border)',
-      }}
-    >
+    <div className="px-5 py-4 bg-muted/30 border-t border-border">
       {/* Correlation ID and pipeline step */}
-      <div style={{ display: 'flex', gap: '32px', marginBottom: '16px', flexWrap: 'wrap' }}>
+      <div className="flex gap-8 mb-4 flex-wrap">
         <div>
-          <p
-            style={{
-              margin: '0 0 4px 0',
-              fontSize: '11px',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#9ca3af',
-            }}
-          >
+          <p className="m-0 mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             Correlation ID
           </p>
-          <code
-            style={{
-              fontSize: '12px',
-              color: 'var(--color-text)',
-              fontFamily: 'monospace',
-              backgroundColor: '#f1f5f9',
-              padding: '2px 6px',
-              borderRadius: '4px',
-            }}
-          >
+          <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
             {event.correlationId}
           </code>
         </div>
         {event.eventId && (
           <div>
-            <p
-              style={{
-                margin: '0 0 4px 0',
-                fontSize: '11px',
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: '#9ca3af',
-              }}
-            >
+            <p className="m-0 mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Event ID
             </p>
-            <code
-              style={{
-                fontSize: '12px',
-                color: 'var(--color-text)',
-                fontFamily: 'monospace',
-                backgroundColor: '#f1f5f9',
-                padding: '2px 6px',
-                borderRadius: '4px',
-              }}
-            >
+            <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
               {event.eventId}
             </code>
           </div>
         )}
         <div>
-          <p
-            style={{
-              margin: '0 0 4px 0',
-              fontSize: '11px',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#9ca3af',
-            }}
-          >
+          <p className="m-0 mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             Retry Count
           </p>
-          <span
-            style={{ fontSize: '12px', color: 'var(--color-text)', fontFamily: 'monospace' }}
-          >
+          <span className="text-xs font-mono">
             {event.retryCount}
           </span>
         </div>
       </div>
 
       {/* Error stack trace */}
-      <div style={{ marginBottom: '16px' }}>
-        <p
-          style={{
-            margin: '0 0 8px 0',
-            fontSize: '12px',
-            fontWeight: 600,
-            color: 'var(--color-chili)',
-          }}
-        >
+      <div className="mb-4">
+        <p className="mb-2 text-xs font-semibold text-chili">
           Error / Stack Trace
         </p>
-        <pre
-          style={{
-            margin: 0,
-            padding: '12px',
-            backgroundColor: '#fff1f2',
-            border: '1px solid #fecaca',
-            borderRadius: '6px',
-            fontSize: '11px',
-            fontFamily: 'monospace',
-            color: 'var(--color-chili)',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            maxHeight: '160px',
-            overflowY: 'auto',
-          }}
-        >
-          {event.error}
-        </pre>
+        <ScrollArea className="h-40">
+          <pre className="p-3 bg-chili/5 border border-chili/20 rounded-md text-[11px] font-mono text-chili whitespace-pre-wrap break-words">
+            {event.error}
+          </pre>
+        </ScrollArea>
       </div>
 
       {/* Raw payload */}
       <div>
-        <p
-          style={{
-            margin: '0 0 8px 0',
-            fontSize: '12px',
-            fontWeight: 600,
-            color: 'var(--color-text-secondary)',
-          }}
-        >
+        <p className="mb-2 text-xs font-semibold text-muted-foreground">
           Raw Payload (JSON)
         </p>
-        <pre
-          style={{
-            margin: 0,
-            padding: '12px',
-            backgroundColor: '#f8fafc',
-            border: '1px solid var(--color-border)',
-            borderRadius: '6px',
-            fontSize: '11px',
-            fontFamily: 'monospace',
-            color: '#0f172a',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            maxHeight: '240px',
-            overflowY: 'auto',
-          }}
-        >
-          {JSON.stringify(event.payload, null, 2)}
-        </pre>
+        <ScrollArea className="h-60">
+          <pre className="p-3 bg-muted/50 border border-border rounded-md text-[11px] font-mono whitespace-pre-wrap break-words">
+            {JSON.stringify(event.payload, null, 2)}
+          </pre>
+        </ScrollArea>
       </div>
     </div>
   )
@@ -195,12 +120,6 @@ export function DeadLetterTable({ events: initialEvents }: DeadLetterTableProps)
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [retrying, setRetrying] = useState<Set<string>>(new Set())
   const [isBulkRetrying, startBulkTransition] = useTransition()
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
-
-  function showToast(message: string, type: 'success' | 'error') {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 5000)
-  }
 
   function toggleRow(id: string) {
     setExpandedRows((prev) => {
@@ -219,7 +138,7 @@ export function DeadLetterTable({ events: initialEvents }: DeadLetterTableProps)
     try {
       const result = await retryDeadLetterEvent({ eventId })
       if (result.error) {
-        showToast(`Retry failed: ${result.error.message}`, 'error')
+        toast.error(`Retry failed: ${result.error.message}`)
         // Update local state to reflect incremented retry count
         setEvents((prev) =>
           prev.map((e) =>
@@ -229,7 +148,7 @@ export function DeadLetterTable({ events: initialEvents }: DeadLetterTableProps)
           )
         )
       } else {
-        showToast('Event retried successfully', 'success')
+        toast.success('Event retried successfully')
         // Remove from local list (deleted from DB on success)
         setEvents((prev) => prev.filter((e) => e.id !== eventId))
       }
@@ -246,13 +165,15 @@ export function DeadLetterTable({ events: initialEvents }: DeadLetterTableProps)
     startBulkTransition(async () => {
       const result = await bulkRetryDeadLetterEvents()
       if (result.error) {
-        showToast(`Bulk retry failed: ${result.error.message}`, 'error')
+        toast.error(`Bulk retry failed: ${result.error.message}`)
       } else {
         const { attempted, succeeded, failed } = result.data
-        showToast(
-          `Bulk retry: ${succeeded}/${attempted} succeeded${failed > 0 ? `, ${failed} failed` : ''}`,
-          succeeded > 0 ? 'success' : 'error'
-        )
+        const message = `Bulk retry: ${succeeded}/${attempted} succeeded${failed > 0 ? `, ${failed} failed` : ''}`
+        if (succeeded > 0) {
+          toast.success(message)
+        } else {
+          toast.error(message)
+        }
         // Refresh local state: remove successfully retried events
         if (succeeded > 0) {
           setEvents((prev) => prev.filter((e) => e.retryCount > 0))
@@ -265,249 +186,143 @@ export function DeadLetterTable({ events: initialEvents }: DeadLetterTableProps)
 
   return (
     <div>
-      {/* Toast notification */}
-      {toast && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            padding: '12px 20px',
-            borderRadius: '8px',
-            backgroundColor: toast.type === 'success' ? 'var(--color-coriander)' : 'var(--color-chili)',
-            color: 'white',
-            fontSize: '14px',
-            fontWeight: 500,
-            zIndex: 1000,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-          }}
-          role="status"
-          aria-live="polite"
-        >
-          {toast.message}
-        </div>
-      )}
-
       {/* Table header with Retry All */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '16px',
-        }}
-      >
-        <div>
-          <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>
-            {events.length === 0
-              ? 'No failed events'
-              : `${events.length} event${events.length !== 1 ? 's' : ''} — click a row to inspect`}
-          </p>
-        </div>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-muted-foreground">
+          {events.length === 0
+            ? 'No failed events'
+            : `${events.length} event${events.length !== 1 ? 's' : ''} — click a row to inspect`}
+        </p>
         {pendingCount > 0 && (
-          <button
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleBulkRetry}
             disabled={isBulkRetrying}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '6px',
-              border: '1px solid var(--color-chili)',
-              backgroundColor: isBulkRetrying ? '#f3f4f6' : 'white',
-              color: isBulkRetrying ? '#9ca3af' : 'var(--color-chili)',
-              fontSize: '13px',
-              fontWeight: 500,
-              cursor: isBulkRetrying ? 'not-allowed' : 'pointer',
-            }}
+            className="text-chili border-chili/40 hover:bg-chili/10"
             aria-label={`Retry all ${pendingCount} pending events`}
           >
             {isBulkRetrying ? 'Retrying…' : `Retry All (${pendingCount} pending)`}
-          </button>
+          </Button>
         )}
       </div>
 
       {events.length === 0 ? (
-        <div
-          style={{
-            padding: '40px',
-            textAlign: 'center',
-            color: '#9ca3af',
-            backgroundColor: '#f9fafb',
-            borderRadius: '8px',
-            border: '1px dashed var(--color-border)',
-          }}
-        >
+        <div className="py-10 text-center text-muted-foreground bg-muted/30 rounded-lg border border-dashed border-border">
           No dead letter events. Pipeline is healthy.
         </div>
       ) : (
-        <div
-          style={{
-            border: '1px solid var(--color-border)',
-            borderRadius: '8px',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Table header */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '120px 120px 1fr 180px 80px 80px 80px',
-              padding: '10px 16px',
-              backgroundColor: '#f9fafb',
-              borderBottom: '1px solid var(--color-border)',
-              fontSize: '11px',
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#6b7280',
-              gap: '12px',
-            }}
-          >
-            <span>Source</span>
-            <span>Event Type</span>
-            <span>Failure Reason</span>
-            <span>Failed At</span>
-            <span>Retries</span>
-            <span>Status</span>
-            <span>Action</span>
-          </div>
+        <div className="border border-border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wide">Source</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wide">Event Type</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wide">Failure Reason</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wide">Failed At</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wide">Retries</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wide">Status</TableHead>
+                <TableHead className="text-[11px] font-semibold uppercase tracking-wide">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {events.map((event) => {
+                const isExpanded = expandedRows.has(event.id)
+                const isRetrying = retrying.has(event.id)
 
-          {/* Table rows */}
-          {events.map((event) => {
-            const isExpanded = expandedRows.has(event.id)
-            const isRetrying = retrying.has(event.id)
-            const statusStyle = STATUS_STYLE[event.status]
+                return (
+                  <>
+                    <TableRow
+                      key={event.id}
+                      onClick={() => toggleRow(event.id)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) =>
+                        e.key === 'Enter' || e.key === ' ' ? toggleRow(event.id) : undefined
+                      }
+                      aria-expanded={isExpanded}
+                      className={cn(
+                        'cursor-pointer',
+                        isExpanded ? 'bg-muted/30' : 'hover:bg-muted/20'
+                      )}
+                    >
+                      {/* Source badge */}
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className="text-xs font-medium"
+                        >
+                          {event.source}
+                        </Badge>
+                      </TableCell>
 
-            return (
-              <div key={event.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                {/* Main row */}
-                <div
-                  onClick={() => toggleRow(event.id)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' || e.key === ' ' ? toggleRow(event.id) : undefined}
-                  aria-expanded={isExpanded}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '120px 120px 1fr 180px 80px 80px 80px',
-                    padding: '12px 16px',
-                    gap: '12px',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    backgroundColor: isExpanded ? '#f8fafc' : 'white',
-                    transition: 'background-color 0.1s',
-                  }}
-                >
-                  {/* Source badge */}
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontSize: '13px',
-                      fontWeight: 500,
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        backgroundColor:
-                          event.source === 'jira'
-                            ? '#0052CC'
-                            : event.source === 'github'
-                              ? '#24292e'
-                              : '#6b7280',
-                        flexShrink: 0,
-                      }}
-                    />
-                    {event.source}
-                  </span>
+                      {/* Event type */}
+                      <TableCell
+                        className="text-xs max-w-[120px] truncate"
+                        title={event.eventType}
+                      >
+                        {event.eventType}
+                      </TableCell>
 
-                  {/* Event type */}
-                  <span
-                    style={{
-                      fontSize: '12px',
-                      color: '#374151',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                    title={event.eventType}
-                  >
-                    {event.eventType}
-                  </span>
+                      {/* Failure reason (first line only) */}
+                      <TableCell
+                        className="text-xs text-chili max-w-[200px] truncate"
+                        title={event.error}
+                      >
+                        {event.error.split('\n')[0]}
+                      </TableCell>
 
-                  {/* Failure reason (first line only) */}
-                  <span
-                    style={{
-                      fontSize: '12px',
-                      color: 'var(--color-chili)',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                    title={event.error}
-                  >
-                    {event.error.split('\n')[0]}
-                  </span>
+                      {/* Timestamp */}
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatTimestamp(event.createdAt)}
+                      </TableCell>
 
-                  {/* Timestamp */}
-                  <span style={{ fontSize: '12px', color: '#6b7280', whiteSpace: 'nowrap' }}>
-                    {formatTimestamp(event.createdAt)}
-                  </span>
+                      {/* Retry count */}
+                      <TableCell className="text-sm font-medium">
+                        {event.retryCount}
+                      </TableCell>
 
-                  {/* Retry count */}
-                  <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--color-text)' }}>
-                    {event.retryCount}
-                  </span>
+                      {/* Status badge */}
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={cn('text-[11px] font-semibold', STATUS_BADGE_STYLES[event.status])}
+                        >
+                          {STATUS_LABELS[event.status]}
+                        </Badge>
+                      </TableCell>
 
-                  {/* Status badge */}
-                  <span
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: statusStyle.color,
-                      backgroundColor: statusStyle.bg,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {statusStyle.label}
-                  </span>
+                      {/* Retry button */}
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRetry(event.id)
+                          }}
+                          disabled={isRetrying}
+                          className="text-coriander border-coriander/40 hover:bg-coriander/10 text-xs"
+                          aria-label={`Retry event ${event.id}`}
+                        >
+                          {isRetrying ? '…' : 'Retry'}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
 
-                  {/* Retry button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleRetry(event.id)
-                    }}
-                    disabled={isRetrying}
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '4px',
-                      border: '1px solid var(--color-coriander)',
-                      backgroundColor: isRetrying ? '#f3f4f6' : 'white',
-                      color: isRetrying ? '#9ca3af' : 'var(--color-coriander)',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      cursor: isRetrying ? 'not-allowed' : 'pointer',
-                      whiteSpace: 'nowrap',
-                    }}
-                    aria-label={`Retry event ${event.id}`}
-                  >
-                    {isRetrying ? '…' : 'Retry'}
-                  </button>
-                </div>
-
-                {/* Expanded detail row */}
-                {isExpanded && <ExpandedRow event={event} />}
-              </div>
-            )
-          })}
+                    {/* Expanded detail row */}
+                    {isExpanded && (
+                      <TableRow key={`${event.id}-expanded`}>
+                        <TableCell colSpan={7} className="p-0">
+                          <ExpandedRow event={event} />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
+                )
+              })}
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

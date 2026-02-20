@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useCallback } from 'react'
+import { Sparkles, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { WidgetSkeleton } from '@/components/shared/widget-skeleton'
 import { ReportViewer } from './report-viewer'
 import type { GeneratedReport } from '../types'
@@ -82,36 +84,19 @@ export function ReportGenerator({ roleLabel }: ReportGeneratorProps) {
     <div>
       {/* Generate button */}
       {!isGenerating && !completedReport && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-          <button
+        <div className="flex items-center gap-4 flex-wrap">
+          <Button
             type="button"
             onClick={handleGenerate}
             aria-label="Generate progress summary report"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.625rem 1.25rem',
-              borderRadius: 'var(--radius-md)',
-              border: 'none',
-              backgroundColor: 'var(--color-turmeric)',
-              color: '#fff',
-              fontWeight: 600,
-              fontSize: '0.9375rem',
-              cursor: 'pointer',
-              transition: 'opacity 0.15s',
-            }}
-            onMouseOver={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.85' }}
-            onMouseOut={(e) => { (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
+            className="bg-[var(--color-turmeric)] text-white hover:opacity-85 transition-opacity hover:bg-[var(--color-turmeric)]"
           >
             {/* Sparkle icon */}
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} style={{ width: '18px', height: '18px' }} aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 003.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 00-3.09 3.09z" />
-            </svg>
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
             Generate Progress Summary
-          </button>
+          </Button>
           {roleLabel && (
-            <span style={{ fontSize: '0.8125rem', color: 'hsl(var(--muted-foreground))' }}>
+            <span className="text-[0.8125rem] text-muted-foreground">
               Tailored for {roleLabel} role
             </span>
           )}
@@ -132,25 +117,15 @@ export function ReportGenerator({ roleLabel }: ReportGeneratorProps) {
       {completedReport && (
         <>
           <ReportViewer report={completedReport} />
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={handleGenerate}
-            style={{
-              marginTop: '1rem',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.375rem',
-              padding: '0.5rem 1rem',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid hsl(var(--border))',
-              backgroundColor: 'transparent',
-              color: 'hsl(var(--foreground))',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-            }}
+            className="mt-4"
           >
+            <Loader2 className="h-4 w-4" aria-hidden="true" />
             Regenerate
-          </button>
+          </Button>
         </>
       )}
 
@@ -158,28 +133,13 @@ export function ReportGenerator({ roleLabel }: ReportGeneratorProps) {
       {error && (
         <div
           role="alert"
-          style={{
-            marginTop: '0.75rem',
-            padding: '0.75rem 1rem',
-            borderRadius: 'var(--radius-md)',
-            backgroundColor: 'hsl(var(--destructive) / 0.1)',
-            color: 'hsl(var(--destructive))',
-            fontSize: '0.875rem',
-          }}
+          className="mt-3 px-4 py-3 rounded-md bg-destructive/10 text-destructive text-sm"
         >
           {error}
           <button
             type="button"
             onClick={handleGenerate}
-            style={{
-              marginLeft: '0.75rem',
-              textDecoration: 'underline',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'inherit',
-              fontSize: 'inherit',
-            }}
+            className="ml-3 underline bg-transparent border-0 cursor-pointer text-inherit text-[length:inherit]"
           >
             Try again
           </button>

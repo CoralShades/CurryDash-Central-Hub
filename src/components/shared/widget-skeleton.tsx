@@ -10,11 +10,10 @@ interface WidgetSkeletonProps {
 function ShimmerLine({ width = 'full', height = 4 }: { width?: string | number; height?: number }) {
   return (
     <div
-      className="animate-pulse rounded"
+      className="animate-pulse rounded bg-border"
       style={{
         width: typeof width === 'number' ? `${width}%` : '100%',
         height: `${height * 4}px`,
-        backgroundColor: 'var(--color-border)',
       }}
     />
   )
@@ -33,12 +32,12 @@ export function WidgetSkeleton({ variant, className }: WidgetSkeletonProps) {
       {variant === 'chart' && (
         <>
           <ShimmerLine width={50} height={3} />
-          <div className="flex items-end gap-2 pt-2" style={{ height: '120px' }}>
+          <div className="flex h-[120px] items-end gap-2 pt-2">
             {[60, 80, 45, 90, 70, 55, 85].map((h, i) => (
               <div
                 key={i}
-                className="animate-pulse flex-1 rounded-t"
-                style={{ height: `${h}%`, backgroundColor: 'var(--color-border)' }}
+                className="animate-pulse flex-1 rounded-t bg-border"
+                style={{ height: `${h}%` }}
               />
             ))}
           </div>
@@ -58,10 +57,7 @@ export function WidgetSkeleton({ variant, className }: WidgetSkeletonProps) {
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3">
-              <div
-                className="animate-pulse rounded-full"
-                style={{ width: '32px', height: '32px', backgroundColor: 'var(--color-border)', flexShrink: 0 }}
-              />
+              <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-border" />
               <div className="flex-1 space-y-1.5">
                 <ShimmerLine width={70} height={2} />
                 <ShimmerLine width={50} height={2} />

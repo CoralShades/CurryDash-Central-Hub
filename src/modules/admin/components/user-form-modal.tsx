@@ -4,6 +4,24 @@ import { useState } from 'react'
 import { ROLES } from '@/types/roles'
 import type { Role } from '@/types/roles'
 import type { AdminUser } from '../actions/manage-users'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 interface UserFormModalProps {
   isOpen: boolean
@@ -54,163 +72,78 @@ export function UserFormModal({
     onClose()
   }
 
-  if (!isOpen) return null
-
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 50 }}>
-      {/* Backdrop */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        }}
-        onClick={handleClose}
-        aria-hidden="true"
-      />
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{isEditMode ? 'Edit User' : 'Add User'}</DialogTitle>
+          <DialogDescription>
+            {isEditMode
+              ? 'Update the role for this user.'
+              : 'Invite a new team member by entering their email and assigning a role.'}
+          </DialogDescription>
+        </DialogHeader>
 
-      {/* Modal */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
-          padding: '24px',
-          width: '90%',
-          maxWidth: '400px',
-          zIndex: 51,
-        }}
-      >
-        <h2 style={{ marginTop: 0, marginBottom: '16px', fontSize: '18px', fontWeight: 600 }}>
-          {isEditMode ? 'Edit User' : 'Add User'}
-        </h2>
-
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email Field */}
-          <div style={{ marginBottom: '16px' }}>
-            <label
-              htmlFor="email"
-              style={{
-                display: 'block',
-                marginBottom: '6px',
-                fontSize: '14px',
-                fontWeight: 500,
-              }}
-            >
-              Email
-            </label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isEditMode}
               placeholder="user@example.com"
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: '1px solid var(--color-border)',
-                borderRadius: '6px',
-                fontSize: '14px',
-                opacity: isEditMode ? 0.6 : 1,
-                cursor: isEditMode ? 'not-allowed' : 'text',
-              }}
+              className={isEditMode ? 'opacity-60 cursor-not-allowed' : ''}
             />
           </div>
 
           {/* Role Dropdown */}
-          <div style={{ marginBottom: '20px' }}>
-            <label
-              htmlFor="role"
-              style={{
-                display: 'block',
-                marginBottom: '6px',
-                fontSize: '14px',
-                fontWeight: 500,
-              }}
-            >
-              Role
-            </label>
-            <select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value as Role)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: '1px solid var(--color-border)',
-                borderRadius: '6px',
-                fontSize: '14px',
-              }}
-            >
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {r.charAt(0).toUpperCase() + r.slice(1)}
-                </option>
-              ))}
-            </select>
+          <div className="space-y-1.5">
+            <Label htmlFor="role">Role</Label>
+            <Select value={role} onValueChange={(value) => setRole(value as Role)}>
+              <SelectTrigger id="role" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLES.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r.charAt(0).toUpperCase() + r.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Error Message */}
           {error && (
             <div
-              style={{
-                marginBottom: '16px',
-                padding: '8px 12px',
-                backgroundColor: '#FEE2E2',
-                color: 'var(--color-chili)',
-                borderRadius: '6px',
-                fontSize: '13px',
-              }}
+              className="px-3 py-2 bg-destructive/10 text-chili rounded-md text-sm"
               role="alert"
             >
               {error}
             </div>
           )}
 
-          {/* Buttons */}
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-            <button
+          <DialogFooter>
+            <Button
               type="button"
+              variant="outline"
               onClick={handleClose}
               disabled={isLoading}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: 'transparent',
-                border: '1px solid var(--color-border)',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: 500,
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                opacity: isLoading ? 0.6 : 1,
-              }}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
               disabled={isLoading}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: 'var(--color-turmeric)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontSize: '14px',
-                fontWeight: 500,
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                opacity: isLoading ? 0.6 : 1,
-              }}
             >
-              {isLoading ? 'Creating...' : isEditMode ? 'Save' : 'Create'}
-            </button>
-          </div>
+              {isLoading ? 'Saving...' : isEditMode ? 'Save' : 'Create'}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

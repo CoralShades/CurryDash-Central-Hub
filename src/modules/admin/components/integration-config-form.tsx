@@ -1,17 +1,24 @@
 'use client'
 
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { testConnection, saveCredentials } from '@/modules/admin/actions/configure-integration'
 import type { IntegrationInfo } from '@/modules/admin/actions/configure-integration'
 import type { IntegrationType } from '@/modules/admin/schemas/integration-schema'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 interface IntegrationConfigFormProps {
   info: IntegrationInfo
-}
-
-interface Toast {
-  message: string
-  type: 'success' | 'error'
 }
 
 /**
@@ -24,7 +31,6 @@ export function IntegrationConfigForm({ info }: IntegrationConfigFormProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  const [toast, setToast] = useState<Toast | null>(null)
 
   // Form field state — empty means "keep existing"
   const [jiraBaseUrl, setJiraBaseUrl] = useState('')
@@ -35,22 +41,17 @@ export function IntegrationConfigForm({ info }: IntegrationConfigFormProps) {
   const [githubWebhookSecret, setGithubWebhookSecret] = useState('')
   const [anthropicKey, setAnthropicKey] = useState('')
 
-  const showToast = (message: string, type: 'success' | 'error') => {
-    setToast({ message, type })
-    setTimeout(() => setToast(null), 4000)
-  }
-
   const handleTestConnection = async () => {
     setIsTesting(true)
     const result = await testConnection({ integration: info.integration })
     setIsTesting(false)
 
     if (result.error) {
-      showToast(result.error.message, 'error')
+      toast.error(result.error.message)
     } else if (result.data?.verified) {
-      showToast(`Connection verified — ${result.data.message}`, 'success')
+      toast.success(`Connection verified — ${result.data.message}`)
     } else {
-      showToast(result.data?.message ?? 'Connection failed', 'error')
+      toast.error(result.data?.message ?? 'Connection failed')
     }
   }
 
@@ -60,7 +61,7 @@ export function IntegrationConfigForm({ info }: IntegrationConfigFormProps) {
     let result
     if (info.integration === 'jira') {
       if (!jiraBaseUrl || !jiraEmail || !jiraToken) {
-        showToast('Base URL, email, and API token are required', 'error')
+        toast.error('Base URL, email, and API token are required')
         setIsSaving(false)
         return
       }
@@ -73,7 +74,7 @@ export function IntegrationConfigForm({ info }: IntegrationConfigFormProps) {
       })
     } else if (info.integration === 'github') {
       if (!githubToken) {
-        showToast('OAuth token is required', 'error')
+        toast.error('OAuth token is required')
         setIsSaving(false)
         return
       }
@@ -84,7 +85,7 @@ export function IntegrationConfigForm({ info }: IntegrationConfigFormProps) {
       })
     } else {
       if (!anthropicKey) {
-        showToast('API key is required', 'error')
+        toast.error('API key is required')
         setIsSaving(false)
         return
       }
@@ -97,9 +98,9 @@ export function IntegrationConfigForm({ info }: IntegrationConfigFormProps) {
     setIsSaving(false)
 
     if (result?.error) {
-      showToast(result.error.message, 'error')
+      toast.error(result.error.message)
     } else {
-      showToast('Credentials updated successfully', 'success')
+      toast.success('Credentials updated successfully')
       setIsOpen(false)
       // Reset form fields
       resetForm()
@@ -119,173 +120,75 @@ export function IntegrationConfigForm({ info }: IntegrationConfigFormProps) {
   const handleClose = () => {
     setIsOpen(false)
     resetForm()
-    setToast(null)
   }
 
   return (
     <>
       {/* Buttons row */}
-      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-        <button
+      <div className="flex gap-2 mt-1">
+        <Button
+          variant="outline"
+          size="sm"
           onClick={handleTestConnection}
           disabled={isTesting}
-          style={{
-            flex: 1,
-            padding: '8px 12px',
-            fontSize: '13px',
-            fontWeight: 500,
-            cursor: isTesting ? 'not-allowed' : 'pointer',
-            backgroundColor: 'transparent',
-            border: '1px solid var(--color-border)',
-            borderRadius: '6px',
-            color: isTesting ? '#9ca3af' : 'var(--color-foreground)',
-            transition: 'background-color 0.15s',
-          }}
+          className="flex-1 text-sm"
         >
           {isTesting ? 'Testing…' : 'Test Connection'}
-        </button>
+        </Button>
 
-        <button
+        <Button
+          size="sm"
           onClick={() => setIsOpen(true)}
-          style={{
-            flex: 1,
-            padding: '8px 12px',
-            fontSize: '13px',
-            fontWeight: 500,
-            cursor: 'pointer',
-            backgroundColor: 'var(--color-foreground)',
-            color: 'var(--color-background)',
-            border: 'none',
-            borderRadius: '6px',
-            transition: 'opacity 0.15s',
-          }}
+          className="flex-1 text-sm"
         >
           Configure
-        </button>
+        </Button>
       </div>
 
-      {/* Toast notification */}
-      {toast && (
-        <div
-          role="status"
-          style={{
-            padding: '10px 14px',
-            borderRadius: '6px',
-            fontSize: '13px',
-            backgroundColor:
-              toast.type === 'success' ? 'rgba(74,124,89,0.12)' : 'rgba(197,53,31,0.12)',
-            color:
-              toast.type === 'success' ? 'var(--color-coriander)' : 'var(--color-chili)',
-            border: `1px solid ${toast.type === 'success' ? 'var(--color-coriander)' : 'var(--color-chili)'}`,
-          }}
-        >
-          {toast.message}
-        </div>
-      )}
-
-      {/* Modal overlay */}
-      {isOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`Configure ${info.name}`}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 50,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
-          }}
-        >
-          {/* Backdrop */}
-          <div
-            onClick={handleClose}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.5)',
-            }}
-          />
-
-          {/* Dialog panel */}
-          <div
-            style={{
-              position: 'relative',
-              backgroundColor: 'white',
-              borderRadius: '12px',
-              padding: '28px',
-              width: '100%',
-              maxWidth: '480px',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-            }}
-          >
-            <h2 style={{ margin: '0 0 4px 0', fontSize: '20px', fontWeight: 700 }}>
-              Configure {info.name}
-            </h2>
-            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#6b7280' }}>
+      {/* Dialog modal */}
+      <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configure {info.name}</DialogTitle>
+            <DialogDescription>
               Enter new credentials to update. Existing values are masked for security.
-            </p>
+            </DialogDescription>
+          </DialogHeader>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <CredentialFields
-                integration={info.integration}
-                masked={info.maskedCredentials}
-                jiraBaseUrl={jiraBaseUrl}
-                setJiraBaseUrl={setJiraBaseUrl}
-                jiraEmail={jiraEmail}
-                setJiraEmail={setJiraEmail}
-                jiraToken={jiraToken}
-                setJiraToken={setJiraToken}
-                jiraWebhookSecret={jiraWebhookSecret}
-                setJiraWebhookSecret={setJiraWebhookSecret}
-                githubToken={githubToken}
-                setGithubToken={setGithubToken}
-                githubWebhookSecret={githubWebhookSecret}
-                setGithubWebhookSecret={setGithubWebhookSecret}
-                anthropicKey={anthropicKey}
-                setAnthropicKey={setAnthropicKey}
-              />
-            </div>
-
-            <div
-              style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}
-            >
-              <button
-                onClick={handleClose}
-                style={{
-                  padding: '9px 18px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  backgroundColor: 'transparent',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '6px',
-                  color: 'var(--color-foreground)',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                style={{
-                  padding: '9px 18px',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  cursor: isSaving ? 'not-allowed' : 'pointer',
-                  backgroundColor: isSaving ? '#9ca3af' : 'var(--color-foreground)',
-                  color: 'var(--color-background)',
-                  border: 'none',
-                  borderRadius: '6px',
-                }}
-              >
-                {isSaving ? 'Saving…' : 'Save credentials'}
-              </button>
-            </div>
+          <div className="flex flex-col gap-3.5">
+            <CredentialFields
+              integration={info.integration}
+              masked={info.maskedCredentials}
+              jiraBaseUrl={jiraBaseUrl}
+              setJiraBaseUrl={setJiraBaseUrl}
+              jiraEmail={jiraEmail}
+              setJiraEmail={setJiraEmail}
+              jiraToken={jiraToken}
+              setJiraToken={setJiraToken}
+              jiraWebhookSecret={jiraWebhookSecret}
+              setJiraWebhookSecret={setJiraWebhookSecret}
+              githubToken={githubToken}
+              setGithubToken={setGithubToken}
+              githubWebhookSecret={githubWebhookSecret}
+              setGithubWebhookSecret={setGithubWebhookSecret}
+              anthropicKey={anthropicKey}
+              setAnthropicKey={setAnthropicKey}
+            />
           </div>
-        </div>
-      )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving…' : 'Save credentials'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
@@ -305,26 +208,17 @@ interface FieldProps {
 
 function FormField({ label, placeholder, value, onChange, hint, type = 'password' }: FieldProps) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-      <label style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>{label}</label>
+    <div className="flex flex-col gap-1">
+      <Label className="text-sm font-medium">{label}</Label>
       {hint && (
-        <span style={{ fontSize: '12px', color: '#9ca3af', fontFamily: 'monospace' }}>{hint}</span>
+        <span className="text-xs text-muted-foreground font-mono">{hint}</span>
       )}
-      <input
+      <Input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        style={{
-          padding: '8px 12px',
-          fontSize: '14px',
-          border: '1px solid var(--color-border)',
-          borderRadius: '6px',
-          outline: 'none',
-          width: '100%',
-          boxSizing: 'border-box',
-          backgroundColor: '#f9fafb',
-        }}
+        className="bg-muted/50"
         autoComplete="off"
       />
     </div>

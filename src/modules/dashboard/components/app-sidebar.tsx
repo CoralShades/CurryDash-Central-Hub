@@ -3,13 +3,19 @@
 import { useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { LayoutDashboard, Users, Puzzle, Activity, ChevronsLeft, ChevronsRight, type LucideIcon } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
 import { useSidebarStore } from '@/stores/use-sidebar-store'
 import type { Role } from '@/types/roles'
 
 interface NavItem {
   href: string
   label: string
-  icon: React.ReactNode
+  icon: LucideIcon
 }
 
 interface NavSection {
@@ -25,11 +31,7 @@ const NAV_SECTIONS: NavSection[] = [
       {
         href: '/dev',
         label: 'Dashboard',
-        icon: (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-          </svg>
-        ),
+        icon: LayoutDashboard,
       },
     ],
   },
@@ -40,29 +42,17 @@ const NAV_SECTIONS: NavSection[] = [
       {
         href: '/admin/users',
         label: 'Users',
-        icon: (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-          </svg>
-        ),
+        icon: Users,
       },
       {
         href: '/admin/integrations',
         label: 'Integrations',
-        icon: (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H6A2.25 2.25 0 003.75 6v2.25A2.25 2.25 0 006 10.5zm0 9.75h2.25A2.25 2.25 0 0010.5 18v-2.25a2.25 2.25 0 00-2.25-2.25H6a2.25 2.25 0 00-2.25 2.25V18A2.25 2.25 0 006 20.25zm9.75-9.75H18a2.25 2.25 0 002.25-2.25V6A2.25 2.25 0 0018 3.75h-2.25A2.25 2.25 0 0013.5 6v2.25a2.25 2.25 0 002.25 2.25z" />
-          </svg>
-        ),
+        icon: Puzzle,
       },
       {
         href: '/admin/system-health',
         label: 'System Health',
-        icon: (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5" aria-hidden="true">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
-          </svg>
-        ),
+        icon: Activity,
       },
     ],
   },
@@ -108,209 +98,144 @@ export function AppSidebar({ userRole, userName, userEmail, userAvatar }: AppSid
 
   const dashboardHref = userRole ? roleDashboardHref[userRole] : '/'
 
+  const userInitial = (userName ?? userEmail ?? 'U')[0].toUpperCase()
+
   return (
-    <aside
-      style={{
-        width: isExpanded ? '256px' : '64px',
-        minHeight: '100vh',
-        backgroundColor: 'hsl(var(--card))',
-        borderRight: '1px solid hsl(var(--border))',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'width 200ms ease',
-        flexShrink: 0,
-      }}
-      aria-label="Main navigation"
-    >
-      {/* Logo */}
-      <div
-        style={{
-          padding: isExpanded ? '1.25rem 1rem' : '1.25rem 0',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          justifyContent: isExpanded ? 'flex-start' : 'center',
-          borderBottom: '1px solid hsl(var(--border))',
-        }}
+    <TooltipProvider delayDuration={300}>
+      <aside
+        className={cn(
+          'min-h-screen bg-card border-r border-border flex flex-col transition-[width] duration-200 ease-in-out shrink-0',
+          isExpanded ? 'w-64' : 'w-16'
+        )}
+        aria-label="Main navigation"
       >
-        <Link href={dashboardHref} className="flex items-center gap-2" aria-label="CurryDash Central Hub home">
-          <div
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: 'var(--radius-md)',
-              backgroundColor: 'var(--color-turmeric)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              fontWeight: 700,
-              color: '#fff',
-              fontSize: '0.875rem',
-            }}
-          >
-            CD
-          </div>
-          {isExpanded && (
-            <span style={{ fontWeight: 600, fontSize: '0.875rem', color: 'hsl(var(--foreground))' }}>
-              Central Hub
-            </span>
+        {/* Logo */}
+        <div
+          className={cn(
+            'flex items-center gap-3 border-b border-border',
+            isExpanded ? 'px-4 py-5 justify-start' : 'px-0 py-5 justify-center'
           )}
-        </Link>
-      </div>
+        >
+          <Link href={dashboardHref} className="flex items-center gap-2" aria-label="CurryDash Central Hub home">
+            <div className="w-8 h-8 rounded-md bg-[var(--color-turmeric)] flex items-center justify-center shrink-0 font-bold text-white text-sm">
+              CD
+            </div>
+            {isExpanded && (
+              <span className="font-semibold text-sm text-foreground">
+                Central Hub
+              </span>
+            )}
+          </Link>
+        </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4" aria-label="Site navigation">
-        {NAV_SECTIONS.map((section) => {
-          // ADMIN section completely absent from DOM for non-admin roles
-          if (section.roles && (!userRole || !section.roles.includes(userRole))) {
-            return null
-          }
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-4" aria-label="Site navigation">
+          {NAV_SECTIONS.map((section) => {
+            // ADMIN section completely absent from DOM for non-admin roles
+            if (section.roles && (!userRole || !section.roles.includes(userRole))) {
+              return null
+            }
 
-          return (
-            <div key={section.label} className="mb-4">
-              {isExpanded && section.roles && (
-                <div
-                  style={{
-                    padding: '0 1rem 0.25rem',
-                    fontSize: '0.625rem',
-                    fontWeight: 600,
-                    letterSpacing: '0.1em',
-                    textTransform: 'uppercase',
-                    color: 'var(--color-text-muted)',
-                  }}
-                >
-                  {section.label}
-                </div>
-              )}
-              <ul role="list" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                {section.items.map((item) => {
-                  const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
-                  return (
-                    <li key={item.href}>
+            return (
+              <div key={section.label} className="mb-4">
+                {isExpanded && section.roles && (
+                  <div className="px-4 pb-1 text-[0.625rem] font-semibold tracking-[0.1em] uppercase text-muted-foreground">
+                    {section.label}
+                  </div>
+                )}
+                {isExpanded && section.roles && <Separator className="mb-2" />}
+                <ul role="list" className="list-none p-0 m-0">
+                  {section.items.map((item) => {
+                    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
+                    const IconComponent = item.icon
+
+                    const linkContent = (
                       <Link
                         href={item.href}
                         aria-current={isActive ? 'page' : undefined}
-                        title={!isExpanded ? item.label : undefined}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: isExpanded ? '0.5rem 1rem' : '0.5rem 0',
-                          justifyContent: isExpanded ? 'flex-start' : 'center',
-                          color: isActive ? 'var(--color-turmeric)' : 'hsl(var(--foreground))',
-                          backgroundColor: isActive ? 'rgba(230, 176, 75, 0.08)' : 'transparent',
-                          borderLeft: isActive ? '4px solid var(--color-turmeric)' : '4px solid transparent',
-                          fontWeight: isActive ? 500 : 400,
-                          fontSize: '0.875rem',
-                          textDecoration: 'none',
-                          transition: 'background-color 150ms, color 150ms',
-                        }}
+                        className={cn(
+                          'flex items-center gap-3 text-sm font-normal no-underline transition-colors duration-150',
+                          'border-l-4',
+                          isExpanded ? 'px-4 py-2 justify-start' : 'px-0 py-2 justify-center',
+                          isActive
+                            ? 'text-[var(--color-turmeric)] bg-[rgba(230,176,75,0.08)] border-l-[var(--color-turmeric)] font-medium'
+                            : 'text-foreground bg-transparent border-l-transparent hover:bg-muted'
+                        )}
                       >
-                        {item.icon}
+                        <IconComponent className="h-5 w-5 shrink-0" aria-hidden="true" />
                         {isExpanded && <span>{item.label}</span>}
                       </Link>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          )
-        })}
-      </nav>
+                    )
 
-      {/* User section + collapse toggle */}
-      <div
-        style={{
-          borderTop: '1px solid hsl(var(--border))',
-          padding: '0.75rem',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          justifyContent: isExpanded ? 'space-between' : 'center',
-        }}
-      >
-        {isExpanded && (
-          <div className="flex items-center gap-2 min-w-0">
-            {/* Avatar */}
-            <div
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                backgroundColor: 'var(--color-turmeric)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                overflow: 'hidden',
-              }}
-            >
-              {userAvatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={userAvatar} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.75rem' }}>
-                  {(userName ?? userEmail ?? 'U')[0].toUpperCase()}
-                </span>
-              )}
-            </div>
-            <div className="min-w-0">
-              <div
-                style={{
-                  fontSize: '0.8125rem',
-                  fontWeight: 500,
-                  color: 'hsl(var(--foreground))',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {userName ?? userEmail}
+                    return (
+                      <li key={item.href}>
+                        {!isExpanded ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              {linkContent}
+                            </TooltipTrigger>
+                            <TooltipContent side="right">
+                              {item.label}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          linkContent
+                        )}
+                      </li>
+                    )
+                  })}
+                </ul>
               </div>
-              {userRole && (
-                <div
-                  style={{
-                    fontSize: '0.6875rem',
-                    textTransform: 'capitalize',
-                    color: 'var(--color-text-muted)',
-                  }}
-                >
-                  {userRole}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+            )
+          })}
+        </nav>
 
-        {/* Collapse toggle */}
-        <button
-          onClick={toggleSidebar}
-          title={isExpanded ? 'Collapse sidebar ([)' : 'Expand sidebar ([)'}
-          aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '32px',
-            height: '32px',
-            borderRadius: 'var(--radius-md)',
-            border: 'none',
-            background: 'transparent',
-            cursor: 'pointer',
-            color: 'var(--color-text-muted)',
-            flexShrink: 0,
-          }}
+        {/* User section + collapse toggle */}
+        <div
+          className={cn(
+            'border-t border-border p-3 flex items-center gap-3',
+            isExpanded ? 'justify-between' : 'justify-center'
+          )}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4" aria-hidden="true">
+          {isExpanded && (
+            <div className="flex items-center gap-2 min-w-0">
+              {/* Avatar */}
+              <Avatar className="h-8 w-8 shrink-0">
+                <AvatarImage src={userAvatar ?? undefined} alt="" />
+                <AvatarFallback className="bg-[var(--color-turmeric)] text-white text-xs font-semibold">
+                  {userInitial}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <div className="text-[0.8125rem] font-medium text-foreground truncate">
+                  {userName ?? userEmail}
+                </div>
+                {userRole && (
+                  <div className="text-[0.6875rem] capitalize text-muted-foreground">
+                    {userRole}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Collapse toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            title={isExpanded ? 'Collapse sidebar ([)' : 'Expand sidebar ([)'}
+            aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+            className="h-8 w-8 shrink-0 text-muted-foreground"
+          >
             {isExpanded ? (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
+              <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
             ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" />
+              <ChevronsRight className="h-4 w-4" aria-hidden="true" />
             )}
-          </svg>
-        </button>
-      </div>
-    </aside>
+          </Button>
+        </div>
+      </aside>
+    </TooltipProvider>
   )
 }

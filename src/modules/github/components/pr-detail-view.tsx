@@ -303,7 +303,7 @@ export function PrDetailView({ pr, onClose }: PrDetailViewProps) {
                 fontSize: '0.75rem',
                 padding: '0.25rem 0.625rem',
                 borderRadius: 'var(--radius-full)',
-                backgroundColor: '#FFF8E1',
+                backgroundColor: 'var(--color-turmeric-muted, hsl(var(--muted)))',
                 color: 'var(--color-turmeric)',
                 fontWeight: 500,
               }}
@@ -326,7 +326,7 @@ export function PrDetailView({ pr, onClose }: PrDetailViewProps) {
                 gap: '0.375rem',
                 padding: '0.5rem 1rem',
                 backgroundColor: 'var(--color-turmeric)',
-                color: '#fff',
+                color: 'white',
                 borderRadius: 'var(--radius-sm)',
                 fontSize: '0.875rem',
                 fontWeight: 500,

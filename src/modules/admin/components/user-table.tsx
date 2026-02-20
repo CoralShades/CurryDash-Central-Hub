@@ -1,7 +1,27 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { WidgetSkeleton } from '@/components/shared'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 import type { AdminUser } from '../actions/manage-users'
 import { ROLES } from '@/types/roles'
 import type { Role } from '@/types/roles'
@@ -15,6 +35,13 @@ interface UserTableProps {
   onAddClick: () => void
   onEditClick: (user: AdminUser) => void
   onDeactivateClick: (user: AdminUser) => void
+}
+
+const ROLE_BADGE_STYLES: Record<string, string> = {
+  admin: 'bg-chili/10 text-chili border-chili/20',
+  developer: 'bg-coriander/10 text-coriander border-coriander/20',
+  qa: 'bg-turmeric/10 text-turmeric border-turmeric/20',
+  stakeholder: 'bg-cinnamon/10 text-cinnamon border-cinnamon/20',
 }
 
 export function UserTable({
@@ -100,9 +127,11 @@ export function UserTable({
 
   const SortIcon = ({ column }: { column: SortKey }) => {
     if (sortKey !== column) {
-      return <span style={{ opacity: 0.3 }}>↕</span>
+      return <ArrowUpDown className="inline h-3 w-3 ml-1 opacity-30" />
     }
-    return <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+    return sortDirection === 'asc'
+      ? <ArrowUp className="inline h-3 w-3 ml-1" />
+      : <ArrowDown className="inline h-3 w-3 ml-1" />
   }
 
   if (isLoading) {
@@ -110,10 +139,10 @@ export function UserTable({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div className="flex flex-col gap-4">
       {/* Toolbar */}
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-        <input
+      <div className="flex gap-3 items-center flex-wrap">
+        <Input
           type="text"
           placeholder="Search by name or email..."
           value={searchTerm}
@@ -121,364 +150,208 @@ export function UserTable({
             setSearchTerm(e.target.value)
             setPageIndex(0)
           }}
-          style={{
-            flex: 1,
-            minWidth: '200px',
-            padding: '8px 12px',
-            border: '1px solid var(--color-border)',
-            borderRadius: '6px',
-            fontSize: '14px',
-          }}
+          className="flex-1 min-w-[200px]"
         />
 
-        <select
+        <Select
           value={roleFilter}
-          onChange={(e) => {
-            setRoleFilter(e.target.value as Role | 'all')
+          onValueChange={(value) => {
+            setRoleFilter(value as Role | 'all')
             setPageIndex(0)
           }}
-          style={{
-            padding: '8px 12px',
-            border: '1px solid var(--color-border)',
-            borderRadius: '6px',
-            fontSize: '14px',
-          }}
         >
-          <option value="all">All Roles</option>
-          {ROLES.map((role) => (
-            <option key={role} value={role}>
-              {role.charAt(0).toUpperCase() + role.slice(1)}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="All Roles" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Roles</SelectItem>
+            {ROLES.map((role) => (
+              <SelectItem key={role} value={role}>
+                {role.charAt(0).toUpperCase() + role.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-        <select
+        <Select
           value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')
+          onValueChange={(value) => {
+            setStatusFilter(value as 'all' | 'active' | 'inactive')
             setPageIndex(0)
           }}
-          style={{
-            padding: '8px 12px',
-            border: '1px solid var(--color-border)',
-            borderRadius: '6px',
-            fontSize: '14px',
-          }}
         >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="All Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
 
-        <button
-          onClick={onAddClick}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: 'var(--color-turmeric)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '14px',
-            fontWeight: 500,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
+        <Button onClick={onAddClick} className="whitespace-nowrap">
           + Add User
-        </button>
+        </Button>
       </div>
 
       {/* Empty State */}
       {filteredAndSorted.length === 0 ? (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '48px 24px',
-            backgroundColor: 'var(--color-cream)',
-            borderRadius: '8px',
-          }}
-        >
-          <p style={{ margin: 0, marginBottom: '16px', color: '#666' }}>
+        <div className="text-center py-12 px-6 bg-muted/30 rounded-lg">
+          <p className="mb-4 text-muted-foreground">
             No team members yet.
           </p>
-          <button
-            onClick={onAddClick}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: 'var(--color-turmeric)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
-          >
+          <Button onClick={onAddClick}>
             Add User
-          </button>
+          </Button>
         </div>
       ) : (
         <>
           {/* Table */}
-          <div
-            style={{
-              overflowX: 'auto',
-              border: '1px solid var(--color-border)',
-              borderRadius: '8px',
-            }}
-          >
-            <table
-              style={{
-                width: '100%',
-                borderCollapse: 'collapse',
-                fontSize: '14px',
-              }}
-            >
-              <thead>
-                <tr
-                  style={{
-                    backgroundColor: '#f9fafb',
-                    borderBottom: '1px solid var(--color-border)',
-                  }}
-                >
-                  <th
+          <div className="overflow-x-auto border border-border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead
                     onClick={() => handleSort('name')}
-                    style={{
-                      padding: '12px 16px',
-                      textAlign: 'left',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                    }}
+                    className="cursor-pointer select-none font-semibold"
                   >
                     Name <SortIcon column="name" />
-                  </th>
-                  <th
+                  </TableHead>
+                  <TableHead
                     onClick={() => handleSort('email')}
-                    style={{
-                      padding: '12px 16px',
-                      textAlign: 'left',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                    }}
+                    className="cursor-pointer select-none font-semibold"
                   >
                     Email <SortIcon column="email" />
-                  </th>
-                  <th
+                  </TableHead>
+                  <TableHead
                     onClick={() => handleSort('role')}
-                    style={{
-                      padding: '12px 16px',
-                      textAlign: 'left',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                    }}
+                    className="cursor-pointer select-none font-semibold"
                   >
                     Role <SortIcon column="role" />
-                  </th>
-                  <th
+                  </TableHead>
+                  <TableHead
                     onClick={() => handleSort('status')}
-                    style={{
-                      padding: '12px 16px',
-                      textAlign: 'left',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      userSelect: 'none',
-                    }}
+                    className="cursor-pointer select-none font-semibold"
                   >
                     Status <SortIcon column="status" />
-                  </th>
-                  <th
-                    style={{
-                      padding: '12px 16px',
-                      textAlign: 'left',
-                      fontWeight: 600,
-                    }}
-                  >
+                  </TableHead>
+                  <TableHead className="font-semibold">
                     Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {paginatedUsers.map((user) => (
-                  <tr
-                    key={user.id}
-                    style={{
-                      borderBottom: '1px solid var(--color-border)',
-                      transition: 'background-color 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--color-cream)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent'
-                    }}
-                  >
-                    <td style={{ padding: '12px 16px' }}>
+                  <TableRow key={user.id} className="hover:bg-muted/50">
+                    <TableCell>
                       {user.fullName || '—'}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    </TableCell>
+                    <TableCell>
                       {user.email}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
+                    </TableCell>
+                    <TableCell>
                       {user.roleName ? (
-                        <span
-                          style={{
-                            display: 'inline-block',
-                            padding: '4px 8px',
-                            backgroundColor:
-                              user.roleName === 'admin'
-                                ? '#FEE2E2'
-                                : user.roleName === 'developer'
-                                  ? '#ECFDF5'
-                                  : user.roleName === 'qa'
-                                    ? '#FEF3C7'
-                                    : '#F5F3FF',
-                            color:
-                              user.roleName === 'admin'
-                                ? 'var(--color-chili)'
-                                : user.roleName === 'developer'
-                                  ? 'var(--color-coriander)'
-                                  : user.roleName === 'qa'
-                                    ? '#92400E'
-                                    : '#6B21A8',
-                            borderRadius: '4px',
-                            fontSize: '12px',
-                            fontWeight: 500,
-                          }}
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            'text-xs font-medium',
+                            ROLE_BADGE_STYLES[user.roleName] ?? ''
+                          )}
                         >
                           {user.roleName.charAt(0).toUpperCase() + user.roleName.slice(1)}
-                        </span>
+                        </Badge>
                       ) : (
                         '—'
                       )}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          padding: '4px 8px',
-                          backgroundColor: user.isActive ? '#ECFDF5' : '#F3F4F6',
-                          color: user.isActive ? 'var(--color-coriander)' : '#6B7280',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                        }}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          'text-xs font-medium',
+                          user.isActive
+                            ? 'bg-coriander/10 text-coriander border-coriander/20'
+                            : 'bg-muted text-muted-foreground border-border'
+                        )}
                       >
                         {user.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => onEditClick(user)}
-                          style={{
-                            padding: '4px 8px',
-                            backgroundColor: 'transparent',
-                            border: '1px solid var(--color-border)',
-                            borderRadius: '4px',
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                            fontWeight: 500,
-                          }}
                         >
                           Edit
-                        </button>
+                        </Button>
                         {user.isActive && (
-                          <button
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => onDeactivateClick(user)}
-                            style={{
-                              padding: '4px 8px',
-                              backgroundColor: '#FEE2E2',
-                              color: 'var(--color-chili)',
-                              border: 'none',
-                              borderRadius: '4px',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              fontWeight: 500,
-                            }}
+                            className="bg-destructive/10 text-chili border-chili/20 hover:bg-destructive/20"
                           >
                             Deactivate
-                          </button>
+                          </Button>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           {/* Pagination */}
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '12px 0',
-            }}
-          >
-            <div style={{ fontSize: '13px', color: '#666' }}>
+          <div className="flex justify-between items-center py-3">
+            <div className="text-sm text-muted-foreground">
               Showing {paginatedUsers.length > 0 ? pageIndex * pageSize + 1 : 0} to{' '}
               {Math.min((pageIndex + 1) * pageSize, filteredAndSorted.length)} of{' '}
               {filteredAndSorted.length}
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <select
-                value={pageSize}
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value))
+            <div className="flex gap-2 items-center">
+              <Select
+                value={String(pageSize)}
+                onValueChange={(value) => {
+                  setPageSize(Number(value))
                   setPageIndex(0)
                 }}
-                style={{
-                  padding: '6px 8px',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '4px',
-                  fontSize: '13px',
-                }}
               >
-                <option value={10}>10 per page</option>
-                <option value={25}>25 per page</option>
-                <option value={50}>50 per page</option>
-              </select>
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10 per page</SelectItem>
+                  <SelectItem value="25">25 per page</SelectItem>
+                  <SelectItem value="50">50 per page</SelectItem>
+                </SelectContent>
+              </Select>
 
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setPageIndex(Math.max(0, pageIndex - 1))}
                 disabled={pageIndex === 0}
-                style={{
-                  padding: '6px 12px',
-                  backgroundColor: 'transparent',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '4px',
-                  fontSize: '13px',
-                  cursor: pageIndex === 0 ? 'not-allowed' : 'pointer',
-                  opacity: pageIndex === 0 ? 0.5 : 1,
-                }}
               >
                 ← Previous
-              </button>
+              </Button>
 
-              <span style={{ fontSize: '13px', minWidth: '60px', textAlign: 'center' }}>
+              <span className="text-sm min-w-[60px] text-center">
                 Page {pageIndex + 1} of {Math.max(1, totalPages)}
               </span>
 
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setPageIndex(Math.min(totalPages - 1, pageIndex + 1))}
                 disabled={pageIndex >= totalPages - 1}
-                style={{
-                  padding: '6px 12px',
-                  backgroundColor: 'transparent',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: '4px',
-                  fontSize: '13px',
-                  cursor: pageIndex >= totalPages - 1 ? 'not-allowed' : 'pointer',
-                  opacity: pageIndex >= totalPages - 1 ? 0.5 : 1,
-                }}
               >
                 Next →
-              </button>
+              </Button>
             </div>
           </div>
         </>

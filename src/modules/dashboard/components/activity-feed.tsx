@@ -1,3 +1,8 @@
+import { GitPullRequest, GitCommit, CheckCircle2, RefreshCw } from 'lucide-react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
+
 export type ActivityEventType = 'pr_merged' | 'issue_transitioned' | 'commits_pushed' | 'webhook_sync'
 
 export interface ActivityEvent {
@@ -25,11 +30,28 @@ const MOCK_EVENTS: ActivityEvent[] = [
   { id: '10', type: 'pr_merged', actor: 'Henry Lu', actorInitials: 'HL', action: 'merged', target: 'PR #135 — Update docs', timestamp: '4h ago' },
 ]
 
-const EVENT_ICONS: Record<ActivityEventType, { icon: string; color: string }> = {
-  pr_merged: { icon: '⎇', color: 'var(--color-coriander)' },
-  issue_transitioned: { icon: '◈', color: 'var(--color-turmeric)' },
-  commits_pushed: { icon: '↑', color: 'var(--color-primary)' },
-  webhook_sync: { icon: '⟳', color: 'var(--color-text-muted)' },
+const EVENT_ICON_CLASS: Record<ActivityEventType, string> = {
+  pr_merged: 'text-coriander',
+  issue_transitioned: 'text-turmeric',
+  commits_pushed: 'text-primary',
+  webhook_sync: 'text-muted-foreground',
+}
+
+const EVENT_AVATAR_CLASS: Record<ActivityEventType, string> = {
+  pr_merged: 'bg-coriander',
+  issue_transitioned: 'bg-turmeric',
+  commits_pushed: 'bg-primary',
+  webhook_sync: 'bg-muted',
+}
+
+function EventTypeIcon({ type }: { type: ActivityEventType }) {
+  const cls = cn('h-3.5 w-3.5', EVENT_ICON_CLASS[type])
+  switch (type) {
+    case 'pr_merged': return <GitPullRequest className={cls} aria-hidden="true" />
+    case 'issue_transitioned': return <CheckCircle2 className={cls} aria-hidden="true" />
+    case 'commits_pushed': return <GitCommit className={cls} aria-hidden="true" />
+    case 'webhook_sync': return <RefreshCw className={cls} aria-hidden="true" />
+  }
 }
 
 interface ActivityFeedProps {
@@ -45,102 +67,52 @@ export function ActivityFeed({ events = MOCK_EVENTS, maxItems = 10 }: ActivityFe
   const displayEvents = events.slice(0, maxItems)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <p
-        style={{
-          margin: '0 0 var(--space-3)',
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          color: 'var(--color-text-secondary)',
-        }}
-      >
+      <p className="m-0 mb-3 text-xs font-semibold uppercase tracking-[0.05em] text-muted-foreground">
         Team Activity
       </p>
 
       {/* Feed */}
-      <div
-        aria-live="polite"
-        aria-label="Team activity feed"
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-3)',
-          paddingRight: '4px',
-        }}
-      >
-        {displayEvents.map((event) => {
-          const { icon, color } = EVENT_ICONS[event.type]
-          return (
+      <ScrollArea className="flex-1">
+        <div
+          aria-live="polite"
+          aria-label="Team activity feed"
+          className="flex flex-col gap-3 pr-1"
+        >
+          {displayEvents.map((event) => (
             <div
               key={event.id}
-              style={{
-                display: 'flex',
-                gap: 'var(--space-3)',
-                alignItems: 'flex-start',
-                paddingBottom: 'var(--space-3)',
-                borderBottom: '1px solid var(--color-border)',
-              }}
+              className="flex gap-3 items-start pb-3 border-b border-border"
             >
               {/* Avatar */}
-              <div
-                aria-hidden="true"
-                style={{
-                  flexShrink: 0,
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  backgroundColor: color,
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.6875rem',
-                  fontWeight: 600,
-                }}
-              >
-                {event.actor === 'System' ? icon : event.actorInitials}
-              </div>
+              <Avatar className={cn('h-8 w-8 flex-shrink-0 text-[0.6875rem] font-semibold text-white', EVENT_AVATAR_CLASS[event.type])} aria-hidden="true">
+                <AvatarFallback className={cn('text-[0.6875rem] font-semibold text-white', EVENT_AVATAR_CLASS[event.type])}>
+                  {event.actor === 'System'
+                    ? <EventTypeIcon type={event.type} />
+                    : event.actorInitials}
+                </AvatarFallback>
+              </Avatar>
 
               {/* Content */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: '0.8125rem',
-                    color: 'var(--color-text)',
-                    lineHeight: '1.4',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  <strong style={{ fontWeight: 600 }}>{event.actor}</strong>
+              <div className="flex-1 min-w-0">
+                <p className="m-0 text-[0.8125rem] text-foreground leading-[1.4] overflow-hidden text-ellipsis whitespace-nowrap">
+                  <strong className="font-semibold">{event.actor}</strong>
                   {' '}
                   {event.action}
                   {' '}
-                  <span style={{ color: 'var(--color-primary)', fontWeight: 500 }}>
+                  <span className="text-primary font-medium">
                     {event.target}
                   </span>
                 </p>
-                <p
-                  style={{
-                    margin: '2px 0 0',
-                    fontSize: '0.6875rem',
-                    color: 'var(--color-text-muted)',
-                  }}
-                >
+                <p className="m-0 mt-0.5 text-[0.6875rem] text-muted-foreground">
                   {event.timestamp}
                 </p>
               </div>
             </div>
-          )
-        })}
-      </div>
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   )
 }

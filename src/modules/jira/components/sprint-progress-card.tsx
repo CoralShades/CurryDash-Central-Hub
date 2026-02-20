@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import type { ProjectProgress } from './sprint-progress-widget'
 import { SprintDetailView } from './sprint-detail-view'
+import { Progress } from '@/components/ui/progress'
+import { cn } from '@/lib/utils'
 
 interface SprintProgressCardProps {
   projects: ProjectProgress[]
@@ -11,6 +13,12 @@ interface SprintProgressCardProps {
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+}
+
+function percentColorClass(percent: number): string {
+  if (percent >= 80) return 'text-coriander'
+  if (percent >= 50) return 'text-turmeric'
+  return 'text-chili'
 }
 
 /**
@@ -22,15 +30,7 @@ export function SprintProgressCard({ projects }: SprintProgressCardProps) {
 
   return (
     <>
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-3)',
-        }}
-      >
+      <div className="flex-1 overflow-y-auto flex flex-col gap-3">
         {projects.map((project) => {
           const percent =
             project.totalIssues > 0
@@ -41,101 +41,40 @@ export function SprintProgressCard({ projects }: SprintProgressCardProps) {
             <button
               key={project.projectKey}
               onClick={() => setSelectedProject(project)}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: 'var(--space-3)',
-                backgroundColor: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
-              }}
+              className="block w-full text-left p-3 bg-muted/50 border border-border rounded-[var(--radius-sm)] cursor-pointer transition-colors hover:bg-muted"
               aria-label={`View sprint detail for ${project.projectName}`}
             >
               {/* Project header row */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 'var(--space-2)',
-                }}
-              >
+              <div className="flex items-center justify-between mb-2">
                 <div>
-                  <span
-                    style={{
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      color: 'var(--color-text-secondary)',
-                    }}
-                  >
+                  <span className="text-xs font-bold text-muted-foreground">
                     {project.projectKey}
                   </span>
-                  <span
-                    style={{
-                      fontSize: '0.75rem',
-                      color: 'var(--color-text-muted)',
-                      marginLeft: '0.375rem',
-                    }}
-                  >
+                  <span className="text-xs text-muted-foreground ml-1.5">
                     {project.sprintName !== 'No active sprint'
                       ? `${formatDate(project.startDate)} – ${formatDate(project.endDate)}`
                       : 'No active sprint'}
                   </span>
                 </div>
-                <span
-                  style={{
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    color: percent >= 80 ? 'var(--color-coriander)' : percent >= 50 ? 'var(--color-turmeric)' : 'var(--color-chili)',
-                  }}
-                >
+                <span className={cn('text-sm font-semibold', percentColorClass(percent))}>
                   {percent}%
                 </span>
               </div>
 
               {/* Progress bar */}
-              <div
-                style={{
-                  height: '6px',
-                  borderRadius: '999px',
-                  backgroundColor: 'var(--color-border-subtle)',
-                  overflow: 'hidden',
-                }}
-                role="progressbar"
-                aria-valuenow={percent}
-                aria-valuemin={0}
-                aria-valuemax={100}
-              >
-                <div
-                  style={{
-                    height: '100%',
-                    width: `${percent}%`,
-                    borderRadius: '999px',
-                    backgroundColor: percent >= 80
-                      ? 'var(--color-coriander)'
-                      : percent >= 50
-                        ? 'var(--color-turmeric)'
-                        : 'var(--color-chili)',
-                    transition: 'width 0.3s ease',
-                  }}
-                />
-              </div>
+              <Progress
+                value={percent}
+                className="h-1.5"
+                aria-label={`${project.projectName} sprint progress`}
+              />
 
               {/* Story counts */}
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginTop: 'var(--space-1)',
-                }}
-              >
-                <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)' }}>
+              <div className="flex justify-between mt-1">
+                <span className="text-[0.6875rem] text-muted-foreground">
                   {project.completedIssues}/{project.totalIssues} stories
                 </span>
                 {project.totalPoints > 0 && (
-                  <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)' }}>
+                  <span className="text-[0.6875rem] text-muted-foreground">
                     {project.completedPoints}/{project.totalPoints} pts
                   </span>
                 )}

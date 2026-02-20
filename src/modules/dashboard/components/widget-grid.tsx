@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth'
 import type { Role } from '@/types/roles'
-import type { WidgetConfig } from '../config/widget-registry'
+import type { WidgetColSpan, WidgetConfig } from '../config/widget-registry'
 import { widgetRegistry } from '../config/widget-registry'
 import { WidgetCard } from './widget-card'
 import { WidgetPlaceholder } from './widget-placeholder'
@@ -17,6 +17,14 @@ import { BlockerCard } from './blocker-card'
 import { SprintProgressWidget } from '@/modules/jira/components/sprint-progress-widget'
 import { PrStatusWidget } from '@/modules/github/components/pr-status-widget'
 import { CicdStatusWidget } from '@/modules/github/components/cicd-status-widget'
+
+/** Static mapping for col-span classes — Tailwind JIT requires full class names */
+const colSpanClass: Record<WidgetColSpan, string> = {
+  3: 'col-span-3',
+  4: 'col-span-4',
+  6: 'col-span-6',
+  12: 'col-span-12',
+}
 
 interface WidgetGridProps {
   role: Role
@@ -65,10 +73,10 @@ export async function WidgetGrid({ role }: WidgetGridProps) {
     <>
       {/* Mobile message — CSS hides .dashboard-grid and shows this at <768px */}
       <div className="dashboard-mobile-message">
-        <p style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)', marginBottom: 'var(--space-2)' }}>
+        <p className="text-base font-semibold text-foreground mb-2">
           Best viewed on desktop
         </p>
-        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0 }}>
+        <p className="text-sm text-muted-foreground m-0">
           CurryDash Central Hub is optimised for desktop. For the best experience, please use a laptop or tablet.
         </p>
       </div>
@@ -78,7 +86,7 @@ export async function WidgetGrid({ role }: WidgetGridProps) {
         {staticWidgets.map((config) => (
           <div
             key={config.id}
-            style={{ gridColumn: `span ${config.colSpan}` }}
+            className={colSpanClass[config.colSpan]}
           >
             <WidgetCard config={config}>
               {resolveWidget(config, role)}
@@ -90,7 +98,7 @@ export async function WidgetGrid({ role }: WidgetGridProps) {
         {aiWidgets.map((widget) => (
           <div
             key={widget.id}
-            style={{ gridColumn: `span ${widget.config.colSpan}` }}
+            className={colSpanClass[widget.config.colSpan]}
           >
             <AiWidgetCard widgetId={widget.id} config={widget.config} />
           </div>

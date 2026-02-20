@@ -4,6 +4,10 @@ import { useState } from 'react'
 import type { PullRequestRow } from './pr-status-widget'
 import { PrDetailView } from './pr-detail-view'
 import type { Role } from '@/types/roles'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { Check, X, Circle } from 'lucide-react'
 
 export type FilterOption = 'all' | 'needs_review' | 'changes_requested' | 'ready_to_merge'
 
@@ -70,48 +74,26 @@ export function extractCiStatus(
 }
 
 function ReviewStatusBadge({ status }: { status: PullRequestRow['reviewStatus'] }) {
-  const config: Record<PullRequestRow['reviewStatus'], { label: string; color: string; bg: string }> = {
-    approved: { label: 'Approved', color: 'var(--color-coriander)', bg: '#E8F5E9' },
-    changes_requested: { label: 'Changes', color: 'var(--color-chili)', bg: '#FDECEA' },
-    pending: { label: 'Review', color: 'var(--color-turmeric)', bg: '#FFF8E1' },
+  const config: Record<PullRequestRow['reviewStatus'], { label: string; className: string }> = {
+    approved: { label: 'Approved', className: 'bg-emerald-50 text-coriander border-0' },
+    changes_requested: { label: 'Changes', className: 'bg-destructive/10 text-chili border-0' },
+    pending: { label: 'Review', className: 'bg-amber-50 text-turmeric border-0' },
   }
-  const { label, color, bg } = config[status]
+  const { label, className } = config[status]
   return (
-    <span
-      style={{
-        fontSize: '0.6875rem',
-        fontWeight: 500,
-        padding: '0.125rem 0.375rem',
-        borderRadius: 'var(--radius-full)',
-        backgroundColor: bg,
-        color,
-        whiteSpace: 'nowrap',
-      }}
-    >
+    <Badge className={cn('text-[0.6875rem] font-medium rounded-full px-1.5 py-0.5 whitespace-nowrap', className)}>
       {label}
-    </span>
+    </Badge>
   )
 }
 
 function CiStatusIcon({ status }: { status: PullRequestRow['ciStatus'] }) {
   if (status === 'success')
-    return (
-      <span title="CI passed" aria-label="CI passed" style={{ color: 'var(--color-coriander)', fontSize: '0.875rem' }}>
-        ✓
-      </span>
-    )
+    return <Check className="h-3.5 w-3.5 text-coriander" aria-label="CI passed" />
   if (status === 'failure')
-    return (
-      <span title="CI failed" aria-label="CI failed" style={{ color: 'var(--color-chili)', fontSize: '0.875rem' }}>
-        ✗
-      </span>
-    )
+    return <X className="h-3.5 w-3.5 text-chili" aria-label="CI failed" />
   if (status === 'pending')
-    return (
-      <span title="CI running" aria-label="CI running" style={{ color: 'var(--color-turmeric)', fontSize: '0.875rem' }}>
-        ◎
-      </span>
-    )
+    return <Circle className="h-3.5 w-3.5 text-turmeric" aria-label="CI running" />
   return null
 }
 
@@ -140,26 +122,12 @@ export function PrStatusCard({ prs, role }: PrStatusCardProps) {
     <>
       {/* Stakeholder aggregated summary */}
       {isStakeholder && (
-        <div
-          style={{
-            marginBottom: 'var(--space-3)',
-            padding: 'var(--space-2) var(--space-3)',
-            backgroundColor: 'var(--color-surface)',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--color-border)',
-          }}
-        >
-          <p
-            style={{
-              margin: 0,
-              fontSize: '0.8125rem',
-              color: 'var(--color-text-secondary)',
-            }}
-          >
-            <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{summary.openCount}</span>
+        <div className="mb-3 py-2 px-3 bg-muted/50 rounded-[var(--radius-sm)] border border-border">
+          <p className="m-0 text-[0.8125rem] text-muted-foreground">
+            <span className="font-semibold text-foreground">{summary.openCount}</span>
             {' '}PRs open
             {' · '}
-            <span style={{ fontWeight: 600, color: 'var(--color-text)' }}>{summary.mergedThisWeek}</span>
+            <span className="font-semibold text-foreground">{summary.mergedThisWeek}</span>
             {' '}merged this week
           </p>
         </div>
@@ -167,58 +135,33 @@ export function PrStatusCard({ prs, role }: PrStatusCardProps) {
 
       {/* Filter row */}
       <div
-        style={{
-          display: 'flex',
-          gap: 'var(--space-2)',
-          marginBottom: 'var(--space-3)',
-          flexWrap: 'wrap',
-          flexShrink: 0,
-        }}
+        className="flex gap-2 mb-3 flex-wrap flex-shrink-0"
         role="group"
         aria-label="Filter pull requests"
       >
         {filters.map(({ key, label }) => (
-          <button
+          <Button
             key={key}
+            variant="outline"
+            size="sm"
             onClick={() => setFilter(key)}
             aria-pressed={filter === key}
-            style={{
-              padding: '0.25rem 0.75rem',
-              fontSize: '0.75rem',
-              fontWeight: filter === key ? 600 : 400,
-              borderRadius: 'var(--radius-full)',
-              border: `1px solid ${filter === key ? 'var(--color-turmeric)' : 'var(--color-border)'}`,
-              backgroundColor: filter === key ? 'hsl(var(--muted))' : 'transparent',
-              color: filter === key ? 'var(--color-text)' : 'var(--color-text-muted)',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-            }}
+            className={cn(
+              'text-xs rounded-full px-3 py-1 h-auto whitespace-nowrap',
+              filter === key
+                ? 'border-turmeric bg-muted font-semibold text-foreground'
+                : 'border-border bg-transparent font-normal text-muted-foreground'
+            )}
           >
             {label}
-          </button>
+          </Button>
         ))}
       </div>
 
       {/* PR list */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--space-2)',
-        }}
-      >
+      <div className="flex-1 overflow-y-auto flex flex-col gap-2">
         {filteredPrs.length === 0 ? (
-          <p
-            style={{
-              fontSize: '0.875rem',
-              color: 'var(--color-text-muted)',
-              textAlign: 'center',
-              padding: 'var(--space-4)',
-              margin: 0,
-            }}
-          >
+          <p className="text-sm text-muted-foreground text-center p-4 m-0">
             No PRs match this filter.
           </p>
         ) : (
@@ -226,107 +169,55 @@ export function PrStatusCard({ prs, role }: PrStatusCardProps) {
             <button
               key={pr.id}
               onClick={() => !isStakeholder && setSelectedPr(pr)}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: 'var(--space-2) var(--space-3)',
-                backgroundColor: 'var(--color-surface)',
-                border: `1px solid ${pr.isStale ? 'var(--color-turmeric)' : 'var(--color-border)'}`,
-                borderLeft: pr.reviewStatus === 'changes_requested'
-                  ? '3px solid var(--color-turmeric)'
-                  : undefined,
-                borderRadius: 'var(--radius-sm)',
-                cursor: isStakeholder ? 'default' : 'pointer',
-              }}
+              className={cn(
+                'block w-full text-left py-2 px-3',
+                'bg-muted/50 border border-border rounded-[var(--radius-sm)]',
+                isStakeholder ? 'cursor-default' : 'cursor-pointer transition-colors hover:bg-muted',
+                pr.isStale && 'border-turmeric',
+                pr.reviewStatus === 'changes_requested' && 'border-l-[3px] border-l-turmeric'
+              )}
               aria-label={`PR #${pr.prNumber}: ${pr.title}`}
             >
               {/* Row 1: repo · PR number · title · stale badge · age */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  gap: 'var(--space-2)',
-                  flexWrap: 'wrap',
-                }}
-              >
-                <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', flexShrink: 0 }}>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-[0.6875rem] text-muted-foreground flex-shrink-0">
                   {pr.repoName}
                 </span>
-                <span
-                  style={{
-                    fontSize: '0.6875rem',
-                    fontWeight: 600,
-                    color: 'var(--color-text-secondary)',
-                    flexShrink: 0,
-                  }}
-                >
+                <span className="text-[0.6875rem] font-semibold text-muted-foreground flex-shrink-0">
                   #{pr.prNumber}
                 </span>
-                <span
-                  style={{
-                    fontSize: '0.8125rem',
-                    fontWeight: 500,
-                    color: 'var(--color-text)',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    flex: 1,
-                    minWidth: 0,
-                  }}
-                >
+                <span className="text-[0.8125rem] font-medium text-foreground overflow-hidden text-ellipsis whitespace-nowrap flex-1 min-w-0">
                   {pr.title}
                 </span>
                 {pr.isStale && (
-                  <span
+                  <Badge
                     title="No review activity in over 3 days"
-                    style={{
-                      fontSize: '0.6875rem',
-                      fontWeight: 500,
-                      padding: '0.0625rem 0.375rem',
-                      borderRadius: 'var(--radius-full)',
-                      backgroundColor: '#FFF8E1',
-                      color: 'var(--color-turmeric)',
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}
+                    className="text-[0.6875rem] font-medium rounded-full px-1.5 py-0 whitespace-nowrap flex-shrink-0 bg-amber-50 text-turmeric border-0"
                   >
                     Stale
-                  </span>
+                  </Badge>
                 )}
-                <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', flexShrink: 0 }}>
+                <span className="text-[0.6875rem] text-muted-foreground flex-shrink-0">
                   {formatAge(pr.updatedAt)}
                 </span>
               </div>
 
               {/* Row 2: author · review status · draft · CI status (not for stakeholder) */}
               {!isStakeholder && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--space-2)',
-                    marginTop: 'var(--space-1)',
-                  }}
-                >
+                <div className="flex items-center gap-2 mt-1">
                   {pr.author && (
-                    <span style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)' }}>
+                    <span className="text-[0.6875rem] text-muted-foreground">
                       {pr.author}
                     </span>
                   )}
                   <ReviewStatusBadge status={pr.reviewStatus} />
                   {pr.isDraft && (
-                    <span
-                      style={{
-                        fontSize: '0.6875rem',
-                        padding: '0.125rem 0.375rem',
-                        borderRadius: 'var(--radius-full)',
-                        border: '1px solid var(--color-border)',
-                        color: 'var(--color-text-muted)',
-                      }}
+                    <Badge
+                      variant="outline"
+                      className="text-[0.6875rem] rounded-full px-1.5 py-0 border-border text-muted-foreground"
                     >
                       Draft
-                    </span>
+                    </Badge>
                   )}
                   <CiStatusIcon status={pr.ciStatus} />
                 </div>
