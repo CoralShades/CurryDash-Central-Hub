@@ -189,7 +189,7 @@ export async function syncJiraData(
       })
     }
 
-    revalidateTag('issues')
+    revalidateTag('issues', 'max')
 
     logger.info('Jira sync completed', {
       source: 'admin',
@@ -365,7 +365,7 @@ export async function syncGitHubData(
       })
     }
 
-    revalidateTag('github-ci')
+    revalidateTag('github-ci', 'max')
 
     logger.info('GitHub sync completed', {
       source: 'admin',

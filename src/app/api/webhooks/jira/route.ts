@@ -383,7 +383,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   // ─── Step 5: ISR Cache Invalidation ────────────────────────────────────────
-  revalidateTag('issues')
+  revalidateTag('issues', 'max')
 
   // ─── Step 6: Realtime Broadcast ─────────────────────────────────────────────
   try {

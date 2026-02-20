@@ -45,7 +45,7 @@ export async function deleteWidget(widgetId: string): Promise<ApiResponse<{ id: 
     }
   }
 
-  revalidateTag('dashboard-widgets')
+  revalidateTag('dashboard-widgets', 'max')
 
   return { data: { id: data.id }, error: null }
 }
