@@ -11,6 +11,6 @@ export const syncGitHubDataSchema = z.object({
 export type SyncGitHubDataInput = z.infer<typeof syncGitHubDataSchema>
 
 export const listGitHubReposSchema = z.object({
-  org: z.string().optional(),
+  org: z.string().min(1).optional(),
 })
 export type ListGitHubReposInput = z.infer<typeof listGitHubReposSchema>

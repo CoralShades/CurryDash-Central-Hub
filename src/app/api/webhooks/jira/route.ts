@@ -244,12 +244,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (eventUpdatedAt) {
       const { data: storedIssue } = await supabase
         .from('jira_issues')
-        .select('updated_at')
+        .select('raw_payload')
         .eq('issue_key', issueKey)
         .maybeSingle()
 
-      if (storedIssue?.updated_at) {
-        const storedTs = new Date(storedIssue.updated_at).getTime()
+      const storedJiraUpdatedAt = (storedIssue?.raw_payload as { jira_updated_at?: string | null } | null)
+        ?.jira_updated_at
+
+      if (storedJiraUpdatedAt) {
+        const storedTs = new Date(storedJiraUpdatedAt).getTime()
         const eventTs = new Date(eventUpdatedAt).getTime()
 
         if (storedTs > eventTs) {
@@ -259,7 +262,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             data: {
               issueKey,
               eventUpdatedAt,
-              storedUpdatedAt: storedIssue.updated_at,
+              storedUpdatedAt: storedJiraUpdatedAt,
               reason: 'out-of-order: newer event already processed',
             },
           })

@@ -96,12 +96,14 @@ export async function syncJiraData(
 
     let projectsImported = 0
     let issuesImported = 0
+    let projectFailures = 0
     const errors: string[] = []
 
     for (const projectKey of projectKeys) {
       try {
         const project = projectMap.get(projectKey)
         if (!project) {
+          projectFailures++
           errors.push(`Project ${projectKey} not found in Jira workspace`)
           continue
         }
@@ -124,6 +126,7 @@ export async function syncJiraData(
           .single()
 
         if (projectError || !projectRow) {
+          projectFailures++
           errors.push(`Failed to upsert project ${projectKey}: ${projectError?.message ?? 'unknown error'}`)
           continue
         }
@@ -158,6 +161,7 @@ export async function syncJiraData(
           }
         }
       } catch (projectErr) {
+        projectFailures++
         errors.push(
           `Error syncing project ${projectKey}: ${projectErr instanceof Error ? projectErr.message : 'unknown error'}`
         )
@@ -165,10 +169,10 @@ export async function syncJiraData(
     }
 
     // Update system_health for jira source
-    await supabase.from('system_health').upsert(
+    const { error: jiraHealthError } = await supabase.from('system_health').upsert(
       {
         source: 'jira',
-        status: errors.length === projectKeys.length ? 'error' : 'connected',
+        status: projectFailures === projectKeys.length ? 'error' : 'connected',
         metadata: {
           lastSyncAt: now,
           projectsImported,
@@ -178,6 +182,12 @@ export async function syncJiraData(
       },
       { onConflict: 'source' }
     )
+    if (jiraHealthError) {
+      logger.warn('Failed to update system_health for jira', {
+        source: 'admin',
+        data: { error: jiraHealthError.message },
+      })
+    }
 
     revalidateTag('issues')
 
@@ -277,37 +287,48 @@ export async function syncGitHubData(
     let reposImported = 0
     let pullRequestsImported = 0
     let workflowRunsImported = 0
+    let repoFailures = 0
     const errors: string[] = []
+
+    // Pre-fetch repos for each unique owner to avoid N+1 API calls
+    const uniqueOwners = [
+      ...new Set(
+        repoFullNames.map((name) => name.split('/')[0]).filter((o): o is string => Boolean(o))
+      ),
+    ]
+    const reposByOwner = new Map<string, GitHubRepo[]>()
+    for (const owner of uniqueOwners) {
+      try {
+        reposByOwner.set(owner, await getRepositories(owner))
+      } catch {
+        reposByOwner.set(owner, [])
+      }
+    }
+    let personalRepos: GitHubRepo[] | null = null
 
     for (const repoFullName of repoFullNames) {
       try {
         const [owner, repoName] = repoFullName.split('/')
         if (!owner || !repoName) {
+          repoFailures++
           errors.push(`Invalid repo format: ${repoFullName} (expected owner/name)`)
           continue
         }
 
-        // Fetch repos for this owner to get the matching repo details
-        const repos = await getRepositories(owner)
-        const repo = repos.find((r) => r.fullName === repoFullName)
+        const repo = (reposByOwner.get(owner) ?? []).find((r) => r.fullName === repoFullName)
 
         if (!repo) {
-          // Try listing for authenticated user in case it's a personal repo
-          const allRepos = await getRepositories()
-          const personalRepo = allRepos.find((r) => r.fullName === repoFullName)
+          // Try listing for authenticated user in case it's a personal repo (fetched once)
+          if (personalRepos === null) {
+            personalRepos = await getRepositories()
+          }
+          const personalRepo = personalRepos.find((r) => r.fullName === repoFullName)
           if (!personalRepo) {
+            repoFailures++
             errors.push(`Repository ${repoFullName} not found`)
             continue
           }
-          // Use personal repo
-          const repoResult = await upsertAndSyncRepo(
-            personalRepo,
-            owner,
-            repoName,
-            supabase,
-            now,
-            errors
-          )
+          const repoResult = await upsertAndSyncRepo(personalRepo, owner, repoName, supabase, now, errors)
           reposImported += repoResult.reposImported
           pullRequestsImported += repoResult.pullRequestsImported
           workflowRunsImported += repoResult.workflowRunsImported
@@ -319,6 +340,7 @@ export async function syncGitHubData(
         pullRequestsImported += repoResult.pullRequestsImported
         workflowRunsImported += repoResult.workflowRunsImported
       } catch (repoErr) {
+        repoFailures++
         errors.push(
           `Error syncing repo ${repoFullName}: ${repoErr instanceof Error ? repoErr.message : 'unknown error'}`
         )
@@ -326,10 +348,10 @@ export async function syncGitHubData(
     }
 
     // Update system_health for github source
-    await supabase.from('system_health').upsert(
+    const { error: githubHealthError } = await supabase.from('system_health').upsert(
       {
         source: 'github',
-        status: errors.length === repoFullNames.length ? 'error' : 'connected',
+        status: repoFailures === repoFullNames.length ? 'error' : 'connected',
         metadata: {
           lastSyncAt: now,
           reposImported,
@@ -340,6 +362,12 @@ export async function syncGitHubData(
       },
       { onConflict: 'source' }
     )
+    if (githubHealthError) {
+      logger.warn('Failed to update system_health for github', {
+        source: 'admin',
+        data: { error: githubHealthError.message },
+      })
+    }
 
     revalidateTag('github-ci')
 
@@ -457,7 +485,7 @@ async function upsertAndSyncRepo(
         status: run.status ?? 'unknown',
         conclusion: run.conclusion ?? null,
         html_url: run.htmlUrl,
-        raw_payload: {} as Json,
+        raw_payload: run as unknown as Json,
         github_created_at: run.createdAt,
         github_updated_at: run.updatedAt,
         synced_at: now,
