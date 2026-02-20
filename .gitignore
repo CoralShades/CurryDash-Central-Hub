@@ -53,3 +53,6 @@ CLAUDE.local.md
 
 # Playwright auth state (contains session cookies)
 e2e/.auth/
+
+# Fumadocs auto-generated source files
+.source/

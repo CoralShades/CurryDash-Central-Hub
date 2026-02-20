@@ -3,7 +3,7 @@
 import { useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Puzzle, Activity, ChevronsLeft, ChevronsRight, type LucideIcon } from 'lucide-react'
+import { LayoutDashboard, Users, Puzzle, Activity, BookOpen, ChevronsLeft, ChevronsRight, type LucideIcon } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -32,6 +32,11 @@ const NAV_SECTIONS: NavSection[] = [
         href: '/dev',
         label: 'Dashboard',
         icon: LayoutDashboard,
+      },
+      {
+        href: '/docs',
+        label: 'Docs',
+        icon: BookOpen,
       },
     ],
   },
