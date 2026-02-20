@@ -322,9 +322,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   // ─── Step 6: ISR Cache Invalidation ────────────────────────────────────────
   if (eventType === 'pull_request') {
-    revalidateTag('github-prs')
+    revalidateTag('github-prs', 'max')
   } else if (eventType === 'workflow_run') {
-    revalidateTag('github-ci')
+    revalidateTag('github-ci', 'max')
   }
 
   // ─── Step 7: Realtime Broadcast ─────────────────────────────────────────────

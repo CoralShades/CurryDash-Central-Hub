@@ -462,8 +462,8 @@ export async function retryDeadLetterEvent(
       }
 
       // Invalidate relevant caches
-      revalidateTag('issues')
-      revalidateTag('github-ci')
+      revalidateTag('issues', 'max')
+      revalidateTag('github-ci', 'max')
 
       // Broadcast to all role channels
       const roles = ['admin', 'developer', 'qa', 'stakeholder'] as const

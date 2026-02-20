@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/middleware'
 import type { Role } from '@/types/roles'
 
 /** Routes accessible without authentication */
-const PUBLIC_PATHS = ['/login', '/register', '/api/webhooks', '/api/auth']
+const PUBLIC_PATHS = ['/login', '/register', '/api/webhooks', '/api/auth', '/docs']
 
 /** Route prefix → required role mapping */
 const ROUTE_ROLE_MAP: Record<string, Role> = {
@@ -36,7 +36,7 @@ function getRequiredRole(pathname: string): Role | null {
   return null
 }
 
-export default auth(async function middleware(request: NextRequest) {
+export const proxy = auth(async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Refresh Supabase session cookie on every pass (sliding session)

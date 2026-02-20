@@ -1,4 +1,20 @@
 import { type Page, expect } from '@playwright/test'
+import fs from 'fs'
+import path from 'path'
+
+const SCREENSHOT_DIR = path.join(__dirname, 'screenshots')
+
+/** Capture a full-page screenshot to e2e/screenshots/{name}.png */
+export async function screenshot(page: Page, name: string) {
+  fs.mkdirSync(SCREENSHOT_DIR, { recursive: true })
+  await page.screenshot({
+    path: path.join(SCREENSHOT_DIR, `${name}.png`),
+    fullPage: true,
+  })
+}
+
+/** Publicly-accessible documentation routes */
+export const DOC_ROUTES = ['/docs', '/docs/getting-started', '/docs/central-hub'] as const
 
 /** Wait for the dashboard grid to be visible (indicates page fully loaded) */
 export async function waitForDashboard(page: Page) {

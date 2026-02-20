@@ -1,0 +1,45 @@
+---
+title: Central Hub
+description: Technical documentation for the CurryDash Central Hub — Next.js 16 monitoring dashboard for the development team.
+icon: Monitor
+---
+
+# CurryDash Central Hub
+
+The Central Hub is a role-based project management and monitoring dashboard built with
+Next.js 16. It serves four roles: Admin, Developer, QA, and Stakeholder.
+
+## Key Features
+
+- **Role-Based Access Control** — Three-layer RBAC (Edge Proxy → Server Components → Supabase RLS)
+- **Dashboard Widgets** — Real-time data from Jira and GitHub with staleness indicators
+- **Jira Integration** — Webhook pipeline, sprint tracking, issue management
+- **GitHub Integration** — PR status, CI/CD pipeline, webhook processing
+- **AI Assistant** — CopilotKit + Mastra backend with Anthropic Claude
+- **Admin Panel** — System health, user management, dead letter queue
+
+## Sections
+
+<Cards>
+  <Card title="Architecture" href="/docs/central-hub/architecture" description="System architecture, module boundaries, and key decisions." />
+  <Card title="Auth & RBAC" href="/docs/central-hub/auth-rbac" description="Three-layer RBAC, JWT claims, Supabase RLS policies." />
+  <Card title="Dashboard Widgets" href="/docs/central-hub/dashboard-widgets" description="Widget system, grid layout, staleness indicators." />
+  <Card title="Jira Integration" href="/docs/central-hub/jira-integration" description="Webhook pipeline, Jira client, sprint tracking." />
+  <Card title="GitHub Integration" href="/docs/central-hub/github-integration" description="GitHub webhooks, PR feed, CI/CD status." />
+  <Card title="AI Assistant" href="/docs/central-hub/ai-assistant" description="CopilotKit frontend, Mastra backend, MCP tools." />
+  <Card title="Design System" href="/docs/central-hub/design-system" description="Spice palette, component library, Tailwind v4 setup." />
+</Cards>
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router), React 18 |
+| Language | TypeScript (strict mode) |
+| Database | Supabase (PostgreSQL + Realtime + Auth) |
+| Auth | Auth.js v5 (JWT sessions) |
+| Styling | Tailwind CSS v4, shadcn/ui |
+| State | Zustand 5 (UI state only) |
+| AI | CopilotKit v1.51.3 + Mastra v0.10.15 |
+| Integrations | Jira (jira.js), GitHub (Octokit) |
+| Testing | Vitest (unit/integration), Playwright (E2E) |

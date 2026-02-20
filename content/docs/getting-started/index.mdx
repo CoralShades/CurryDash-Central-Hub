@@ -1,0 +1,32 @@
+---
+title: Getting Started
+description: Quick start guide for CurryDash development — prerequisites, local setup, and first steps.
+icon: Rocket
+---
+
+# Getting Started with CurryDash
+
+CurryDash is a subscription-marketplace hybrid food delivery platform for the Sri Lankan diaspora
+community in Victoria, Australia. The platform has three main repositories:
+
+| Repository | Technology | Purpose |
+|---|---|---|
+| **Central Hub** | Next.js 16, TypeScript, Supabase | Dev monitoring dashboard, AI assistant, integrations |
+| **Admin-Seller Portal** | Laravel 10.x, Filament 3.x, MySQL | Admin dashboard, vendor portal, backend APIs |
+| **Customer App** | Flutter 3.x, Dart | Cross-platform iOS/Android/Web customer app |
+
+## Prerequisites
+
+- Node.js ≥20.9 (Central Hub)
+- PHP 8.2+, Composer (Admin-Seller Portal)
+- Flutter 3.x, Dart SDK (Customer App)
+- Supabase account with project ID `hlcoyehcatbrqecjoclh`
+- Jira Cloud account (CurryDash project)
+- GitHub account with repo access
+
+## Sections
+
+<Cards>
+  <Card title="Architecture Overview" href="/docs/getting-started/architecture-overview" description="How the three repos interact — C4 architecture, data flows, shared services." />
+  <Card title="Tech Stack" href="/docs/getting-started/tech-stack" description="Side-by-side technology comparison across all three platform components." />
+</Cards>

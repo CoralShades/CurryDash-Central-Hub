@@ -1,6 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
+/* =============================================================================
+   Fumadocs UI — CSS-only integration (Tailwind v4 compatible)
+   Must come after @import "tailwindcss" so fd variables can be overridden
+   ============================================================================= */
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+@source "../node_modules/fumadocs-ui/dist/**/*.js";
+
 @custom-variant dark (&:is(.dark *));
 
 /* =============================================================================
@@ -95,6 +103,26 @@
   /* Font stack */
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  /* Fumadocs UI — map spice palette to fd CSS variables
+     Uses --color-fd-* namespace (no conflict with project vars)
+     These override the neutral.css defaults with CurryDash brand colors */
+  --color-fd-primary: var(--color-turmeric);        /* Turmeric Gold #E6B04B */
+  --color-fd-primary-foreground: #ffffff;
+  --color-fd-background: var(--color-cream);         /* Cream #FFF8DC */
+  --color-fd-foreground: var(--color-cinnamon);      /* Cinnamon #5D4037 */
+  --color-fd-card: #ffffff;
+  --color-fd-card-foreground: var(--color-cinnamon-dark);
+  --color-fd-popover: #ffffff;
+  --color-fd-popover-foreground: var(--color-cinnamon);
+  --color-fd-muted: var(--color-cream-dark);
+  --color-fd-muted-foreground: var(--color-text-muted);
+  --color-fd-accent: var(--color-coriander);         /* Coriander Green #4A7C59 */
+  --color-fd-accent-foreground: #ffffff;
+  --color-fd-border: var(--color-border);
+  --color-fd-ring: var(--color-turmeric);
+  --color-fd-secondary: var(--color-cinnamon-light);
+  --color-fd-secondary-foreground: #ffffff;
 }
 
 /* =============================================================================

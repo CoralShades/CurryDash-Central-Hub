@@ -1,0 +1,6 @@
+{
+  "title": "Central Hub",
+  "icon": "Monitor",
+  "defaultOpen": true,
+  "pages": ["index", "..."]
+}

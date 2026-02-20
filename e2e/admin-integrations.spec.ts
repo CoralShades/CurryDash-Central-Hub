@@ -1,16 +1,18 @@
 import { test, expect } from '@playwright/test'
-import { expectPageTitle } from './helpers'
+import { expectPageTitle, screenshot } from './helpers'
 
 test.describe('Admin — Integrations', () => {
   test('loads integrations page', async ({ page }) => {
     await page.goto('/admin/integrations')
     await expectPageTitle(page, 'Integrations')
+    await screenshot(page, 'admin-integrations-page')
   })
 
   test('navigable from sidebar', async ({ page }) => {
     await page.goto('/admin')
     const sidebar = page.locator('aside[aria-label="Main navigation"]')
     await sidebar.getByText('Integrations').click()
+    await screenshot(page, 'admin-integrations-from-sidebar')
     await expect(page).toHaveURL('/admin/integrations')
   })
 
@@ -20,11 +22,13 @@ test.describe('Admin — Integrations', () => {
     await expect(page.locator('main, [role="main"], .dashboard-grid').first()).toBeVisible({
       timeout: 10_000,
     })
+    await screenshot(page, 'admin-integrations-content')
   })
 
   test('sidebar Integrations link is active', async ({ page }) => {
     await page.goto('/admin/integrations')
     const link = page.locator('aside[aria-label="Main navigation"]').getByText('Integrations').locator('..')
     await expect(link).toHaveAttribute('aria-current', 'page')
+    await screenshot(page, 'admin-integrations-active-link')
   })
 })
