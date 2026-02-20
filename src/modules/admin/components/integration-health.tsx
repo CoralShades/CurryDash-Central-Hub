@@ -1,7 +1,7 @@
 import { CheckCircle2, AlertTriangle, XCircle, Wifi, WifiOff } from 'lucide-react'
 import { getIntegrationStatuses } from '@/modules/admin/actions/configure-integration'
 import type { IntegrationInfo, IntegrationStatus } from '@/modules/admin/actions/configure-integration'
-import { IntegrationConfigForm } from './integration-config-form'
+import { IntegrationCardActions } from './integration-card-actions'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
@@ -74,7 +74,7 @@ function IntegrationCard({ info }: IntegrationCardProps) {
   const { Icon } = statusCfg
 
   return (
-    <Card className="flex flex-col gap-4">
+    <Card className="flex flex-col gap-4" data-testid={`integration-card-${info.integration}`}>
       <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
         <div className="flex items-center gap-3">
           <span className="text-3xl leading-none">
@@ -113,8 +113,8 @@ function IntegrationCard({ info }: IntegrationCardProps) {
           </div>
         </div>
 
-        {/* Configure button — client component */}
-        <IntegrationConfigForm info={info} />
+        {/* Action buttons — client component */}
+        <IntegrationCardActions info={info} />
       </CardContent>
     </Card>
   )

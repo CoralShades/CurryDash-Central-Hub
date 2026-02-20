@@ -19,6 +19,8 @@ import { Label } from '@/components/ui/label'
 
 interface IntegrationConfigFormProps {
   info: IntegrationInfo
+  /** When true, hides the Test Connection button (for use inside IntegrationCardActions) */
+  hideTestButton?: boolean
 }
 
 /**
@@ -27,7 +29,7 @@ interface IntegrationConfigFormProps {
  * and a "Test Connection" button. Credentials are submitted via server actions.
  * API keys are never exposed — only masked hints from server are shown.
  */
-export function IntegrationConfigForm({ info }: IntegrationConfigFormProps) {
+export function IntegrationConfigForm({ info, hideTestButton = false }: IntegrationConfigFormProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -125,21 +127,23 @@ export function IntegrationConfigForm({ info }: IntegrationConfigFormProps) {
   return (
     <>
       {/* Buttons row */}
-      <div className="flex gap-2 mt-1">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleTestConnection}
-          disabled={isTesting}
-          className="flex-1 text-sm"
-        >
-          {isTesting ? 'Testing…' : 'Test Connection'}
-        </Button>
+      <div className={hideTestButton ? undefined : 'flex gap-2 mt-1'}>
+        {!hideTestButton && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleTestConnection}
+            disabled={isTesting}
+            className="flex-1 text-sm"
+          >
+            {isTesting ? 'Testing…' : 'Test Connection'}
+          </Button>
+        )}
 
         <Button
           size="sm"
           onClick={() => setIsOpen(true)}
-          className="flex-1 text-sm"
+          className={hideTestButton ? 'flex-1 text-sm' : 'flex-1 text-sm'}
         >
           Configure
         </Button>
