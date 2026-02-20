@@ -47,11 +47,9 @@ export async function PrStatusWidget({ role }: PrStatusWidgetProps) {
     const { data: rows } = await supabase
       .from('github_pull_requests')
       .select(`
-        id, pr_number, title, state, author_login, author_avatar_url,
-        head_branch, base_branch, is_draft, additions, deletions,
-        changed_files, merged_at, raw_payload, github_created_at, github_updated_at,
-        synced_at, created_at, updated_at,
-        github_repos!github_pull_requests_repo_id_fkey (
+        id, pr_number, title, state, author,
+        head_branch, base_branch, raw_payload, created_at, updated_at,
+        github_repos!github_pull_requests_github_repo_id_fkey (
           full_name, name
         )
       `)
@@ -66,8 +64,8 @@ export async function PrStatusWidget({ role }: PrStatusWidgetProps) {
       prs = rows.map((row) => {
         const isStale = new Date(row.updated_at) < threeDaysAgo
 
-        if (!syncedAt || (row.synced_at && row.synced_at > syncedAt)) {
-          syncedAt = row.synced_at
+        if (!syncedAt || row.updated_at > syncedAt) {
+          syncedAt = row.updated_at
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -79,23 +77,23 @@ export async function PrStatusWidget({ role }: PrStatusWidgetProps) {
           prNumber: row.pr_number,
           title: row.title,
           state: row.state,
-          author: row.author_login,
-          authorAvatarUrl: row.author_avatar_url,
-          headBranch: row.head_branch,
-          baseBranch: row.base_branch,
+          author: row.author,
+          authorAvatarUrl: (rawPayload.user as Record<string, unknown> | null)?.avatar_url as string | null ?? null,
+          headBranch: row.head_branch ?? '',
+          baseBranch: row.base_branch ?? '',
           repoFullName: repo?.full_name ?? 'unknown/repo',
           repoName: repo?.name ?? 'unknown',
           htmlUrl: (rawPayload.html_url as string | null) ?? null,
           reviewStatus: extractReviewStatus(rawPayload),
           ciStatus: extractCiStatus(rawPayload),
-          additions: row.additions,
-          deletions: row.deletions,
-          changedFiles: row.changed_files,
-          isDraft: row.is_draft,
-          mergedAt: row.merged_at,
-          createdAt: row.github_created_at ?? row.created_at,
-          updatedAt: row.github_updated_at ?? row.updated_at,
-          syncedAt: row.synced_at,
+          additions: (rawPayload.additions as number | null) ?? 0,
+          deletions: (rawPayload.deletions as number | null) ?? 0,
+          changedFiles: (rawPayload.changed_files as number | null) ?? 0,
+          isDraft: (rawPayload.draft as boolean | null) ?? false,
+          mergedAt: (rawPayload.merged_at as string | null) ?? null,
+          createdAt: (rawPayload.created_at as string | null) ?? row.created_at,
+          updatedAt: (rawPayload.updated_at as string | null) ?? row.updated_at,
+          syncedAt: row.updated_at,
           isStale,
         } satisfies PullRequestRow
       })

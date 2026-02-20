@@ -10,6 +10,7 @@ import {
   githubWorkflowRunPayloadSchema,
 } from '@/lib/schemas/github-webhook-schema'
 import { sendAdminNotification } from '@/modules/notifications/lib/send-notification'
+import type { Json } from '@/types/database'
 
 const SOURCE = 'webhook:github' as const
 
@@ -218,11 +219,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const { pull_request: pr, repository } = prResult.data
 
       if (repository) {
-        // Find or create repo record
+        // Find repo record by full_name (unique key in github_repos)
         const { data: repoRow } = await supabase
           .from('github_repos')
           .select('id')
-          .eq('repo_id', repository.id)
+          .eq('full_name', repository.full_name)
           .maybeSingle()
 
         if (repoRow) {
@@ -231,24 +232,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             .upsert(
               {
                 pr_number: pr.number,
-                repo_id: repoRow.id,
+                github_repo_id: repoRow.id,
                 title: pr.title,
                 state: pr.state,
-                author_login: pr.user.login,
-                author_avatar_url: pr.user.avatar_url ?? null,
+                author: pr.user.login ?? null,
                 head_branch: pr.head.ref,
                 base_branch: pr.base.ref,
-                is_draft: pr.draft ?? false,
-                additions: pr.additions ?? 0,
-                deletions: pr.deletions ?? 0,
-                changed_files: pr.changed_files ?? 0,
-                merged_at: pr.merged_at ?? null,
-                github_created_at: pr.created_at,
-                github_updated_at: pr.updated_at,
-                synced_at: new Date().toISOString(),
+                raw_payload: pr as unknown as Json,
                 updated_at: new Date().toISOString(),
               },
-              { onConflict: 'pr_number,repo_id' }
+              { onConflict: 'github_repo_id,pr_number' }
             )
 
           if (upsertError) {

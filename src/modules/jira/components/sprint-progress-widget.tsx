@@ -40,12 +40,12 @@ export async function SprintProgressWidget() {
     if (projectRows && projectRows.length > 0) {
       // For each project, find active sprint + issue counts
       const progressItems = await Promise.all(
-        projectRows.map(async (project) => {
+        projectRows.map(async (project): Promise<ProjectProgress> => {
           // Find the active sprint for this project
           const { data: sprintRow } = await supabase
             .from('jira_sprints')
-            .select('id, name, start_date, end_date, synced_at')
-            .eq('project_id', project.id)
+            .select('id, name, start_date, end_date, updated_at')
+            .eq('jira_project_id', project.id)
             .eq('state', 'active')
             .maybeSingle()
 
@@ -67,22 +67,18 @@ export async function SprintProgressWidget() {
           // Count issues in this sprint
           const { data: issues } = await supabase
             .from('jira_issues')
-            .select('status, story_points')
-            .eq('project_id', project.id)
-            .eq('sprint_id', sprintRow.id)
+            .select('status')
+            .eq('jira_project_id', project.id)
+            .eq('jira_sprint_id', sprintRow.id)
 
           const allIssues = issues ?? []
           const totalIssues = allIssues.length
           const completedIssues = allIssues.filter(
             (i) => i.status === 'Done' || i.status === 'Closed'
           ).length
-          const totalPoints = allIssues.reduce((sum, i) => sum + (i.story_points ?? 0), 0)
-          const completedPoints = allIssues
-            .filter((i) => i.status === 'Done' || i.status === 'Closed')
-            .reduce((sum, i) => sum + (i.story_points ?? 0), 0)
 
-          if (sprintRow.synced_at && (!syncedAt || sprintRow.synced_at < syncedAt)) {
-            syncedAt = sprintRow.synced_at
+          if (!syncedAt || sprintRow.updated_at < syncedAt) {
+            syncedAt = sprintRow.updated_at
           }
 
           return {
@@ -93,9 +89,9 @@ export async function SprintProgressWidget() {
             endDate: sprintRow.end_date,
             totalIssues,
             completedIssues,
-            totalPoints,
-            completedPoints,
-            syncedAt: sprintRow.synced_at,
+            totalPoints: 0,
+            completedPoints: 0,
+            syncedAt: sprintRow.updated_at,
           } satisfies ProjectProgress
         })
       )

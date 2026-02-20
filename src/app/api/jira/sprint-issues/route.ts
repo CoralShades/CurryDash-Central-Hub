@@ -37,7 +37,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const { data: sprint } = await supabase
       .from('jira_sprints')
       .select('id')
-      .eq('project_id', project.id)
+      .eq('jira_project_id', project.id)
       .eq('state', 'active')
       .maybeSingle()
 
@@ -48,9 +48,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Get all issues in this sprint
     const { data: issues, error } = await supabase
       .from('jira_issues')
-      .select('issue_key, summary, status, assignee_email, story_points, priority')
-      .eq('project_id', project.id)
-      .eq('sprint_id', sprint.id)
+      .select('issue_key, summary, status, assignee_email, priority, raw_payload')
+      .eq('jira_project_id', project.id)
+      .eq('jira_sprint_id', sprint.id)
       .order('status', { ascending: true })
 
     if (error) {

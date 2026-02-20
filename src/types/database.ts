@@ -135,8 +135,7 @@ export interface Database {
           project_key: string
           name: string
           description: string | null
-          jira_id: string
-          lead_email: string | null
+          raw_payload: Json
           synced_at: string | null
           created_at: string
           updated_at: string
@@ -146,8 +145,7 @@ export interface Database {
           project_key: string
           name: string
           description?: string | null
-          jira_id: string
-          lead_email?: string | null
+          raw_payload?: Json
           synced_at?: string | null
           created_at?: string
           updated_at?: string
@@ -157,8 +155,7 @@ export interface Database {
           project_key?: string
           name?: string
           description?: string | null
-          jira_id?: string
-          lead_email?: string | null
+          raw_payload?: Json
           synced_at?: string | null
           updated_at?: string
         }
@@ -168,45 +165,42 @@ export interface Database {
         Row: {
           id: string
           sprint_id: string
-          project_id: string
+          jira_project_id: string
           name: string
           state: string
           start_date: string | null
           end_date: string | null
-          goal: string | null
-          synced_at: string | null
+          raw_payload: Json
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           sprint_id: string
-          project_id: string
+          jira_project_id: string
           name: string
           state: string
           start_date?: string | null
           end_date?: string | null
-          goal?: string | null
-          synced_at?: string | null
+          raw_payload?: Json
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           sprint_id?: string
-          project_id?: string
+          jira_project_id?: string
           name?: string
           state?: string
           start_date?: string | null
           end_date?: string | null
-          goal?: string | null
-          synced_at?: string | null
+          raw_payload?: Json
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'jira_sprints_project_id_fkey'
-            columns: ['project_id']
+            foreignKeyName: 'jira_sprints_jira_project_id_fkey'
+            columns: ['jira_project_id']
             isOneToOne: false
             referencedRelation: 'jira_projects'
             referencedColumns: ['id']
@@ -217,73 +211,55 @@ export interface Database {
         Row: {
           id: string
           issue_key: string
-          project_id: string
-          sprint_id: string | null
+          jira_project_id: string
+          jira_sprint_id: string | null
           summary: string
-          description: string | null
-          issue_type: string
+          issue_type: string | null
           status: string
           priority: string | null
           assignee_email: string | null
-          reporter_email: string | null
-          story_points: number | null
-          labels: string[]
-          jira_created_at: string | null
-          jira_updated_at: string | null
-          synced_at: string | null
+          raw_payload: Json
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           issue_key: string
-          project_id: string
-          sprint_id?: string | null
+          jira_project_id: string
+          jira_sprint_id?: string | null
           summary: string
-          description?: string | null
-          issue_type: string
-          status: string
+          issue_type?: string | null
+          status?: string
           priority?: string | null
           assignee_email?: string | null
-          reporter_email?: string | null
-          story_points?: number | null
-          labels?: string[]
-          jira_created_at?: string | null
-          jira_updated_at?: string | null
-          synced_at?: string | null
+          raw_payload?: Json
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           issue_key?: string
-          project_id?: string
-          sprint_id?: string | null
+          jira_project_id?: string
+          jira_sprint_id?: string | null
           summary?: string
-          description?: string | null
-          issue_type?: string
+          issue_type?: string | null
           status?: string
           priority?: string | null
           assignee_email?: string | null
-          reporter_email?: string | null
-          story_points?: number | null
-          labels?: string[]
-          jira_created_at?: string | null
-          jira_updated_at?: string | null
-          synced_at?: string | null
+          raw_payload?: Json
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'jira_issues_project_id_fkey'
-            columns: ['project_id']
+            foreignKeyName: 'jira_issues_jira_project_id_fkey'
+            columns: ['jira_project_id']
             isOneToOne: false
             referencedRelation: 'jira_projects'
             referencedColumns: ['id']
           },
           {
-            foreignKeyName: 'jira_issues_sprint_id_fkey'
-            columns: ['sprint_id']
+            foreignKeyName: 'jira_issues_jira_sprint_id_fkey'
+            columns: ['jira_sprint_id']
             isOneToOne: false
             referencedRelation: 'jira_sprints'
             referencedColumns: ['id']
@@ -293,45 +269,33 @@ export interface Database {
       github_repos: {
         Row: {
           id: string
-          repo_id: number
           full_name: string
           name: string
           description: string | null
           default_branch: string
-          is_private: boolean
-          language: string | null
-          stars_count: number
-          open_issues_count: number
+          raw_payload: Json
           synced_at: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
-          repo_id: number
           full_name: string
           name: string
           description?: string | null
           default_branch?: string
-          is_private?: boolean
-          language?: string | null
-          stars_count?: number
-          open_issues_count?: number
+          raw_payload?: Json
           synced_at?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
-          repo_id?: number
           full_name?: string
           name?: string
           description?: string | null
           default_branch?: string
-          is_private?: boolean
-          language?: string | null
-          stars_count?: number
-          open_issues_count?: number
+          raw_payload?: Json
           synced_at?: string | null
           updated_at?: string
         }
@@ -451,72 +415,45 @@ export interface Database {
         Row: {
           id: string
           pr_number: number
-          repo_id: string
+          github_repo_id: string
           title: string
           state: string
-          author_login: string
-          author_avatar_url: string | null
-          head_branch: string
-          base_branch: string
-          is_draft: boolean
-          additions: number
-          deletions: number
-          changed_files: number
-          merged_at: string | null
+          author: string | null
+          head_branch: string | null
+          base_branch: string | null
           raw_payload: Json
-          github_created_at: string | null
-          github_updated_at: string | null
-          synced_at: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           pr_number: number
-          repo_id: string
+          github_repo_id: string
           title: string
           state: string
-          author_login: string
-          author_avatar_url?: string | null
-          head_branch: string
-          base_branch: string
-          is_draft?: boolean
-          additions?: number
-          deletions?: number
-          changed_files?: number
-          merged_at?: string | null
+          author?: string | null
+          head_branch?: string | null
+          base_branch?: string | null
           raw_payload?: Json
-          github_created_at?: string | null
-          github_updated_at?: string | null
-          synced_at?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           pr_number?: number
-          repo_id?: string
+          github_repo_id?: string
           title?: string
           state?: string
-          author_login?: string
-          author_avatar_url?: string | null
-          head_branch?: string
-          base_branch?: string
-          is_draft?: boolean
-          additions?: number
-          deletions?: number
-          changed_files?: number
-          merged_at?: string | null
+          author?: string | null
+          head_branch?: string | null
+          base_branch?: string | null
           raw_payload?: Json
-          github_created_at?: string | null
-          github_updated_at?: string | null
-          synced_at?: string | null
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'github_pull_requests_repo_id_fkey'
-            columns: ['repo_id']
+            foreignKeyName: 'github_pull_requests_github_repo_id_fkey'
+            columns: ['github_repo_id']
             isOneToOne: false
             referencedRelation: 'github_repos'
             referencedColumns: ['id']
