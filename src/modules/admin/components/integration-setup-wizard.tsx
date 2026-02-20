@@ -56,6 +56,19 @@ function getStepIndex(step: WizardStep): number {
   }
 }
 
+function getDialogDescription(step: WizardStep, info: IntegrationInfo): string {
+  if (step.id === 'connect' || step.id === 'test') {
+    return `Verify your ${info.name} connection before selecting data to import.`
+  }
+  if (step.id === 'select') {
+    return `Choose which ${info.integration === 'jira' ? 'projects' : 'repositories'} to import data from.`
+  }
+  if (step.id === 'sync') {
+    return 'Importing data — this may take a moment…'
+  }
+  return 'Your data has been imported successfully.'
+}
+
 // ── Stepper ────────────────────────────────────────────────────────────────
 
 function Stepper({ currentStep }: { currentStep: number }) {
@@ -170,20 +183,14 @@ export function IntegrationSetupWizard({
 
   // Fake progress bar ticker for sync step
   useEffect(() => {
-    if (step.id === 'sync') {
-      progressIntervalRef.current = setInterval(() => {
-        setStep((prev) => {
-          if (prev.id !== 'sync') return prev
-          if (prev.progress >= 90) return prev
-          return { id: 'sync', progress: prev.progress + 2 }
-        })
-      }, 300)
-    } else {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-        progressIntervalRef.current = null
-      }
-    }
+    if (step.id !== 'sync') return
+
+    progressIntervalRef.current = setInterval(() => {
+      setStep((prev) => {
+        if (prev.id !== 'sync' || prev.progress >= 90) return prev
+        return { id: 'sync', progress: prev.progress + 2 }
+      })
+    }, 300)
 
     return () => {
       if (progressIntervalRef.current) {
@@ -224,37 +231,28 @@ export function IntegrationSetupWizard({
   const handleSync = useCallback(async () => {
     setStep({ id: 'sync', progress: 10 })
 
-    if (info.integration === 'jira') {
-      const result = await syncJiraData({ projectKeys: Array.from(selectedJiraKeys) })
+    const result =
+      info.integration === 'jira'
+        ? await syncJiraData({ projectKeys: Array.from(selectedJiraKeys) })
+        : await syncGitHubData({ repoFullNames: Array.from(selectedRepos) })
 
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-        progressIntervalRef.current = null
-      }
-
-      if (result.error) {
-        toast.error(result.error.message)
-        setStep({ id: 'select' })
-        return
-      }
-
-      setStep({ id: 'done', result: result.data ?? { projectsImported: 0, issuesImported: 0, errors: [] } })
-    } else {
-      const result = await syncGitHubData({ repoFullNames: Array.from(selectedRepos) })
-
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current)
-        progressIntervalRef.current = null
-      }
-
-      if (result.error) {
-        toast.error(result.error.message)
-        setStep({ id: 'select' })
-        return
-      }
-
-      setStep({ id: 'done', result: result.data ?? { reposImported: 0, pullRequestsImported: 0, workflowRunsImported: 0, errors: [] } })
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current)
+      progressIntervalRef.current = null
     }
+
+    if (result.error) {
+      toast.error(result.error.message)
+      setStep({ id: 'select' })
+      return
+    }
+
+    const fallback: JiraSyncResult | GitHubSyncResult =
+      info.integration === 'jira'
+        ? { projectsImported: 0, issuesImported: 0, errors: [] }
+        : { reposImported: 0, pullRequestsImported: 0, workflowRunsImported: 0, errors: [] }
+
+    setStep({ id: 'done', result: result.data ?? fallback })
   }, [info.integration, selectedJiraKeys, selectedRepos])
 
   const handleDone = useCallback(() => {
@@ -275,13 +273,7 @@ export function IntegrationSetupWizard({
             {step.id === 'done' ? 'Import complete' : `Set up ${info.name}`}
           </DialogTitle>
           <DialogDescription>
-            {step.id === 'connect' || step.id === 'test'
-              ? `Verify your ${info.name} connection before selecting data to import.`
-              : step.id === 'select'
-                ? `Choose which ${info.integration === 'jira' ? 'projects' : 'repositories'} to import data from.`
-                : step.id === 'sync'
-                  ? 'Importing data — this may take a moment…'
-                  : 'Your data has been imported successfully.'}
+            {getDialogDescription(step, info)}
           </DialogDescription>
         </DialogHeader>
 

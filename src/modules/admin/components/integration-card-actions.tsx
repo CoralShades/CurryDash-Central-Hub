@@ -44,10 +44,6 @@ export function IntegrationCardActions({ info }: IntegrationCardActionsProps) {
     }
   }
 
-  const handleWizardComplete = () => {
-    router.refresh()
-  }
-
   return (
     <>
       <div className="flex flex-col gap-2 mt-1">
@@ -85,7 +81,7 @@ export function IntegrationCardActions({ info }: IntegrationCardActionsProps) {
           info={info}
           open={isWizardOpen}
           onOpenChange={setIsWizardOpen}
-          onComplete={handleWizardComplete}
+          onComplete={router.refresh}
         />
       )}
     </>

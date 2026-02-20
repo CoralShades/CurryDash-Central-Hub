@@ -315,30 +315,26 @@ export async function syncGitHubData(
           continue
         }
 
-        const repo = (reposByOwner.get(owner) ?? []).find((r) => r.fullName === repoFullName)
+        let repo = (reposByOwner.get(owner) ?? []).find((r) => r.fullName === repoFullName)
 
         if (!repo) {
           // Try listing for authenticated user in case it's a personal repo (fetched once)
           if (personalRepos === null) {
             personalRepos = await getRepositories()
           }
-          const personalRepo = personalRepos.find((r) => r.fullName === repoFullName)
-          if (!personalRepo) {
+          repo = personalRepos.find((r) => r.fullName === repoFullName)
+          if (!repo) {
             repoFailures++
             errors.push(`Repository ${repoFullName} not found`)
             continue
           }
-          const repoResult = await upsertAndSyncRepo(personalRepo, owner, repoName, supabase, now, errors)
-          reposImported += repoResult.reposImported
-          pullRequestsImported += repoResult.pullRequestsImported
-          workflowRunsImported += repoResult.workflowRunsImported
-          continue
         }
 
-        const repoResult = await upsertAndSyncRepo(repo, owner, repoName, supabase, now, errors)
+        const repoResult = await upsertAndSyncRepo(repo, owner, repoName, supabase, now)
         reposImported += repoResult.reposImported
         pullRequestsImported += repoResult.pullRequestsImported
         workflowRunsImported += repoResult.workflowRunsImported
+        errors.push(...repoResult.errors)
       } catch (repoErr) {
         repoFailures++
         errors.push(
@@ -399,6 +395,7 @@ interface SyncRepoResult {
   reposImported: number
   pullRequestsImported: number
   workflowRunsImported: number
+  errors: string[]
 }
 
 type SupabaseAdminClient = ReturnType<typeof createAdminClient>
@@ -408,14 +405,13 @@ async function upsertAndSyncRepo(
   owner: string,
   repoName: string,
   supabase: SupabaseAdminClient,
-  now: string,
-  errors: string[]
+  now: string
 ): Promise<SyncRepoResult> {
+  const errors: string[] = []
   let reposImported = 0
   let pullRequestsImported = 0
   let workflowRunsImported = 0
 
-  // Upsert github_repos record
   const { data: repoRow, error: repoError } = await supabase
     .from('github_repos')
     .upsert(
@@ -435,18 +431,17 @@ async function upsertAndSyncRepo(
 
   if (repoError || !repoRow) {
     errors.push(`Failed to upsert repo ${repo.fullName}: ${repoError?.message ?? 'unknown error'}`)
-    return { reposImported, pullRequestsImported, workflowRunsImported }
+    return { reposImported, pullRequestsImported, workflowRunsImported, errors }
   }
 
   reposImported++
 
-  // Sync open pull requests
   try {
     const prs = await getPullRequests(owner, repoName, 'open')
     if (prs.length > 0) {
       const prRows = prs.map((pr) => ({
         pr_number: pr.number,
-        github_repo_id: repoRow.id, // Supabase UUID FK
+        github_repo_id: repoRow.id,
         title: pr.title,
         state: pr.state,
         author: pr.author ?? null,
@@ -472,13 +467,12 @@ async function upsertAndSyncRepo(
     )
   }
 
-  // Sync recent workflow runs
   try {
     const runs = await getWorkflowRuns(owner, repoName)
     if (runs.length > 0) {
       const runRows = runs.map((run) => ({
         run_id: run.id,
-        github_repo_id: repoRow.id, // Supabase UUID FK
+        github_repo_id: repoRow.id,
         workflow_name: run.workflowName,
         head_branch: run.branch,
         head_sha: run.commitSha,
@@ -508,5 +502,5 @@ async function upsertAndSyncRepo(
     )
   }
 
-  return { reposImported, pullRequestsImported, workflowRunsImported }
+  return { reposImported, pullRequestsImported, workflowRunsImported, errors }
 }
