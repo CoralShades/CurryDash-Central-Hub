@@ -111,10 +111,10 @@ export async function syncJiraData(
           .from('jira_projects')
           .upsert(
             {
-              jira_id: project.id,
               project_key: project.key,
               name: project.name,
               description: project.description ?? null,
+              raw_payload: project as unknown as Json,
               synced_at: now,
               updated_at: now,
             },
@@ -136,18 +136,14 @@ export async function syncJiraData(
         if (issues.length > 0) {
           const issueRows = issues.map((issue) => ({
             issue_key: issue.key,
-            project_id: projectRow.id,
-            sprint_id: null,
+            jira_project_id: projectRow.id,
+            jira_sprint_id: null,
             summary: issue.summary,
             issue_type: issue.issueType,
             status: issue.status,
             priority: issue.priority ?? null,
             assignee_email: issue.assignee?.emailAddress ?? null,
-            story_points: issue.storyPoints ?? null,
-            labels: [] as string[],
-            jira_created_at: issue.created,
-            jira_updated_at: issue.updated,
-            synced_at: now,
+            raw_payload: issue as unknown as Json,
             updated_at: now,
           }))
 
@@ -396,19 +392,15 @@ async function upsertAndSyncRepo(
     .from('github_repos')
     .upsert(
       {
-        repo_id: repo.id,
         full_name: repo.fullName,
         name: repo.name,
-        description: repo.description,
+        description: repo.description ?? null,
         default_branch: repo.defaultBranch,
-        is_private: repo.isPrivate,
-        language: repo.language,
-        stars_count: repo.stargazersCount,
-        open_issues_count: repo.openIssuesCount,
+        raw_payload: repo as unknown as Json,
         synced_at: now,
         updated_at: now,
       },
-      { onConflict: 'repo_id' }
+      { onConflict: 'full_name' }
     )
     .select('id')
     .single()
@@ -426,28 +418,19 @@ async function upsertAndSyncRepo(
     if (prs.length > 0) {
       const prRows = prs.map((pr) => ({
         pr_number: pr.number,
-        repo_id: repoRow.id, // Supabase UUID FK
+        github_repo_id: repoRow.id, // Supabase UUID FK
         title: pr.title,
         state: pr.state,
-        author_login: pr.author,
-        author_avatar_url: pr.authorAvatarUrl || null,
+        author: pr.author ?? null,
         head_branch: pr.headBranch,
         base_branch: pr.baseBranch,
-        is_draft: pr.isDraft,
-        additions: pr.additions,
-        deletions: pr.deletions,
-        changed_files: pr.changedFiles,
-        merged_at: pr.mergedAt,
-        raw_payload: {} as Json,
-        github_created_at: pr.createdAt,
-        github_updated_at: pr.updatedAt,
-        synced_at: now,
+        raw_payload: pr as unknown as Json,
         updated_at: now,
       }))
 
       const { error: prError } = await supabase
         .from('github_pull_requests')
-        .upsert(prRows, { onConflict: 'pr_number,repo_id' })
+        .upsert(prRows, { onConflict: 'github_repo_id,pr_number' })
 
       if (prError) {
         errors.push(`Failed to upsert PRs for ${repo.fullName}: ${prError.message}`)
@@ -483,7 +466,7 @@ async function upsertAndSyncRepo(
 
       const { error: runError } = await supabase
         .from('github_workflow_runs')
-        .upsert(runRows, { onConflict: 'run_id' })
+        .upsert(runRows, { onConflict: 'github_repo_id,run_id' })
 
       if (runError) {
         errors.push(`Failed to upsert workflow runs for ${repo.fullName}: ${runError.message}`)

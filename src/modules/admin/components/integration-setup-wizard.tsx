@@ -222,7 +222,7 @@ export function IntegrationSetupWizard({
   }, [org])
 
   const handleSync = useCallback(async () => {
-    setStep({ id: 'sync', progress: 0 })
+    setStep({ id: 'sync', progress: 10 })
 
     if (info.integration === 'jira') {
       const result = await syncJiraData({ projectKeys: Array.from(selectedJiraKeys) })
@@ -238,7 +238,7 @@ export function IntegrationSetupWizard({
         return
       }
 
-      setStep({ id: 'done', result: result.data! })
+      setStep({ id: 'done', result: result.data ?? { projectsImported: 0, issuesImported: 0, errors: [] } })
     } else {
       const result = await syncGitHubData({ repoFullNames: Array.from(selectedRepos) })
 
@@ -253,7 +253,7 @@ export function IntegrationSetupWizard({
         return
       }
 
-      setStep({ id: 'done', result: result.data! })
+      setStep({ id: 'done', result: result.data ?? { reposImported: 0, pullRequestsImported: 0, workflowRunsImported: 0, errors: [] } })
     }
   }, [info.integration, selectedJiraKeys, selectedRepos])
 

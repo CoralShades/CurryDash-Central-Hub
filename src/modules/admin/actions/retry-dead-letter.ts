@@ -328,23 +328,15 @@ async function processJiraEvent(
     .upsert(
       {
         issue_key: issueKey,
-        project_id: projectRow.id,
+        jira_project_id: projectRow.id,
         summary: typeof fields.summary === 'string' ? fields.summary : '',
         issue_type: issueType,
         status,
         priority: (fields.priority as { name?: string } | null)?.name ?? null,
         assignee_email:
           (fields.assignee as { emailAddress?: string } | null)?.emailAddress ?? null,
-        reporter_email:
-          (fields.reporter as { emailAddress?: string } | null)?.emailAddress ?? null,
-        story_points:
-          typeof (fields as Record<string, unknown>).customfield_10016 === 'number'
-            ? ((fields as Record<string, unknown>).customfield_10016 as number)
-            : null,
-        labels: Array.isArray(fields.labels) ? (fields.labels as string[]) : [],
-        jira_updated_at: typeof fields.updated === 'string' ? fields.updated : null,
-        jira_created_at: typeof fields.created === 'string' ? fields.created : null,
-        synced_at: new Date().toISOString(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        raw_payload: fields as any,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'issue_key' }
@@ -372,18 +364,18 @@ async function processGithubEvent(
   if (!pr || !repository) return
 
   const prNumber = typeof pr.number === 'number' ? pr.number : null
-  const repoId = typeof repository.id === 'number' ? repository.id : null
+  const repoFullName = typeof repository.full_name === 'string' ? repository.full_name : null
 
-  if (!prNumber || !repoId) throw new Error('Missing PR number or repo ID in GitHub payload')
+  if (!prNumber || !repoFullName) throw new Error('Missing PR number or repo full_name in GitHub payload')
 
   const { data: repoRow, error: repoError } = await supabase
     .from('github_repos')
     .select('id')
-    .eq('repo_id', repoId)
+    .eq('full_name', repoFullName)
     .maybeSingle()
 
   if (repoError) throw new Error(`Repo lookup failed: ${repoError.message}`)
-  if (!repoRow) throw new Error(`GitHub repo not found: id=${repoId}`)
+  if (!repoRow) throw new Error(`GitHub repo not found: ${repoFullName}`)
 
   const head = (pr.head ?? {}) as Record<string, unknown>
   const base = (pr.base ?? {}) as Record<string, unknown>
@@ -394,26 +386,17 @@ async function processGithubEvent(
     .upsert(
       {
         pr_number: prNumber,
-        repo_id: repoRow.id,
+        github_repo_id: repoRow.id,
         title: typeof pr.title === 'string' ? pr.title : '',
         state: typeof pr.state === 'string' ? pr.state : 'open',
-        author_login: typeof user.login === 'string' ? user.login : '',
-        author_avatar_url: typeof user.avatar_url === 'string' ? user.avatar_url : null,
-        head_branch: typeof head.ref === 'string' ? head.ref : '',
-        base_branch: typeof base.ref === 'string' ? base.ref : '',
-        is_draft: typeof pr.draft === 'boolean' ? pr.draft : false,
-        additions: typeof pr.additions === 'number' ? pr.additions : 0,
-        deletions: typeof pr.deletions === 'number' ? pr.deletions : 0,
-        changed_files: typeof pr.changed_files === 'number' ? pr.changed_files : 0,
-        merged_at: typeof pr.merged_at === 'string' ? pr.merged_at : null,
+        author: typeof user.login === 'string' ? user.login : null,
+        head_branch: typeof head.ref === 'string' ? head.ref : null,
+        base_branch: typeof base.ref === 'string' ? base.ref : null,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         raw_payload: payload as any,
-        github_created_at: typeof pr.created_at === 'string' ? pr.created_at : null,
-        github_updated_at: typeof pr.updated_at === 'string' ? pr.updated_at : null,
-        synced_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
-      { onConflict: 'pr_number,repo_id' }
+      { onConflict: 'github_repo_id,pr_number' }
     )
 
   if (upsertError) throw new Error(`PR upsert failed: ${upsertError.message}`)

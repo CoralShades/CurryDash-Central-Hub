@@ -8,6 +8,7 @@ import {
   jiraIssuePayloadSchema,
 } from '@/lib/schemas/jira-webhook-schema'
 import { sendAdminNotification } from '@/modules/notifications/lib/send-notification'
+import type { Json } from '@/types/database'
 
 const SOURCE = 'webhook:jira' as const
 
@@ -243,12 +244,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (eventUpdatedAt) {
       const { data: storedIssue } = await supabase
         .from('jira_issues')
-        .select('jira_updated_at')
+        .select('updated_at')
         .eq('issue_key', issueKey)
         .maybeSingle()
 
-      if (storedIssue?.jira_updated_at) {
-        const storedTs = new Date(storedIssue.jira_updated_at).getTime()
+      if (storedIssue?.updated_at) {
+        const storedTs = new Date(storedIssue.updated_at).getTime()
         const eventTs = new Date(eventUpdatedAt).getTime()
 
         if (storedTs > eventTs) {
@@ -258,7 +259,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             data: {
               issueKey,
               eventUpdatedAt,
-              storedUpdatedAt: storedIssue.jira_updated_at,
+              storedUpdatedAt: storedIssue.updated_at,
               reason: 'out-of-order: newer event already processed',
             },
           })
@@ -318,9 +319,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             .from('jira_issues')
             .upsert(
               {
-                ...issuePayload,
-                project_id: projectRow.id,
-                synced_at: new Date().toISOString(),
+                issue_key: issuePayload.issue_key,
+                jira_project_id: projectRow.id,
+                summary: issuePayload.summary,
+                issue_type: issuePayload.issue_type,
+                status: issuePayload.status,
+                priority: issuePayload.priority ?? null,
+                assignee_email: issuePayload.assignee_email ?? null,
+                raw_payload: issuePayload as unknown as Json,
                 updated_at: new Date().toISOString(),
               },
               { onConflict: 'issue_key' }

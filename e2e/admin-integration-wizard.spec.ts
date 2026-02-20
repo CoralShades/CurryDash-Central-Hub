@@ -54,7 +54,6 @@ test.describe('Admin — Integration Setup Wizard', () => {
     // Only test if button is not disabled (i.e., integration is connected)
     const isDisabled = await setupBtn.getAttribute('disabled')
     if (isDisabled !== null) {
-      test.skip()
       return
     }
 
@@ -68,7 +67,6 @@ test.describe('Admin — Integration Setup Wizard', () => {
 
     const isDisabled = await setupBtn.getAttribute('disabled')
     if (isDisabled !== null) {
-      test.skip()
       return
     }
 
@@ -87,7 +85,6 @@ test.describe('Admin — Integration Setup Wizard', () => {
 
     const isDisabled = await setupBtn.getAttribute('disabled')
     if (isDisabled !== null) {
-      test.skip()
       return
     }
 
@@ -101,7 +98,6 @@ test.describe('Admin — Integration Setup Wizard', () => {
 
     const isDisabled = await setupBtn.getAttribute('disabled')
     if (isDisabled !== null) {
-      test.skip()
       return
     }
 
@@ -120,7 +116,6 @@ test.describe('Admin — Integration Setup Wizard', () => {
 
     const isDisabled = await setupBtn.getAttribute('disabled')
     if (isDisabled !== null) {
-      test.skip()
       return
     }
 

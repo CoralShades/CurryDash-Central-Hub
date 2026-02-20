@@ -96,11 +96,11 @@ export const getActiveSprintIssuesTool = createTool({
     const { data, error } = await supabase
       .from('jira_issues')
       .select(
-        `id, issue_key, summary, status, priority, assignee_email, story_points, updated_at,
+        `id, issue_key, summary, status, priority, assignee_email, raw_payload, updated_at,
          jira_projects!inner(project_key)`
       )
       .eq('jira_projects.project_key', projectKey)
-      .not('sprint_id', 'is', null)
+      .not('jira_sprint_id', 'is', null)
       .order('updated_at', { ascending: false })
       .limit(limit ?? 50)
 

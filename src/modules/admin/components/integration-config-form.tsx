@@ -143,7 +143,7 @@ export function IntegrationConfigForm({ info, hideTestButton = false }: Integrat
         <Button
           size="sm"
           onClick={() => setIsOpen(true)}
-          className={hideTestButton ? 'flex-1 text-sm' : 'flex-1 text-sm'}
+          className="flex-1 text-sm"
         >
           Configure
         </Button>

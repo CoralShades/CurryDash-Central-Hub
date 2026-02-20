@@ -125,16 +125,15 @@ export const getPullRequestsTool = createTool({
     let query = supabase
       .from('github_pull_requests')
       .select(
-        `id, pr_number, title, state, author_login, head_branch, base_branch, additions, deletions,
-         changed_files, is_draft, merged_at, github_created_at,
+        `id, pr_number, title, state, author, head_branch, base_branch, raw_payload,
          github_repos!inner(full_name, name)`
       )
-      .order('github_created_at', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(limit ?? 20)
 
-    if (state === 'merged') {
-      query = query.not('merged_at', 'is', null)
-    } else if (state === 'open' || state === 'closed') {
+    if (state === 'merged' || state === 'closed') {
+      query = query.eq('state', 'closed')
+    } else if (state === 'open') {
       query = query.eq('state', state)
     }
 
