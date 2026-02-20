@@ -1,10 +1,11 @@
 import { test, expect } from '@playwright/test'
-import { waitForDashboard, expectWidget, expectPageTitle, ROLE_WIDGETS } from './helpers'
+import { waitForDashboard, expectWidget, expectPageTitle, screenshot, ROLE_WIDGETS } from './helpers'
 
 test.describe('QA Dashboard', () => {
   test('loads QA dashboard', async ({ page }) => {
     await page.goto('/qa')
     await waitForDashboard(page)
+    await screenshot(page, 'qa-dashboard-loaded')
     await expectPageTitle(page, 'QA Dashboard')
   })
 
@@ -13,6 +14,7 @@ test.describe('QA Dashboard', () => {
       await page.goto('/qa')
       await waitForDashboard(page)
       await expectWidget(page, widgetTitle)
+      await screenshot(page, `qa-widget-${widgetTitle.toLowerCase().replace(/\s+/g, '-')}`)
     })
   }
 
@@ -24,6 +26,7 @@ test.describe('QA Dashboard', () => {
     const sprintWidget = page.getByText('Sprint Progress', { exact: true }).first().locator('..').locator('..')
     // The parent grid item should span 12 columns
     await expect(sprintWidget).toBeVisible()
+    await screenshot(page, 'qa-sprint-progress-full-width')
   })
 
   test('sidebar does NOT show admin navigation', async ({ page }) => {
@@ -31,5 +34,6 @@ test.describe('QA Dashboard', () => {
     await waitForDashboard(page)
     const sidebar = page.locator('aside[aria-label="Main navigation"]')
     await expect(sidebar.getByText('Users')).not.toBeVisible()
+    await screenshot(page, 'qa-sidebar-no-admin')
   })
 })

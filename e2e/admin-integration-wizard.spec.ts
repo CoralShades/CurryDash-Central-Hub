@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { screenshot } from './helpers'
 
 /**
  * Integration Setup Wizard E2E tests.
@@ -12,6 +13,7 @@ test.describe('Admin — Integration Setup Wizard', () => {
     await expect(page.locator('[data-testid="integration-card-jira"]').first()).toBeVisible({
       timeout: 15_000,
     })
+    await screenshot(page, 'admin-wizard-integration-cards-loaded')
   })
 
   // ── Card rendering ───────────────────────────────────────────────────────
@@ -21,6 +23,7 @@ test.describe('Admin — Integration Setup Wizard', () => {
     await expect(jiraCard).toBeVisible()
     const setupBtn = jiraCard.locator('[data-testid="setup-btn-jira"]')
     await expect(setupBtn).toBeVisible()
+    await screenshot(page, 'admin-wizard-jira-card')
   })
 
   test('GitHub card renders with Setup/Re-sync button', async ({ page }) => {
@@ -28,12 +31,14 @@ test.describe('Admin — Integration Setup Wizard', () => {
     await expect(githubCard).toBeVisible()
     const setupBtn = githubCard.locator('[data-testid="setup-btn-github"]')
     await expect(setupBtn).toBeVisible()
+    await screenshot(page, 'admin-wizard-github-card')
   })
 
   test('Anthropic card has no Setup button', async ({ page }) => {
     const anthropicCard = page.locator('[data-testid="integration-card-anthropic"]')
     await expect(anthropicCard).toBeVisible()
     await expect(anthropicCard.locator('[data-testid^="setup-btn-"]')).toHaveCount(0)
+    await screenshot(page, 'admin-wizard-anthropic-card')
   })
 
   test('Setup button shows correct label based on sync state', async ({ page }) => {
@@ -43,6 +48,7 @@ test.describe('Admin — Integration Setup Wizard', () => {
     // It should be either 'Setup' or 'Re-sync'
     const text = await setupBtn.textContent()
     expect(['Setup', 'Re-sync']).toContain(text?.trim())
+    await screenshot(page, 'admin-wizard-setup-button-label')
   })
 
   // ── Wizard dialog ────────────────────────────────────────────────────────
@@ -59,6 +65,7 @@ test.describe('Admin — Integration Setup Wizard', () => {
 
     await setupBtn.click()
     await expect(page.locator('[data-testid="wizard-dialog"]')).toBeVisible({ timeout: 5_000 })
+    await screenshot(page, 'admin-wizard-dialog-opened')
   })
 
   test('Wizard shows 4-step stepper when open', async ({ page }) => {
@@ -77,6 +84,7 @@ test.describe('Admin — Integration Setup Wizard', () => {
     for (let i = 0; i < 4; i++) {
       await expect(page.locator(`[data-testid="step-${i}"]`)).toBeVisible()
     }
+    await screenshot(page, 'admin-wizard-4-step-stepper')
   })
 
   test('Wizard step 1 shows Test Connection button', async ({ page }) => {
@@ -90,6 +98,7 @@ test.describe('Admin — Integration Setup Wizard', () => {
 
     await setupBtn.click()
     await expect(page.locator('[data-testid="test-connection-btn"]')).toBeVisible()
+    await screenshot(page, 'admin-wizard-step-1-test-button')
   })
 
   test('Escape key closes the wizard dialog', async ({ page }) => {
@@ -105,6 +114,7 @@ test.describe('Admin — Integration Setup Wizard', () => {
     await expect(page.locator('[data-testid="wizard-dialog"]')).toBeVisible()
 
     await page.keyboard.press('Escape')
+    await screenshot(page, 'admin-wizard-escape-closed')
     await expect(page.locator('[data-testid="wizard-dialog"]')).not.toBeVisible({ timeout: 3_000 })
   })
 
@@ -122,6 +132,7 @@ test.describe('Admin — Integration Setup Wizard', () => {
     await setupBtn.click()
     await expect(page.locator('[data-testid="wizard-dialog"]')).toBeVisible({ timeout: 5_000 })
     await expect(page.locator('[data-testid="test-connection-btn"]')).toBeVisible()
+    await screenshot(page, 'admin-wizard-github-dialog')
   })
 
   // ── Disabled state ───────────────────────────────────────────────────────
@@ -145,6 +156,7 @@ test.describe('Admin — Integration Setup Wizard', () => {
         await expect(setupBtn).toBeDisabled()
       }
     }
+    await screenshot(page, 'admin-wizard-disabled-setup-buttons')
   })
 
   // ── Test Connection buttons ──────────────────────────────────────────────
@@ -155,5 +167,6 @@ test.describe('Admin — Integration Setup Wizard', () => {
       const card = page.locator(`[data-testid="integration-card-${integration}"]`)
       await expect(card.locator(`[data-testid="test-connection-${integration}"]`)).toBeVisible()
     }
+    await screenshot(page, 'admin-wizard-test-connection-buttons')
   })
 })
