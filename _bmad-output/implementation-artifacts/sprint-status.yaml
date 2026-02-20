@@ -1,6 +1,7 @@
 # Sprint Status — CurryDash Central Hub
 # Generated: 2026-02-19T09:42:33Z
-# Source: .ralph-plan.md
+# Updated: 2026-02-21 (Sprint Change Proposal — Epic 9 Fumadocs)
+# Source: .ralph-plan.md + sprint-change-proposal-2026-02-21.md
 #
 # Status values:
 #   Epic:  backlog | in-progress | done
@@ -79,3 +80,15 @@ development_status:
   8-3: done
   8-4: done
   epic-8-retrospective: optional
+
+  # Epic 9: Documentation Site (Fumadocs)
+  # Added via Sprint Change Proposal 2026-02-21
+  # Prerequisite: Next.js 16 upgrade (Story 9-0)
+  epic-9: in-progress
+  9-0: done      # Next.js 16 upgrade + proxy.ts migration (commit a79b329)
+  9-1: done      # Fumadocs scaffold, routes, components, search (commit de5bb98)
+  9-2: backlog   # PRD-to-MDX content generation pipeline (~30 pages)
+  9-3: backlog   # Mermaid diagrams and static visual assets
+  9-4: backlog   # Role-based documentation views and access control
+  9-5: backlog   # AI-powered doc maintenance script
+  epic-9-retrospective: optional

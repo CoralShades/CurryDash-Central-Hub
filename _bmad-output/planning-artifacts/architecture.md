@@ -162,7 +162,7 @@ npm install -D prettier eslint-config-prettier husky lint-staged
 
 | Package | Version | Source |
 |---------|---------|--------|
-| Next.js | 15.x (latest stable) | [nextjs.org](https://nextjs.org/docs/app/getting-started/installation) |
+| Next.js | 16.x (upgraded from 15.x, Sprint 2) | [nextjs.org](https://nextjs.org/docs/app/getting-started/installation) |
 | shadcn CLI | `shadcn@latest` (renamed from shadcn-ui) | [ui.shadcn.com](https://ui.shadcn.com/docs/cli) |
 | CopilotKit | v1.51.3 (`@copilotkit/react-core`) | [npm](https://www.npmjs.com/package/@copilotkit/react-core) |
 | Mastra | v1.2.0 (`@mastra/core`) | [npm](https://www.npmjs.com/package/@mastra/core) |
@@ -436,6 +436,8 @@ currydash-central-hub/
 ├── vitest.config.ts                      # Vitest unit test config
 ├── playwright.config.ts                  # Playwright E2E config
 ├── components.json                       # shadcn/ui config
+├── source.config.ts                      # Fumadocs MDX loader configuration (Epic 9)
+├── eslint.config.mjs                     # ESLint 9 flat config (Next.js 16)
 │
 ├── .github/
 │   └── workflows/
@@ -448,9 +450,20 @@ currydash-central-hub/
 │   └── fixtures/                         # Test fixtures and helpers
 │       └── auth.ts                       # Authenticated page helper
 │
+├── content/docs/                            # MDX documentation source (Epic 9)
+│   ├── meta.json                            # Fumadocs navigation structure
+│   ├── index.mdx                            # Docs landing page
+│   ├── getting-started/                     # Quick start guides
+│   │   ├── meta.json
+│   │   └── index.mdx
+│   └── central-hub/                         # Central Hub-specific docs
+│       ├── meta.json
+│       └── index.mdx
+│
 ├── public/
 │   ├── favicon.ico
-│   └── images/                           # Static images, logos
+│   ├── images/                              # Static images, logos
+│   └── docs/diagrams/                       # Static diagram assets (SVG)
 │
 ├── supabase/                             # Supabase CLI directory
 │   ├── config.toml                       # Supabase local dev config
@@ -513,6 +526,13 @@ currydash-central-hub/
 │   │   │   └── reports/
 │   │   │       └── page.tsx              # AI-generated reports
 │   │   │
+│   │   ├── docs/                          # Fumadocs documentation route group (Epic 9)
+│   │   │   ├── layout.tsx                 # DocsLayout with RootProvider + spice palette
+│   │   │   ├── [[...slug]]/
+│   │   │   │   └── page.tsx              # Dynamic SSG page renderer
+│   │   │   └── api/search/
+│   │   │       └── route.ts              # Orama full-text search endpoint
+│   │   │
 │   │   └── api/                          # Route Handlers (webhooks, AI, callbacks)
 │   │       ├── webhooks/
 │   │       │   ├── jira/
@@ -548,6 +568,14 @@ currydash-central-hub/
 │   │       ├── staleness-indicator.tsx    # Amber >10min, red >30min badge
 │   │       ├── role-gate.tsx             # <RoleGate allowedRoles={[...]}> wrapper
 │   │       └── relative-time.tsx          # "5 min ago" display component
+│   │   └── docs/                          # Custom MDX components (Epic 9)
+│   │       ├── mdx-components.tsx         # Component registration map
+│   │       ├── mermaid-diagram.tsx        # Client-side Mermaid.js renderer
+│   │       ├── api-endpoint.tsx           # Styled API endpoint card
+│   │       ├── role-badge.tsx             # Inline role indicator pill
+│   │       ├── callout.tsx                # info/warning/success/note admonition
+│   │       ├── tech-stack-table.tsx       # 3-repo comparison table
+│   │       └── architecture-diagram.tsx   # SVG viewer with zoom dialog
 │   │
 │   ├── modules/                          # Feature modules (domain capability)
 │   │   ├── auth/                         # FR1-FR9: Identity & Access Management
@@ -945,3 +973,42 @@ Run the initialization command sequence from the Starter Template Evaluation sec
 **Architecture Status:** READY FOR IMPLEMENTATION
 
 **Next Phase:** Create epics and stories using this architecture as the technical foundation, then begin implementation.
+
+---
+
+## Post-MVP Amendment: Documentation Site & Next.js 16 (2026-02-21)
+
+_Added via Sprint Change Proposal. Epic 9: Documentation Site (Fumadocs)._
+
+### Next.js 16 Migration (Story 9.0)
+
+| Change | Before | After |
+|--------|--------|-------|
+| Framework version | Next.js 15.5.12 | Next.js 16.1.6 |
+| Node.js requirement | 18.x | ≥20.9 |
+| Middleware | `src/middleware.ts` (Edge runtime) | `proxy.ts` (Node.js runtime) |
+| Cache revalidation | `revalidateTag(tag)` | `revalidateTag(tag, 'max')` (7 call sites) |
+| ESLint config | `.eslintrc.json` | `eslint.config.mjs` (ESLint 9 flat config) |
+| Lint command | `next lint` | `eslint src/` (next lint removed in v16) |
+
+All existing functionality preserved. Auth.js v5 supports Node.js runtime.
+
+### Documentation Site Architecture (Story 9.1)
+
+| Decision | Choice | Version | Rationale | Affects |
+|----------|--------|---------|-----------|---------|
+| Doc framework | Fumadocs | core@16.6.3, ui@16.6.3, mdx@14.2.7 | Route-group integration inside existing app. Shares auth, design tokens, single Vercel deployment. | /docs routes, MDX pipeline, globals.css |
+| Content source | MDX in `content/docs/` | fumadocs-mdx v14 | Source-controlled docs with custom components. BMAD artifacts serve as content generation source. | Content workflow, CI build |
+| Search engine | Orama | @orama/orama | Full-text search with relevance ranking. Lightweight, no external service dependency. | `/docs/api/search` route |
+| Theme integration | CSS variable mapping | Tailwind v4 | `--color-fd-*` mapped to spice palette tokens in globals.css. Zero runtime cost. | All doc pages |
+| MDX components | 7 custom components | React 18 | Mermaid diagrams, API endpoints, role badges, callouts, comparison tables, SVG viewer. Registered in component map. | All MDX content |
+| Content loader | source.config.ts | fumadocs-mdx | Turbopack-compatible via esbuild. Auto-generates `.source/` at build time (gitignored). | Build pipeline |
+
+### Documentation Cross-Cutting Concern
+
+**Documentation as Code** — Docs are co-located with the application source:
+- Share the same auth system (role-gated docs in Phase 4)
+- Share the spice palette design tokens via CSS variable mapping
+- Single deployment on Vercel (no separate docs site)
+- AI sidebar can reference docs content (MCP/RAG integration in future)
+- BMAD planning artifacts feed directly into `content/docs/` via generation script (Phase 5)

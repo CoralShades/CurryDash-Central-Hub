@@ -1,69 +1,135 @@
-# Phase 1: Next.js 16 Upgrade + Fumadocs Documentation Site
+# Task Plan: BMAD Artifact Sync — Fumadocs Documentation Site
 
-**Branch:** feat/fumadocs-integration
-**Created:** 2026-02-20
-**Author:** Demi + Claude
-**Base:** feature/integration-wizards
-**Status:** COMPLETE ✅
+**Branch:** main (fumadocs already merged via PR #19)
+**Created:** 2026-02-21
+**Author:** Demi + Claude (BMad Master session)
+**Status:** Phase 1 — Discovery & Gap Assessment
 
 ---
 
 ## Goal
-Integrate Fumadocs into CurryDash Central Hub as a route group at `/docs`.
-Prerequisite: Upgrade Next.js 15.5.12 → 16.x (requires Node.js 20.9+).
+
+Synchronize all BMAD planning artifacts (PRD, architecture, epics, sprint-status, project-context) to reflect the Fumadocs documentation site feature that was implemented on `feat/fumadocs-integration` and merged to main via PR #19, but never tracked through BMAD workflows.
 
 ---
 
-## Sub-phase A: Node.js + Next.js 16 Upgrade ✅
+## Current Phase
 
-- [x] Node.js 20.20.0 installed via nvm
-- [x] Next.js 16.1.6 installed (manual upgrade — codemod requires TTY)
-- [x] middleware.ts → proxy.ts migration (export `const proxy = auth(...)`)
-- [x] 7× revalidateTag(tag) → revalidateTag(tag, 'max')
-- [x] Build passes, TypeScript zero errors
-- [x] Committed: `chore: upgrade Next.js 15 → 16.1.6 with proxy.ts migration`
+Phase 6 (final verification)
 
 ---
 
-## Sub-phase B: Fumadocs Scaffold ✅
+## What Was Implemented (Without BMAD Tracking)
 
-- [x] fumadocs-core@16.6.3, fumadocs-ui@16.6.3, fumadocs-mdx@14.2.7 installed
-- [x] source.config.ts created (defineDocs, defineConfig)
-- [x] content/docs/ structure: index.mdx, getting-started/, central-hub/
-- [x] Per-folder meta.json (strings-only — fumadocs-core v16 schema)
-- [x] next.config.ts wrapped with createMDX()
-- [x] globals.css: fumadocs-ui CSS imports + spice palette → --color-fd-* mapping
-- [x] src/lib/docs-source.ts imports from ../../.source/server (Turbopack fix)
-- [x] src/app/docs/layout.tsx — DocsLayout with RootProvider
-- [x] src/app/docs/[[...slug]]/page.tsx — SSG page renderer
-- [x] src/app/docs/api/search/route.ts — Orama search endpoint
-- [x] docs/ old guides archived to docs/_archive/
-- [x] Dashboard sidebar: Docs link added (all roles, BookOpen icon)
+### Commits on feat/fumadocs-integration (merged PR #19)
+
+| Commit | Description | Phase |
+|--------|-------------|-------|
+| a79b329 | Next.js 15 → 16.1.6 upgrade + proxy.ts migration | Phase 0 (prereq) |
+| de5bb98 | Fumadocs scaffold — routes, components, MDX, config | Phase 1 |
+| ca11aa6 | Planning files updated (task_plan.md only) | Tracking |
+| d78bcf3 | Comprehensive Playwright E2E suite with JWT auth | E2E (bonus) |
+
+### What Was Built (Phase 1 Complete, Phases 2-5 NOT started)
+
+**Infrastructure (Phase 1):**
+- fumadocs-core@16.6.3, fumadocs-ui@16.6.3, fumadocs-mdx@14.2.7
+- `src/app/docs/` route group (layout, page, search API)
+- `content/docs/` with 3 MDX pages (index, getting-started, central-hub)
+- 7 custom MDX components in `src/components/docs/`
+- Spice palette → Fumadocs CSS variable mapping
+- Dashboard sidebar "Docs" link (all roles)
+- Orama search endpoint
+- `source.config.ts` for MDX content loading
+
+**NOT Built (Phases 2-5 from original plan):**
+- Phase 2: PRD-to-MDX content generation pipeline (0 of ~30 pages)
+- Phase 3: Visual content — Mermaid diagrams, SVG assets
+- Phase 4: Role-based documentation views
+- Phase 5: AI-powered doc maintenance script
+
+### Also Not Updated (The Core Problem)
+
+- `_bmad-output/planning-artifacts/prd.md` — no Fumadocs FRs added
+- `_bmad-output/planning-artifacts/architecture.md` — no docs architecture section
+- `_bmad-output/planning-artifacts/epics.md` — no Epic 9 for docs
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — no docs stories
+- `_bmad-output/project-context.md` — no Fumadocs rules
+- No sprint change proposal was filed
 
 ---
 
-## Sub-phase C: Custom MDX Components ✅
+## Phases
 
-- [x] mermaid-diagram.tsx — client, lazy-load, spice palette
-- [x] api-endpoint.tsx — method badge, role indicators, collapsible examples
-- [x] role-badge.tsx — spice palette role pills
-- [x] callout.tsx — info/warning/success/note variants
-- [x] tech-stack-table.tsx — 3-repo comparison
-- [x] architecture-diagram.tsx — SVG viewer with zoom Dialog
-- [x] mdx-components.tsx — all registered in MDX map
+### Phase 1: Discovery & Gap Assessment
+- [x] Recover previous session context (442 unsynced messages)
+- [x] Map what was actually committed on feat/fumadocs-integration
+- [x] Compare against original 5-phase plan
+- [x] Identify all BMAD artifacts that need updates
+- [x] Document current state in planning files
+- **Status:** complete
+
+### Phase 2: Sprint Change Proposal
+- [x] Draft sprint change proposal using BMAD correct-course workflow
+- [x] Define new Epic 9: Documentation Site (Fumadocs)
+- [x] Break into stories matching the 5-phase plan
+- [x] Mark Phase 1 stories as DONE (already implemented)
+- [x] Mark Phases 2-5 stories as BACKLOG
+- [x] Get user approval on the change proposal
+- **Status:** complete
+
+### Phase 3: PRD Amendment
+- [x] Add Fumadocs functional requirements (FR57-FR64 in epics.md)
+- [x] Add FR Coverage Map entries for Epic 9
+- [x] Add Epic 9 summary to Epic List section
+- **Status:** complete
+
+### Phase 4: Architecture Amendment
+- [x] Update Next.js version reference: 15 → 16
+- [x] Add docs route group to project structure
+- [x] Add content/docs/, src/components/docs/, source.config.ts to structure
+- [x] Add Fumadocs architecture decision table
+- [x] Add Next.js 16 migration notes
+- [x] Add "Documentation as Code" cross-cutting concern
+- **Status:** complete
+
+### Phase 5: Epics & Sprint Status Update
+- [x] Add Epic 9 with 6 stories + acceptance criteria to epics.md
+- [x] Update sprint-status.yaml with Epic 9 entries
+- [x] Mark stories 9-0 and 9-1 as done
+- [x] Mark stories 9-2 through 9-5 as backlog
+- [x] Update FR traceability and story count tables
+- **Status:** complete
+
+### Phase 6: Commit & Verify
+- [ ] Review all artifact changes for consistency
+- [ ] Commit BMAD artifact updates
+- [ ] Verify sprint-status reflects true project state
+- **Status:** in_progress
 
 ---
 
-## Sub-phase D: Verification ✅
+## Key Questions
 
-- [x] `npm run build` — passes (22 routes, /docs SSG-prerendered)
-- [x] `npx tsc --noEmit` — zero errors
-- [x] `npm run lint` — zero errors (32 pre-existing warnings, 0 errors)
-- [x] /docs route: SSG at /docs, /docs/getting-started, /docs/central-hub
-- [x] /docs/api/search: dynamic route handler registered
-- [x] Custom components created, registered in MDX map
-- [x] Dashboard sidebar: Docs link present
-- [x] Committed: `feat: add Fumadocs documentation site scaffold (Phase 1)`
+1. Should Fumadocs get its own epic (Epic 9) or be appended to Epic 1 (Foundation)?
+   - **Answer:** Own epic — it's a distinct feature with 5 phases and separate stories
+2. What FR range for Fumadocs in the Central Hub PRD scope?
+   - **Answer:** FR57-FR64 (continuing Central Hub FR numbering from architecture.md)
+3. Should the consolidated PRD (docs/prd.md) also be updated?
+   - **Answer:** TBD — ask user. The consolidated PRD covers all 3 repos, Fumadocs is Central Hub only
+4. How should Phase 0 (Next.js 16 upgrade) be tracked?
+   - **Answer:** As a prerequisite task in Epic 9, story 9-0
+
+---
+
+## Decisions Made
+
+| Decision | Rationale |
+|----------|-----------|
+| New Epic 9 for docs | Distinct feature with multiple phases, not a foundation concern |
+| Use correct-course workflow | Retroactive tracking of unplanned feature work |
+| FR57-FR64 range | Continues Central Hub numbering; won't conflict with consolidated PRD ranges |
+| Phase 1 = DONE | Already implemented, tested, merged — just needs artifact tracking |
 
 ---
 
@@ -71,46 +137,13 @@ Prerequisite: Upgrade Next.js 15.5.12 → 16.x (requires Node.js 20.9+).
 
 | Error | Attempt | Resolution |
 |-------|---------|------------|
-| @next/codemod requires TTY | 1 | Manual migration instead |
-| fumadocs peer deps conflict | 1 | `--legacy-peer-deps` |
-| `@/../.source` Turbopack can't resolve | 1 | Use relative `../../.source/server` |
-| meta.json pages must be strings | 1 | Split into per-folder meta.json files |
-| `next lint` removed in Next.js 16 | 1 | Changed to `eslint src/` in package.json |
-| ESLint 9 flat config required | 1 | Created eslint.config.mjs with direct imports |
-| FlatCompat circular JSON error | 1 | Import eslint-config-next directly as flat array |
+| — | — | No errors yet |
 
 ---
 
-## Key Decisions Made
+## Notes
 
-| Decision | Rationale |
-|----------|-----------|
-| Next.js 16 before Fumadocs | Clean upgrade path, Turbopack stable |
-| proxy.ts (Node.js runtime) | User preference, Auth.js v5 supports it |
-| Tailwind v4 CSS-only | fumadocs-ui v16 requires v4, no tailwind.config.js |
-| Public docs in Phase 1 | Simplest path; role-gating in Phase 4 |
-| docs/_archive/ | Preserve old guides, recreate as MDX in Phase 2 |
-| source.config.ts approach | Turbopack-compatible, fumadocs-mdx v14 |
-| .source/ gitignored | Auto-generated at build time, not committed |
-| ESLint 9 flat config | next lint removed from Next.js 16, use eslint directly |
-| New react-hooks rules → warn | Pre-existing violations, clean up in separate sprint |
-
----
-
-## Next: Phase 2 — Content Generation
-
-Source material:
-- docs/prd.md (3304-line consolidated PRD for all 3 repos)
-- _bmad-output/planning-artifacts/architecture.md
-- _bmad-output/planning-artifacts/ux-design-specification.md
-
-Pages to generate (from meta.json navigation plan):
-- getting-started/architecture-overview.mdx
-- getting-started/tech-stack.mdx
-- central-hub/architecture.mdx, auth-rbac.mdx, dashboard-widgets.mdx,
-  jira-integration.mdx, github-integration.mdx, ai-assistant.mdx,
-  webhook-pipeline.mdx, design-system.mdx
-- admin-seller-portal/ (5 pages)
-- customer-app/ (5 pages)
-- integrations/ (4 pages)
-- roles/ (4 pages)
+- The original plan from the user's earlier session specified 5 phases but only Phase 1 was executed
+- Next.js was upgraded from 15 to 16 as a prerequisite — this is a significant change that also needs architecture tracking
+- The E2E test suite on the fumadocs branch (d78bcf3) added docs.spec.ts + enhanced all existing specs
+- The planning files (task_plan.md, findings.md, progress.md) in the repo are from the fumadocs session and are stale

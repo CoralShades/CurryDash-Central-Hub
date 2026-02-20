@@ -96,6 +96,17 @@ This document provides the complete epic and story breakdown for CurryDash-Centr
 - FR55: The system can cap individual AI requests at a configured token budget to prevent cost overruns
 - FR56: The system can log rate limit events with remaining quota information and surface warnings when consumption exceeds 50%
 
+**9. Documentation Site (FR57-FR64)**
+
+- FR57: Users can access a documentation site at `/docs` within Central Hub that renders MDX content with full-text search
+- FR58: The documentation site can display content with custom MDX components (Mermaid diagrams, API endpoint cards, role badges, callouts, tech stack tables, architecture diagrams)
+- FR59: The documentation site integrates with the CurryDash spice palette design system via CSS variable mapping
+- FR60: The system can auto-generate MDX documentation pages from BMAD planning artifacts (PRD, architecture, epics, UX spec)
+- FR61: The documentation site can render Mermaid diagrams for architecture flows, data pipelines, RBAC matrices, and ER diagrams
+- FR62: The documentation site can display role-specific landing pages guiding each user type to relevant documentation
+- FR63: Admin users can configure which documentation sections are visible to each role via frontmatter-based access control
+- FR64: The system can regenerate documentation from BMAD artifacts via a CLI script (`npm run docs:generate`)
+
 ### NonFunctional Requirements
 
 **Performance (NFR-P1 to NFR-P10)**
@@ -253,6 +264,14 @@ FR53: Epic 8 - Admin views AI API usage metrics
 FR54: Epic 8 - Admin configures integration credentials
 FR55: Epic 8 - Token budget cap on AI requests
 FR56: Epic 8 - Rate limit event logging with warnings at 50%
+FR57: Epic 9 - Documentation site at /docs with MDX and full-text search
+FR58: Epic 9 - Custom MDX components (Mermaid, API cards, role badges, callouts)
+FR59: Epic 9 - Spice palette integration with Fumadocs theme variables
+FR60: Epic 9 - Auto-generate docs from BMAD planning artifacts
+FR61: Epic 9 - Mermaid diagram rendering for architecture documentation
+FR62: Epic 9 - Role-specific documentation landing pages
+FR63: Epic 9 - Role-based documentation access control via frontmatter
+FR64: Epic 9 - CLI doc regeneration script (npm run docs:generate)
 
 ## Epic List
 
@@ -295,6 +314,11 @@ Users can request AI-generated sprint reports and stakeholder summaries, and cre
 Admin users can monitor integration health, webhook status, AI costs, and rate limit consumption — with visibility into system operations and the ability to investigate failures.
 **FRs covered:** FR51, FR52, FR53, FR54, FR55, FR56
 **Additional reqs:** ARCH-13, NFR-P9, NFR-P10, NFR-R1, NFR-R5, NFR-SC1, NFR-SC3, NFR-SC5
+
+### Epic 9: Documentation Site (Fumadocs)
+Users can access a comprehensive documentation site at `/docs` within Central Hub, featuring auto-generated content from BMAD artifacts, Mermaid diagrams, role-specific views, and full-text search — integrated with the spice palette design system.
+**FRs covered:** FR57, FR58, FR59, FR60, FR61, FR62, FR63, FR64
+**Additional reqs:** Post-MVP enhancement. Prerequisite: Next.js 16 upgrade (proxy.ts migration, ESLint 9).
 
 ---
 
@@ -1578,6 +1602,14 @@ So that I am immediately aware of issues requiring my attention without monitori
 | FR54 | Admin: configure integration credentials | 8.1 |
 | FR55 | Token budget cap enforcement | 8.3 |
 | FR56 | Rate limit logging + warnings | 8.2, 8.4 |
+| FR57 | Docs site at /docs with MDX + search | 9.1 |
+| FR58 | Custom MDX components | 9.1 |
+| FR59 | Spice palette Fumadocs theme integration | 9.1 |
+| FR60 | Auto-generate docs from BMAD artifacts | 9.2 |
+| FR61 | Mermaid diagram rendering | 9.3 |
+| FR62 | Role-specific doc landing pages | 9.4 |
+| FR63 | Role-based doc access control | 9.4 |
+| FR64 | CLI doc regeneration script | 9.5 |
 
 ### Non-Functional Requirements Coverage
 
@@ -1627,4 +1659,166 @@ So that I am immediately aware of issues requiring my attention without monitori
 | 6 | AI Assistant & Project Intelligence | 4 |
 | 7 | AI Reports & Widget Generation | 4 |
 | 8 | System Administration & Observability | 4 |
-| **Total** | | **36 stories** |
+| 9 | Documentation Site (Fumadocs) | 6 |
+| **Total** | | **42 stories** |
+
+---
+
+## Epic 9: Documentation Site (Fumadocs)
+
+Users can access a comprehensive documentation site at `/docs` within Central Hub, featuring auto-generated content from BMAD artifacts, Mermaid diagrams, role-specific views, and full-text search — integrated with the spice palette design system.
+
+**Prerequisite:** Next.js 16 upgrade (Story 9-0) required before Fumadocs integration due to fumadocs-ui v16 compatibility.
+
+### Story 9.0: Next.js 16 Upgrade & Proxy Migration
+
+As a developer,
+I want the project upgraded from Next.js 15 to Next.js 16 with all breaking changes resolved,
+So that Fumadocs v16 packages are compatible and the project benefits from Turbopack stability and Node.js runtime middleware.
+
+**Acceptance Criteria:**
+
+**Given** the project is on Next.js 15.5.12 with Node.js 18.x
+**When** the developer performs the upgrade
+**Then** Next.js 16.1.6+ is installed with Node.js ≥20.9
+**And** `middleware.ts` is migrated to `proxy.ts` (Node.js runtime)
+**And** all 7 `revalidateTag(tag)` call sites are updated to `revalidateTag(tag, 'max')`
+**And** ESLint config migrated from `.eslintrc.json` to `eslint.config.mjs` (ESLint 9 flat config)
+**And** `npm run build` passes with zero errors
+**And** `npx tsc --noEmit` reports zero type errors
+**And** all existing Vitest tests continue to pass
+
+**Status:** DONE (commit a79b329)
+
+### Story 9.1: Fumadocs Scaffold & MDX Components
+
+As a user,
+I want a documentation site at `/docs` within Central Hub that renders MDX content with full-text search and custom components,
+So that I can browse project documentation without leaving the application.
+
+**Acceptance Criteria:**
+
+**Given** the Next.js 16 upgrade is complete (Story 9.0)
+**When** the developer integrates Fumadocs
+**Then** fumadocs-core, fumadocs-ui, and fumadocs-mdx packages are installed (FR57)
+**And** `source.config.ts` defines the MDX content source configuration
+**And** `src/app/docs/layout.tsx` renders DocsLayout with RootProvider and spice palette theming (FR59)
+**And** `src/app/docs/[[...slug]]/page.tsx` dynamically renders MDX pages via SSG
+**And** `src/app/docs/api/search/route.ts` provides Orama full-text search (FR57)
+**And** `content/docs/` directory contains initial MDX pages (index, getting-started, central-hub)
+**And** per-folder `meta.json` files define navigation structure
+**And** `next.config.ts` is wrapped with `createMDX()` from fumadocs-mdx
+**And** `globals.css` includes fumadocs-ui CSS imports and maps `--color-fd-*` to spice palette (FR59)
+**And** 7 custom MDX components are created in `src/components/docs/` (FR58):
+  - `mermaid-diagram.tsx` — Client component, lazy-loads mermaid.js, spice palette themed
+  - `api-endpoint.tsx` — Styled API endpoint card with method badges and role indicators
+  - `role-badge.tsx` — Inline role indicator pills using spice palette colors
+  - `callout.tsx` — info/warning/success/note admonition variants
+  - `tech-stack-table.tsx` — 3-repo comparison table
+  - `architecture-diagram.tsx` — SVG viewer with zoom dialog
+  - `mdx-components.tsx` — All components registered in MDX map
+**And** the dashboard sidebar includes a "Docs" link (BookOpen icon) visible to all roles
+**And** `npm run build` passes with /docs routes prerendered via SSG
+**And** `npx tsc --noEmit` reports zero type errors
+
+**Status:** DONE (commit de5bb98)
+
+### Story 9.2: PRD-to-MDX Content Generation Pipeline
+
+As a user,
+I want the documentation site populated with comprehensive content auto-generated from BMAD planning artifacts,
+So that I have complete documentation covering all 3 CurryDash repos without manual authoring.
+
+**Acceptance Criteria:**
+
+**Given** the Fumadocs scaffold is complete (Story 9.1)
+**And** BMAD artifacts exist at `_bmad-output/planning-artifacts/` (PRD, architecture, UX spec, epics)
+**And** the consolidated PRD exists at `docs/prd.md` (3304 lines covering all 3 repos)
+**When** the content generation pipeline runs
+**Then** ~30 MDX pages are generated in `content/docs/` following this structure (FR60):
+  - `getting-started/` — architecture overview, tech stack comparison, development setup
+  - `admin-seller-portal/` — features, database schema, API endpoints, components, deployment
+  - `customer-app/` — features, architecture, screens, API integration, builds
+  - `central-hub/` — architecture, auth/RBAC, dashboard widgets, Jira, GitHub, AI, webhooks, design system
+  - `integrations/` — cross-system data flow, webhook architecture, API contracts
+  - `roles/` — admin, developer, QA, stakeholder landing pages
+**And** each MDX file has proper frontmatter (title, description, icon)
+**And** content is extracted from actual BMAD artifacts, not placeholder text
+**And** `content/docs/meta.json` and per-section meta.json files define complete navigation
+**And** internal cross-links between related doc pages work correctly
+**And** `npm run build` passes with all new pages prerendered
+
+**Status:** BACKLOG
+
+### Story 9.3: Visual Content — Mermaid Diagrams & Static Assets
+
+As a user,
+I want the documentation to include visual diagrams for architecture flows, data pipelines, RBAC matrices, and database schemas,
+So that complex system concepts are easy to understand at a glance.
+
+**Acceptance Criteria:**
+
+**Given** MDX content pages exist (Story 9.2)
+**When** diagrams are added to relevant documentation pages
+**Then** the following Mermaid diagrams are rendered inline (FR61):
+  - Ecosystem architecture (3-repo overview with integration points)
+  - Webhook pipeline flow (POST → HMAC → dedup → upsert → ISR → Realtime)
+  - Three-layer RBAC flow (Edge Middleware → Server Component → Supabase RLS)
+  - Data freshness state machine (Current → Aging → Stale → Critical)
+  - AI agent architecture (CopilotKit → AG-UI → Mastra → MCP Tools)
+  - Database ER diagram (all Supabase tables with relationships)
+  - User journey flows (admin morning workflow, webhook pipeline, AI widget generation)
+  - Sprint/epic Gantt chart (8 epics across 4-week timeline)
+**And** static SVG diagram assets are in `public/docs/diagrams/` using spice palette colors
+**And** each diagram has a text description for accessibility
+**And** Mermaid diagrams render correctly in the browser via the `MermaidDiagram` component
+
+**Status:** BACKLOG
+
+### Story 9.4: Role-Based Documentation Views & Access Control
+
+As a user,
+I want to see documentation tailored to my role, with role-specific landing pages guiding me to the most relevant content,
+So that I find what I need quickly without navigating irrelevant sections.
+
+**Acceptance Criteria:**
+
+**Given** content pages and diagrams exist (Stories 9.2, 9.3)
+**When** role-specific documentation views are implemented
+**Then** 4 role landing pages exist in `content/docs/roles/` (FR62):
+  - `admin.mdx` — dashboard, team management, integration setup, monitoring, reports
+  - `developer.mdx` — dev setup, architecture decisions, code patterns, PR workflow, AI tools
+  - `qa.mdx` — testing strategy, bug tracking, quality metrics, AI for QA
+  - `stakeholder.mdx` — reading the dashboard, understanding reports, project status (no code)
+**And** each role page opens with a `<RoleBadge>` and links to 5-7 most relevant doc pages
+**And** MDX frontmatter supports `roles: [admin, developer]` field for access control (FR63)
+**And** the docs navigation tree is filtered based on the user's authenticated role:
+  - Admin: sees everything
+  - Developer: sees everything except admin system health internals
+  - QA: sees everything except admin pages
+  - Stakeholder: sees getting-started, roles/stakeholder, high-level overviews only
+  - Unauthenticated: sees getting-started and architecture overview only
+**And** navigating to a role-restricted page redirects to the user's role landing page
+**And** all docs work without auth in development mode
+
+**Status:** BACKLOG
+
+### Story 9.5: AI-Powered Doc Maintenance Script
+
+As a developer,
+I want a CLI script that regenerates documentation from BMAD artifacts,
+So that docs stay in sync with planning changes without manual updates.
+
+**Acceptance Criteria:**
+
+**Given** BMAD artifacts exist at `_bmad-output/planning-artifacts/`
+**When** the developer runs `npm run docs:generate` (FR64)
+**Then** the script reads all BMAD artifacts (PRD, architecture, UX spec, epics)
+**And** generates/updates MDX files in `content/docs/` based on content mapping
+**And** sections between `<!-- auto-generated-start -->` and `<!-- auto-generated-end -->` are overwritten
+**And** sections between `<!-- manual-content-start -->` and `<!-- manual-content-end -->` are preserved
+**And** `meta.json` navigation structure is updated to reflect content changes
+**And** a changelog entry is generated in `content/docs/changelog.mdx`
+**And** the script supports `--section` flag for targeted regeneration
+**And** the script supports `--dry-run` flag to preview changes without writing
+**And** the script is at `scripts/generate-docs.ts` with npm script `"docs:generate"`
