@@ -1,5 +1,8 @@
+import { config as loadEnv } from 'dotenv'
 import { defineConfig, devices } from '@playwright/test'
 import path from 'path'
+
+loadEnv({ path: '.env.local' })
 
 const authDir = path.join(__dirname, 'e2e', '.auth')
 

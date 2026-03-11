@@ -27,7 +27,8 @@
       "Bash(rm -rf *)",
       "Bash(git push --force *)",
       "Bash(git reset --hard *)",
-      "Bash(git clean -f *)"
+      "Bash(git clean -f *)",
+      "mcp__claude_ai_Atlassian_2"
     ]
   },
   "env": {
