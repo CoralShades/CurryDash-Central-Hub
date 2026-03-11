@@ -1,15 +1,54 @@
 installation:
-  version: 6.0.0-alpha.23
-  installDate: 2026-02-17T03:55:44.078Z
-  lastUpdated: 2026-02-17T03:55:44.078Z
+  version: 6.0.4
+  installDate: 2026-03-06T03:30:47.526Z
+  lastUpdated: 2026-03-06T03:30:47.526Z
 modules:
-  - core
-  - bmm
-  - cis
-  - jbm
+  - name: core
+    version: 6.0.4
+    installDate: 2026-03-06T03:30:46.133Z
+    lastUpdated: 2026-03-06T03:30:46.133Z
+    source: built-in
+    npmPackage: null
+    repoUrl: null
+  - name: bmm
+    version: 6.0.4
+    installDate: 2026-03-06T03:30:36.707Z
+    lastUpdated: 2026-03-06T03:30:46.134Z
+    source: built-in
+    npmPackage: null
+    repoUrl: null
+  - name: bmb
+    version: 0.1.6
+    installDate: 2026-03-06T03:30:38.966Z
+    lastUpdated: 2026-03-06T03:30:46.590Z
+    source: external
+    npmPackage: bmad-builder
+    repoUrl: https://github.com/bmad-code-org/bmad-builder
+  - name: cis
+    version: 0.1.8
+    installDate: 2026-03-06T03:30:40.800Z
+    lastUpdated: 2026-03-06T03:30:47.065Z
+    source: external
+    npmPackage: bmad-creative-intelligence-suite
+    repoUrl: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+  - name: tea
+    version: 1.5.2
+    installDate: 2026-03-06T03:30:42.684Z
+    lastUpdated: 2026-03-06T03:30:47.525Z
+    source: external
+    npmPackage: bmad-method-test-architecture-enterprise
+    repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+  - name: jbm
+    version: null
+    installDate: 2026-03-06T03:30:42.706Z
+    lastUpdated: 2026-03-06T03:30:47.526Z
+    source: custom
+    npmPackage: null
+    repoUrl: null
 ides:
   - claude-code
   - codex
+  - gemini
   - github-copilot
   - antigravity
-  - gemini
+  - opencode
