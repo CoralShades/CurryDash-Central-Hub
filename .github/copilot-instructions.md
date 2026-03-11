@@ -1,342 +1,58 @@
-# GitHub Copilot Instructions for CurryDash Central Hub
+<!-- BMAD:START -->
+# BMAD Method — Project Instructions
 
-## Project Context
-You are working on **CurryDash Central Hub**, a role-based project management portal built with Next.js 15, TypeScript, and Prisma. The application integrates with Jira, GitHub, and AI services to provide specialized dashboards for different user roles.
+## Project Configuration
 
-## Core Principles
+- **Project**: CurryDash-Central-Hub
+- **User**: Demi
+- **Communication Language**: English
+- **Document Output Language**: English
+- **User Skill Level**: intermediate
+- **Output Folder**: {project-root}/_bmad-output
+- **Planning Artifacts**: {project-root}/_bmad-output/planning-artifacts
+- **Implementation Artifacts**: {project-root}/_bmad-output/implementation-artifacts
+- **Project Knowledge**: {project-root}/docs
 
-### 1. Type Safety First
-- Always use TypeScript with explicit types
-- Leverage Prisma-generated types for database operations
-- Define interfaces for all API responses
-- Use generics where appropriate
+## BMAD Runtime Structure
 
-### 2. Role-Based Architecture
-The application has four primary user roles:
-- **Admin** (`--role-admin`: #C5351F) - System administration
-- **Developer** (`--role-dev`: #4A7C59) - Code development
-- **QA** (`--role-qa`: #E6B04B) - Quality assurance
-- **Stakeholder** (`--role-stakeholder`: #5D4037) - Project oversight
+- **Agent definitions**: `_bmad/bmm/agents/` (BMM module) and `_bmad/core/agents/` (core)
+- **Workflow definitions**: `_bmad/bmm/workflows/` (organized by phase)
+- **Core tasks**: `_bmad/core/tasks/` (help, editorial review, indexing, sharding, adversarial review)
+- **Core workflows**: `_bmad/core/workflows/` (brainstorming, party-mode, advanced-elicitation)
+- **Workflow engine**: `_bmad/core/tasks/workflow.xml` (executes YAML-based workflows)
+- **Module configuration**: `_bmad/bmm/config.yaml`
+- **Core configuration**: `_bmad/core/config.yaml`
+- **Agent manifest**: `_bmad/_config/agent-manifest.csv`
+- **Workflow manifest**: `_bmad/_config/workflow-manifest.csv`
+- **Help manifest**: `_bmad/_config/bmad-help.csv`
+- **Agent memory**: `_bmad/_memory/`
 
-### 3. Design System (Spice Theme)
-Always use CSS custom properties from `/src/styles/brand-tokens.css`:
-- Colors: `--spice-turmeric`, `--spice-chili`, `--spice-coriander`, `--spice-cinnamon`, `--spice-cream`
-- Spacing: `--space-xs` through `--space-2xl`
-- Radius: `--radius-sm`, `--radius-md`, `--radius-lg`
-- Shadows: `--shadow-sm`, `--shadow-md`, `--shadow-lg`
+## Key Conventions
 
-## Code Generation Guidelines
+- Always load `_bmad/bmm/config.yaml` before any agent activation or workflow execution
+- Store all config fields as session variables: `{user_name}`, `{communication_language}`, `{output_folder}`, `{planning_artifacts}`, `{implementation_artifacts}`, `{project_knowledge}`
+- MD-based workflows execute directly — load and follow the `.md` file
+- YAML-based workflows require the workflow engine — load `workflow.xml` first, then pass the `.yaml` config
+- Follow step-based workflow execution: load steps JIT, never multiple at once
+- Save outputs after EACH step when using the workflow engine
+- The `{project-root}` variable resolves to the workspace root at runtime
 
-### React Components
-```typescript
-// Preferred pattern: Server Components by default
-export default function ComponentName() {
-  return (
-    <div style={{ padding: 'var(--space-lg)' }}>
-      {/* Content */}
-    </div>
-  )
-}
+## Available Agents
 
-// For client interactivity
-'use client'
+| Agent | Persona | Title | Capabilities |
+|---|---|---|---|
+| bmad-master | BMad Master | BMad Master Executor, Knowledge Custodian, and Workflow Orchestrator | runtime resource management, workflow orchestration, task execution, knowledge custodian |
+| analyst | Mary | Business Analyst | market research, competitive analysis, requirements elicitation, domain expertise |
+| architect | Winston | Architect | distributed systems, cloud infrastructure, API design, scalable patterns |
+| dev | Amelia | Developer Agent | story execution, test-driven development, code implementation |
+| pm | John | Product Manager | PRD creation, requirements discovery, stakeholder alignment, user interviews |
+| qa | Quinn | QA Engineer | test automation, API testing, E2E testing, coverage analysis |
+| quick-flow-solo-dev | Barry | Quick Flow Solo Dev | rapid spec creation, lean implementation, minimum ceremony |
+| sm | Bob | Scrum Master | sprint planning, story preparation, agile ceremonies, backlog management |
+| tech-writer | Paige | Technical Writer | documentation, Mermaid diagrams, standards compliance, concept explanation |
+| ux-designer | Sally | UX Designer | user research, interaction design, UI patterns, experience strategy |
 
-export default function InteractiveComponent() {
-  const [state, setState] = useState('')
-  // ...
-}
-```
+## Slash Commands
 
-### API Routes (Next.js 15 App Router)
-```typescript
-// /src/app/api/[endpoint]/route.ts
-import { NextRequest, NextResponse } from 'next/server'
-
-export async function GET(request: NextRequest) {
-  try {
-    // Implementation
-    return NextResponse.json({ data })
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
-```
-
-### Database Queries
-```typescript
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
-
-// Always include proper error handling
-try {
-  const users = await prisma.user.findMany({
-    include: {
-      roles: true,
-      teams: true
-    }
-  })
-} catch (error) {
-  console.error('Database error:', error)
-  throw error
-} finally {
-  await prisma.$disconnect()
-}
-```
-
-## Integration Patterns
-
-### Jira Integration
-```typescript
-import { createJiraClient } from '@/lib/jira-client'
-
-const jira = createJiraClient()
-const issues = await jira.searchIssues('assignee = currentUser()')
-```
-
-### GitHub Integration
-```typescript
-import { createGitHubClient } from '@/lib/github-client'
-
-const github = createGitHubClient()
-const prs = await github.listPullRequests('owner', 'repo', 'open')
-```
-
-### AI Chat
-```typescript
-import { createAIChatEngine, AIChatEngine } from '@/lib/ai-chat-engine'
-
-const ai = createAIChatEngine()
-const session = ai.createSession(
-  AIChatEngine.getProjectManagementPrompt('dev')
-)
-```
-
-## Common Patterns
-
-### Page Structure
-```typescript
-import Link from 'next/link'
-
-export default function DashboardPage() {
-  return (
-    <main style={{ padding: 'var(--space-2xl)', maxWidth: '1400px', margin: '0 auto' }}>
-      <header style={{ 
-        marginBottom: 'var(--space-2xl)',
-        borderBottom: '3px solid var(--role-[role])'
-      }}>
-        <h1 style={{ color: 'var(--role-[role])' }}>
-          Dashboard Title
-        </h1>
-      </header>
-      
-      {/* Content grid */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-        gap: 'var(--space-lg)'
-      }}>
-        {/* Cards */}
-      </div>
-    </main>
-  )
-}
-```
-
-### Card Component Pattern
-```typescript
-<div style={{
-  padding: 'var(--space-xl)',
-  background: 'white',
-  borderRadius: 'var(--radius-lg)',
-  boxShadow: 'var(--shadow-md)',
-  borderTop: '4px solid var(--role-[role])'
-}}>
-  <h2>Card Title</h2>
-  <p>Card content</p>
-</div>
-```
-
-### Form Styling
-```typescript
-<input
-  type="text"
-  style={{
-    width: '100%',
-    padding: 'var(--space-md)',
-    border: '2px solid var(--spice-turmeric)',
-    borderRadius: 'var(--radius-md)',
-    fontSize: '1rem',
-  }}
-/>
-```
-
-## Environment Variables
-
-Required environment variables (never hardcode):
-```bash
-# Database
-DATABASE_URL="postgresql://..."
-
-# Jira
-JIRA_BASE_URL="https://your-domain.atlassian.net"
-JIRA_EMAIL="your-email@example.com"
-JIRA_API_TOKEN="your-api-token"
-
-# GitHub
-GITHUB_TOKEN="ghp_your_token"
-
-# AI
-ANTHROPIC_API_KEY="sk-ant-..."
-AI_API_ENDPOINT="https://api.anthropic.com/v1/messages"
-AI_MODEL="claude-3-sonnet-20240229"
-```
-
-## File Organization
-
-### Where to Add Files
-- **Pages**: `/src/app/[route]/page.tsx`
-- **API Routes**: `/src/app/api/[endpoint]/route.ts`
-- **Components**: `/src/components/[ComponentName].tsx`
-- **Utilities**: `/src/lib/[utility-name].ts`
-- **Styles**: `/src/styles/[style-name].css`
-- **Types**: `/src/types/[type-name].ts`
-
-### Naming Conventions
-- Files: `kebab-case.ts` or `PascalCase.tsx` (for components)
-- Components: `PascalCase`
-- Functions: `camelCase`
-- Constants: `UPPER_SNAKE_CASE`
-- CSS Classes: `kebab-case`
-
-## Testing Guidelines
-
-### Unit Test Pattern
-```typescript
-import { describe, it, expect } from '@jest/globals'
-
-describe('UtilityFunction', () => {
-  it('should perform expected operation', () => {
-    const result = utilityFunction(input)
-    expect(result).toBe(expectedOutput)
-  })
-})
-```
-
-## Security Best Practices
-
-1. **Never expose sensitive data**
-   - Use environment variables for all secrets
-   - Sanitize user input
-   - Validate all external data
-
-2. **Authentication checks**
-   ```typescript
-   function requireAuth(request: NextRequest) {
-     const token = request.headers.get('authorization')
-     if (!token) {
-       throw new Error('Unauthorized')
-     }
-     return verifyToken(token)
-   }
-   ```
-
-3. **Permission validation**
-   ```typescript
-   function requireRole(user: User, role: string) {
-     if (!user.roles.some(r => r.name === role)) {
-       throw new Error('Forbidden')
-     }
-   }
-   ```
-
-## Common Tasks
-
-### Adding a New Dashboard Route
-1. Create directory: `/src/app/[role]/`
-2. Add `page.tsx` with role-specific styling
-3. Use role color: `--role-[admin|dev|qa|stakeholder]`
-4. Follow existing dashboard structure
-
-### Adding a New API Client
-1. Create file: `/src/lib/[service]-client.ts`
-2. Define TypeScript interfaces for responses
-3. Implement error handling
-4. Export factory function using env vars
-5. Add JSDoc comments
-
-### Adding a Database Model
-1. Update `/prisma/schema.prisma`
-2. Run: `npx prisma migrate dev --name [migration_name]`
-3. Run: `npx prisma generate`
-4. Use Prisma Client in your code
-
-### Where to Use Sub-Agents**
-- Prefer using relevant sub-agents (via the task tool) instead of doing the work yourself.
-- When relevant sub-agents are available, your role changes from a coder making changes to a manager of software engineers. Your job is to utilize these sub-agents to deliver the best results as efficiently as possible.
-
-**When to use explore agent** (not grep/glob):
-- Questions needing understanding or synthesis
-- Multi-step searches requiring analysis
-- Want a summarized answer, not raw results
-
-**When to use custom agents**:
-- If both a built-in agent and a custom agent could handle a task, prefer the custom agent as it has specialized knowledge for this environment.
-
-### Performance Tips
-
-- Use Server Components by default (Next.js 15)
-- Add `'use client'` only when needed
-- Implement proper loading states
-- Use `<Link>` for client-side navigation
-- Optimize images with `next/image`
-
-## Accessibility
-
-- Use semantic HTML elements
-- Add ARIA labels where needed
-- Ensure keyboard navigation works
-- Maintain color contrast ratios
-- Test with screen readers
-
-## When Suggesting Code
-
-1. **Provide context**: Explain why you're suggesting specific patterns
-2. **Use existing patterns**: Reference similar code in the project
-3. **Include types**: Always include TypeScript types
-4. **Handle errors**: Include try-catch blocks
-5. **Follow style**: Use the spice-themed design tokens
-6. **Be specific**: Reference exact file paths
-7. **Consider roles**: Think about role-based access
-
-## Documentation
-
-When adding new features, update:
-- `README.md` - User-facing features
-- `CLAUDE.md` - Architecture changes
-- `AGENTS.md` - Agent-specific guidance
-- JSDoc comments - All public functions
-
-## Quick Reference
-
-### Common Imports
-```typescript
-import Link from 'next/link'
-import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { createJiraClient } from '@/lib/jira-client'
-import { createGitHubClient } from '@/lib/github-client'
-import { createAIChatEngine } from '@/lib/ai-chat-engine'
-```
-
-### Spice Palette Colors
-- Turmeric: `#E6B04B`
-- Chili: `#C5351F`
-- Coriander: `#4A7C59`
-- Cinnamon: `#5D4037`
-- Cream: `#FFF8DC`
-
-Remember: CurryDash is all about role-based project management with a unique spice-themed design. Keep the code clean, typed, and accessible!
+Type `/bmad-` in Copilot Chat to see all available BMAD workflows and agent activators. Agents are also available in the agents dropdown.
+<!-- BMAD:END -->
