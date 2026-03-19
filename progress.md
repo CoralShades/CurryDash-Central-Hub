@@ -311,3 +311,120 @@
 3. **Blockers:** 8 decisions needed, 9 Jira links to create, 3 duplicates to close
 4. **Last modified files:** findings.md, task_plan.md, progress.md
 5. **Next action:** Get Demi's decisions → create missing Jira links → close duplicates → execute sprint plan
+
+---
+
+## Session: 2026-03-12 (Pass 2) — Mobile & CUR Deep Audit
+
+### Phase 14: PACK + CUR Deep Dive
+
+**Data collected:**
+- 100 active PACK tickets (14 bugs, 32 tasks, 15 epics, 9 subtasks, 14 brand, 12 dev-foundation)
+- 100 active CUR tickets (14 epics, 56 stories, 4 tasks, 26 subtasks)
+- 2 completed PACK tickets in 30d (PACK-176 CORS, PACK-207 Payment nav)
+- 0 completed CUR tickets in 30d
+- 83 related backend tickets (CAD+CAR) for cross-reference
+
+**Key findings:**
+- **PACK has ZERO velocity** — 0 tickets in progress, 74 unassigned
+- **CUR has near-zero velocity** — 1 in progress (CUR-14), 7 in UAT limbo
+- **68% of PACK's required APIs don't exist** — severely backend-blocked
+- **7 potential duplicate pairs** in PACK (old tasks ≈ newer stories)
+- **Ramesh has 129 total tickets** (92 CAD/CAR + 37 CUR) — unsustainable
+- **6 dependency chains** mapped (Package, Cart, Subscription, Stripe, Notification, Delivery)
+
+**AI-Achievability (PACK):** 11 HIGH, 7 MEDIUM, 10 LOW, 72 NOT
+**AI-Achievability (CUR):** 8 HIGH, 10 MEDIUM, 6 LOW, 76 NOT
+**Combined Quick Wins:** 15 tickets (10 Flutter + 5 Next.js) → ~43-55 hrs total
+
+### Files Created (6 total)
+| File | Description |
+|------|-------------|
+| `docs/jira/reviews/mobile-cur-audit-2026-03-12/MOBILE-BOARD-AUDIT.md` | Full PACK inventory |
+| `docs/jira/reviews/mobile-cur-audit-2026-03-12/CUR-BOARD-AUDIT.md` | Full CUR inventory |
+| `docs/jira/reviews/mobile-cur-audit-2026-03-12/MOBILE-BACKEND-DEPENDENCIES.md` | PACK→backend API dependency map |
+| `docs/jira/reviews/mobile-cur-audit-2026-03-12/AI-ACHIEVABILITY-MOBILE.md` | Flutter AI assessment |
+| `docs/jira/reviews/mobile-cur-audit-2026-03-12/AI-ACHIEVABILITY-CUR.md` | Next.js AI assessment |
+| `docs/jira/reviews/mobile-cur-audit-2026-03-12/QUICK-WINS-MOBILE.md` | Top 15 quick wins with execution plan |
+
+### 5-Question Reboot Check (Updated)
+1. **Last milestone:** Mobile + CUR deep audit — 200 tickets analyzed, 6 dependency chains, backend API coverage mapped
+2. **Current task:** Copy audit files to Obsidian, enhance with codebase exploration results
+3. **Blockers:** Same 8 decisions from prior audit still pending from Demi
+4. **Last modified files:** 6 new audit docs in `docs/jira/reviews/mobile-cur-audit-2026-03-12/`, INDEX.md updated
+5. **Next action:** Start implementing PACK quick wins (Session 1: Flutter Bug Blitz)
+
+---
+
+## Session: 2026-03-12 (Pass 3) — Jira Refresh + Obsidian Vault Copy
+
+### Phase 15: Jira Status Refresh
+
+**PACK board — DRAMATIC movement detected:**
+- To Do: 100 → **46** (-54)
+- In Progress: 0 → **10** (+10)
+- Dev Tested: 0 → **23** (+23)
+- Ready for UAT: 0 → **20** (+20)
+- UAT: 0 → **1** (+1)
+- Ruchiran: 19 → **51** tickets (+32) — actively implementing core package + user stories
+- Unassigned: 74 → **37** (-37)
+- Board is NOT stalled — most active of all 4 projects
+
+Key tickets in motion:
+- PACK-1 through PACK-9: Package management features (all Dev Tested by Ruchiran)
+- PACK-46 through PACK-77: Core user stories (Dev Tested / Ready for UAT)
+- PACK-99 through PACK-106: CI/CD & docs (Deshan)
+- PACK-67-70: In Progress but **unassigned** (payment, promo, order)
+
+**CUR board — minor changes:**
+- To Do: 90 → 85 (-5)
+- UAT: 7 → 8 (+1, CUR-4 Splash added)
+- Ready for PROD: 0 → **4** (NEW: CUR-109 ERD, CUR-113 package data, CUR-121 GCP, CUR-79 Apple Dev)
+- Santhuka: 1 → 3 (+2)
+- Ruchiran: 22 → 31 (+9)
+- Unassigned: 31 → 17 (-14)
+
+**Laravel API correction:**
+- Subscription routes EXIST (OrderSubscriptionController) — audit incorrectly marked as MISSING
+- 27 API controllers in Api/V1/ confirmed
+- 467 lines of routes confirmed
+
+### Phase 16: Audit Document Updates
+
+Updated files:
+- `MOBILE-BOARD-AUDIT.md` — New dashboard with current statuses, non-To Do ticket list, risk assessment
+- `CUR-BOARD-AUDIT.md` — Ready for PROD section, UAT updates, assignee changes
+
+### Phase 17: Codebase Verification (Flutter)
+
+All quick-win file paths **confirmed**:
+- `lib/features/auth/controllers/auth_controller.dart` — exists (PACK-177)
+- `lib/features/dashboard/screens/dashboard_screen.dart` — exists (PACK-221)
+- `lib/features/product/` — controllers, domain, screens dirs exist (PACK-209)
+- `lib/api/api_checker.dart`, `api_client.dart` — exist (PACK-178)
+- `lib/features/checkout/controllers/checkout_controller.dart` — exists (PACK-184)
+- 34 feature modules confirmed (was 30+ in audit — now precise: 34)
+- 5 tests confirmed (4 package model + 1 widget)
+
+### Phase 18: Obsidian Vault Copy
+
+**Files already in Obsidian (from prior session):**
+- All 6 mobile-cur-audit docs
+- AI-ACHIEVABILITY-AUDIT.md
+- All 6 board-audit docs
+- INDEX.md
+
+**Updated in Obsidian:**
+- MOBILE-BOARD-AUDIT.md (refreshed dashboard)
+- CUR-BOARD-AUDIT.md (new Ready for PROD section)
+- INDEX.md
+
+**Created:**
+- `CurryDash-Audit.canvas` — JSON Canvas showing audit doc relationships with 20 nodes, 9 edges, 3 color-coded groups
+
+### 5-Question Reboot Check (Updated)
+1. **Last milestone:** Jira refresh + Obsidian vault copy complete — PACK board dramatically active (54 tickets moved)
+2. **Current task:** All audit work complete
+3. **Blockers:** Same 8 decisions pending from Demi. 4 In-Progress PACK tickets are unassigned (PACK-67-70).
+4. **Last modified files:** MOBILE-BOARD-AUDIT.md, CUR-BOARD-AUDIT.md, progress.md, CurryDash-Audit.canvas
+5. **Next action:** Start implementing quick wins — Flutter Bug Blitz (cd D:\ailocal\currydash\User-Web-Mobile)

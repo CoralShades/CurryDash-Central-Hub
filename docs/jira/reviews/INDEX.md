@@ -1,9 +1,20 @@
 # Jira Reviews & Audit — Master Index
 
-> **Last updated**: 2026-03-12
+> **Last updated**: 2026-03-12 (Pass 2)
 > **To continue in a new session**: Start by reading `progress.md` (repo root), then this index.
 
 ---
+
+## Mobile & CUR Deep Audit (2026-03-12)
+
+| File | Description | Read When |
+|------|-------------|-----------|
+| [mobile-cur-audit-2026-03-12/MOBILE-BOARD-AUDIT.md](mobile-cur-audit-2026-03-12/MOBILE-BOARD-AUDIT.md) | Full PACK inventory — 100 tickets, 14 bugs, 74 unassigned, ZERO velocity | Understanding mobile board state |
+| [mobile-cur-audit-2026-03-12/CUR-BOARD-AUDIT.md](mobile-cur-audit-2026-03-12/CUR-BOARD-AUDIT.md) | Full CUR inventory — 100 tickets, 37 prototyping, Ramesh overloaded (129 total) | Understanding new platform board |
+| [mobile-cur-audit-2026-03-12/MOBILE-BACKEND-DEPENDENCIES.md](mobile-cur-audit-2026-03-12/MOBILE-BACKEND-DEPENDENCIES.md) | Every PACK ticket mapped to backend API — 68% of APIs don't exist yet | **Understanding what blocks mobile work** |
+| [mobile-cur-audit-2026-03-12/AI-ACHIEVABILITY-MOBILE.md](mobile-cur-audit-2026-03-12/AI-ACHIEVABILITY-MOBILE.md) | Per-ticket AI assessment for Flutter — 11 HIGH, 7 MEDIUM, 10 LOW, 72 NOT | Planning mobile AI implementation |
+| [mobile-cur-audit-2026-03-12/AI-ACHIEVABILITY-CUR.md](mobile-cur-audit-2026-03-12/AI-ACHIEVABILITY-CUR.md) | Per-ticket AI assessment for Next.js — 8 HIGH, 10 MEDIUM, 6 LOW, 76 NOT | Planning CUR AI implementation |
+| [mobile-cur-audit-2026-03-12/QUICK-WINS-MOBILE.md](mobile-cur-audit-2026-03-12/QUICK-WINS-MOBILE.md) | Top 15 tickets (10 Flutter + 5 Next.js) implementable TODAY with execution plan | **Start here for immediate work** |
 
 ## AI Achievability Audit (2026-03-12)
 
